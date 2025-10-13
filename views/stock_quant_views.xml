@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista tree de ubicaciones con dimensiones -->
+    <record id="view_stock_quant_tree_inherit" model="ir.ui.view">
+        <field name="name">stock.quant.tree.inherit.dimensions</field>
+        <field name="model">stock.quant</field>
+        <field name="inherit_id" ref="stock.view_stock_quant_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='lot_id']" position="after">
+                <field name="x_grosor" optional="hide" string="Grosor (cm)"/>
+                <field name="x_alto" optional="hide" string="Alto (m)"/>
+                <field name="x_ancho" optional="hide" string="Ancho (m)"/>
+                <field name="x_fotografia_principal" widget="image_preview" options="{'size': [60, 60]}" optional="hide"/>
+                <field name="x_cantidad_fotos" optional="show" string="Fotos"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista tree editable (para ubicaciones) con botón de fotos -->
+    <record id="view_stock_quant_tree_editable_inherit" model="ir.ui.view">
+        <field name="name">stock.quant.tree.editable.inherit.dimensions</field>
+        <field name="model">stock.quant</field>
+        <field name="inherit_id" ref="stock.view_stock_quant_tree_editable"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='lot_id']" position="after">
+                <field name="x_grosor" optional="hide" string="Grosor (cm)" readonly="1"/>
+                <field name="x_alto" optional="hide" string="Alto (m)" readonly="1"/>
+                <field name="x_ancho" optional="hide" string="Ancho (m)" readonly="1"/>
+                <field name="x_fotografia_principal" widget="image_preview" options="{'size': [60, 60]}" optional="hide" readonly="1"/>
+                <field name="x_cantidad_fotos" optional="show" string="Fotos" readonly="1"/>
+            </xpath>
+            
+            <!-- Agregar botón para agregar fotos en popup -->
+            <xpath expr="//button[@name='action_view_orderpoints']" position="after">
+                <button name="action_add_photos" 
+                        string="Agregar Foto" 
+                        type="object" 
+                        class="btn-link" 
+                        icon="fa-camera"
+                        invisible="not lot_id"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

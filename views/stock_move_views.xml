@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extender vista de líneas de movimiento en recepción -->
+    <record id="view_stock_move_line_operation_tree_inherit" model="ir.ui.view">
+        <field name="name">stock.move.line.operations.tree.inherit.dimensions</field>
+        <field name="model">stock.move.line</field>
+        <field name="inherit_id" ref="stock.view_stock_move_line_operation_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='lot_id']" position="after">
+                <field name="x_grosor_temp" optional="show" string="Grosor (cm)"/>
+                <field name="x_alto_temp" optional="show" string="Alto (m)"/>
+                <field name="x_ancho_temp" optional="show" string="Ancho (m)"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista tree para historial de movimientos con dimensiones del lote -->
+    <record id="view_move_line_tree_inherit_dimensions" model="ir.ui.view">
+        <field name="name">stock.move.line.tree.inherit.lot.dimensions</field>
+        <field name="model">stock.move.line</field>
+        <field name="inherit_id" ref="stock.view_move_line_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='lot_id']" position="after">
+                <field name="x_grosor_lote" optional="hide" string="Grosor (cm)"/>
+                <field name="x_alto_lote" optional="hide" string="Alto (m)"/>
+                <field name="x_ancho_lote" optional="hide" string="Ancho (m)"/>
+                <field name="x_fotografia_principal_lote" widget="image_preview" options="{'size': [60, 60]}" optional="hide"/>
+                <field name="x_cantidad_fotos_lote" optional="show" string="Fotos"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_stock_move_operations_form_inherit" model="ir.ui.view">
+        <field name="name">stock.move.operations.form.inherit.dimensions</field>
+        <field name="model">stock.move</field>
+        <field name="inherit_id" ref="stock.view_stock_move_operations"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='move_line_ids']" position="attributes">
+                <attribute name="context">{'list_view_ref': 'stock_lot_dimensions.view_stock_move_line_operation_tree_inherit', 'form_view_ref': 'stock_lot_dimensions.view_move_line_mobile_form_inherit', 'default_picking_id': picking_id, 'default_move_id': id, 'default_product_id': product_id, 'default_location_id': location_id, 'default_location_dest_id': location_dest_id, 'default_company_id': company_id, 'active_picking_id': picking_id}</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_move_line_mobile_form_inherit" model="ir.ui.view">
+        <field name="name">stock.move.line.mobile.form.inherit.dimensions</field>
+        <field name="model">stock.move.line</field>
+        <field name="inherit_id" ref="stock.view_move_line_mobile_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='lot_id']" position="after">
+                <group string="Dimensiones del Lote" col="2">
+                    <field name="x_grosor_temp" string="Grosor (cm)"/>
+                    <field name="x_alto_temp" string="Alto (m)"/>
+                    <field name="x_ancho_temp" string="Ancho (m)"/>
+                </group>
+            </xpath>
+            
+            <xpath expr="//group[last()]" position="after">
+                <group string="Fotografías" invisible="not lot_id">
+                    <button name="action_add_photos" 
+                            string="Agregar Fotografías" 
+                            type="object" 
+                            class="btn-primary"
+                            invisible="not lot_id"/>
+                    <button name="action_view_lot_photos" 
+                            string="Ver Fotografías" 
+                            type="object" 
+                            class="btn-secondary"
+                            invisible="not lot_id or not x_cantidad_fotos_lote"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

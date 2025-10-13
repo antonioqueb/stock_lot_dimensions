@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="stock_lot_dimensions.ImageGalleryWidget" owl="1">
+        <div class="image-gallery-container">
+            <div class="image-gallery-thumbnails">
+                <t t-foreach="state.images" t-as="image" t-key="image.id">
+                    <img 
+                        t-att-src="getImageUrl(image.id)" 
+                        t-att-alt="image.name"
+                        class="image-gallery-thumbnail"
+                        t-on-click="() => openGallery(image_index)"
+                    />
+                </t>
+            </div>
+            
+            <t t-if="state.showModal">
+                <div class="image-gallery-modal" t-on-click="closeGallery">
+                    <div class="image-gallery-content" t-on-click.stop="">
+                        <button class="image-gallery-close" t-on-click="closeGallery">×</button>
+                        <img 
+                            t-att-src="getImageUrl(state.images[state.currentIndex].id)" 
+                            t-att-alt="state.images[state.currentIndex].name"
+                            class="image-gallery-main"
+                        />
+                        <div class="image-gallery-controls">
+                            <button 
+                                class="image-gallery-btn" 
+                                t-on-click="prevImage"
+                                t-att-disabled="state.currentIndex === 0"
+                            >‹</button>
+                            <button 
+                                class="image-gallery-btn" 
+                                t-on-click="nextImage"
+                                t-att-disabled="state.currentIndex === state.images.length - 1"
+                            >›</button>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="stock_lot_dimensions.ImagePreviewWidget" owl="1">
+        <div class="image-preview-wrapper" t-if="imageUrl">
+            <img 
+                t-att-src="imageUrl" 
+                class="image-preview-thumbnail"
+                t-on-click="openPreview"
+                alt="Fotografía"
+            />
+            
+            <t t-if="state.showModal">
+                <div class="image-preview-modal" t-on-click="closePreview">
+                    <div class="image-preview-content" t-on-click.stop="">
+                        <button class="image-preview-close" t-on-click="closePreview">×</button>
+                        <img 
+                            t-att-src="imageUrl" 
+                            class="image-preview-full"
+                            alt="Fotografía"
+                        />
+                    </div>
+                </div>
+            </t>
+        </div>
+        <div t-else="" class="image-preview-placeholder">
+            <i class="fa fa-picture-o"></i>
+        </div>
+    </t>
+</templates>

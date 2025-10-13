@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_lot_image_wizard_form" model="ir.ui.view">
+        <field name="name">stock.lot.image.wizard.form</field>
+        <field name="model">stock.lot.image.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="lot_id" readonly="1" class="oe_inline"/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="name" placeholder="Ej: Foto frontal, Foto lateral, etc."/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="notas" placeholder="Notas adicionales sobre esta fotografía..."/>
+                        </group>
+                    </group>
+                    
+                    <group string="Imagen">
+                        <field name="image" 
+                               widget="image" 
+                               class="oe_avatar" 
+                               options="{'preview_image': 'image', 'size': [400, 400]}"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button string="Guardar y Cerrar" 
+                            name="action_save_image" 
+                            type="object" 
+                            class="btn-primary"/>
+                    <button string="Cancelar" 
+                            class="btn-secondary" 
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
