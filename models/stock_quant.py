@@ -25,6 +25,27 @@ class StockQuant(models.Model):
         store=False
     )
     
+    x_acabado = fields.Selection(
+        related='lot_id.x_acabado',
+        string='Acabado',
+        readonly=True,
+        store=False
+    )
+    
+    x_bloque = fields.Char(
+        related='lot_id.x_bloque',
+        string='Bloque',
+        readonly=True,
+        store=False
+    )
+    
+    x_formato = fields.Selection(
+        related='lot_id.x_formato',
+        string='Formato',
+        readonly=True,
+        store=False
+    )
+    
     x_fotografia_principal = fields.Binary(
         related='lot_id.x_fotografia_principal',
         string='Foto',

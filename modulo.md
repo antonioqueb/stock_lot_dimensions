@@ -51,6 +51,7 @@ from . import stock_lot
 from . import stock_lot_image
 from . import stock_move_line
 from . import stock_quant
+from . import stock_picking
 ```
 
 ## ./models/stock_lot.py
@@ -78,6 +79,81 @@ class StockLot(models.Model):
         digits=(10, 4),
         help='Ancho del producto en metros'
     )
+    
+    x_acabado = fields.Selection([
+        ('pulido', 'Pulido'),
+        ('mate', 'Mate'),
+        ('busardeado', 'Busardeado'),
+        ('sandblasteado', 'Sandblasteado'),
+        ('acido_ligero', 'Acido Ligero'),
+        ('acido_rugoso', 'Acido Rugoso'),
+        ('cepillado', 'Cepillado'),
+        ('busardeado_cepillado', 'Busardeado + Cepillado'),
+        ('sandblasteado_cepillado', 'Sandblasteado + Cepillado'),
+        ('macheteado', 'Macheteado'),
+        ('century', 'Century'),
+        ('apomazado', 'Apomazado'),
+        ('routeado_nivel1', 'Routeado Nivel 1 (2cm)'),
+        ('routeado_nivel2', 'Routeado Nivel 2 (4cm)'),
+        ('routeado_nivel3', 'Routeado Nivel 3 (6cm)'),
+        ('flameado', 'Flameado'),
+        ('al_corte', 'Al corte'),
+        ('natural', 'Natural'),
+        ('tomboleado', 'Tomboleado'),
+        ('lino', 'Lino'),
+        ('raw', 'Raw'),
+        ('bamboo', 'Bamboo'),
+        ('r10', 'R10'),
+        ('r11', 'R11'),
+        ('polvo', 'Polvo'),
+        ('liquido', 'Liquido'),
+        ('satinado', 'Satinado'),
+        ('cepillado_mate', 'Cepillado / Mate'),
+        ('cepillado_brillado', 'Cepillado / Brillado'),
+        ('rockface', 'Rockface'),
+        ('bamboo_alt', 'Bamboo'),
+        ('moonface', 'Moonface'),
+        ('corte_disco', 'Corte Disco'),
+        ('guillotina', 'Guillotina'),
+        ('mate_destapado', 'Mate Destapado'),
+        ('mate_retapado', 'Mate Retapado'),
+        ('sandblasteado_retapado', 'Sandblasteado Retapado'),
+        ('pulido_brillado_retapado', 'Pulido Brillado Retapado'),
+        ('cepillado_retapado', 'Cepillado Retapado'),
+        ('riverwashed', 'Riverwashed'),
+        ('slate', 'Slate'),
+    ], string='Acabado', help='Tipo de acabado del producto')
+    
+    x_bloque = fields.Char(
+        string='Bloque',
+        help='Identificación del bloque de origen'
+    )
+    
+    x_formato = fields.Selection([
+        ('placa', 'Placa'),
+        ('060x120', '0.60 x 1.20 m'),
+        ('060x060', '0.60 x 0.60 m'),
+        ('060x040', '0.60 x 0.40 m'),
+        ('060x020', '0.60 x 0.20 m'),
+        ('060x010', '0.60 x 0.10 m'),
+        ('060x030', '0.60 x 0.30 m'),
+        ('060xll', '0.60 x LL m'),
+        ('050xll', '0.50 x LL m'),
+        ('040xll', '0.40 x LL m'),
+        ('010xll', '0.10 x LL m'),
+        ('005xll', '0.05 x LL m'),
+        ('080x160', '0.80 x 1.60 m'),
+        ('075x150', '0.75 x 1.50 m'),
+        ('320x160', '3.20 x 1.60 m'),
+        ('020xll', '0.20 x LL m'),
+        ('015xll', '0.15 x LL m'),
+        ('122x061', '1.22 x 0.61 m'),
+        ('100x050', '1.00 x 0.50 m'),
+        ('100x025', '1.00 x 0.25 m'),
+        ('120x278', '1.20 x 2.78 m'),
+        ('300x100', '3.00 x 1.00 m'),
+        ('324x162', '3.24 x 1.62 m'),
+    ], string='Formato', default='placa', help='Formato del producto')
     
     x_fotografia_ids = fields.One2many(
         'stock.lot.image',
@@ -215,6 +291,81 @@ class StockMoveLine(models.Model):
         help='Ancho del producto en metros (se guardará en el lote)'
     )
     
+    x_acabado_temp = fields.Selection([
+        ('pulido', 'Pulido'),
+        ('mate', 'Mate'),
+        ('busardeado', 'Busardeado'),
+        ('sandblasteado', 'Sandblasteado'),
+        ('acido_ligero', 'Acido Ligero'),
+        ('acido_rugoso', 'Acido Rugoso'),
+        ('cepillado', 'Cepillado'),
+        ('busardeado_cepillado', 'Busardeado + Cepillado'),
+        ('sandblasteado_cepillado', 'Sandblasteado + Cepillado'),
+        ('macheteado', 'Macheteado'),
+        ('century', 'Century'),
+        ('apomazado', 'Apomazado'),
+        ('routeado_nivel1', 'Routeado Nivel 1 (2cm)'),
+        ('routeado_nivel2', 'Routeado Nivel 2 (4cm)'),
+        ('routeado_nivel3', 'Routeado Nivel 3 (6cm)'),
+        ('flameado', 'Flameado'),
+        ('al_corte', 'Al corte'),
+        ('natural', 'Natural'),
+        ('tomboleado', 'Tomboleado'),
+        ('lino', 'Lino'),
+        ('raw', 'Raw'),
+        ('bamboo', 'Bamboo'),
+        ('r10', 'R10'),
+        ('r11', 'R11'),
+        ('polvo', 'Polvo'),
+        ('liquido', 'Liquido'),
+        ('satinado', 'Satinado'),
+        ('cepillado_mate', 'Cepillado / Mate'),
+        ('cepillado_brillado', 'Cepillado / Brillado'),
+        ('rockface', 'Rockface'),
+        ('bamboo_alt', 'Bamboo'),
+        ('moonface', 'Moonface'),
+        ('corte_disco', 'Corte Disco'),
+        ('guillotina', 'Guillotina'),
+        ('mate_destapado', 'Mate Destapado'),
+        ('mate_retapado', 'Mate Retapado'),
+        ('sandblasteado_retapado', 'Sandblasteado Retapado'),
+        ('pulido_brillado_retapado', 'Pulido Brillado Retapado'),
+        ('cepillado_retapado', 'Cepillado Retapado'),
+        ('riverwashed', 'Riverwashed'),
+        ('slate', 'Slate'),
+    ], string='Acabado', help='Tipo de acabado del producto (se guardará en el lote)')
+    
+    x_bloque_temp = fields.Char(
+        string='Bloque',
+        help='Identificación del bloque de origen (se guardará en el lote)'
+    )
+    
+    x_formato_temp = fields.Selection([
+        ('placa', 'Placa'),
+        ('060x120', '0.60 x 1.20 m'),
+        ('060x060', '0.60 x 0.60 m'),
+        ('060x040', '0.60 x 0.40 m'),
+        ('060x020', '0.60 x 0.20 m'),
+        ('060x010', '0.60 x 0.10 m'),
+        ('060x030', '0.60 x 0.30 m'),
+        ('060xll', '0.60 x LL m'),
+        ('050xll', '0.50 x LL m'),
+        ('040xll', '0.40 x LL m'),
+        ('010xll', '0.10 x LL m'),
+        ('005xll', '0.05 x LL m'),
+        ('080x160', '0.80 x 1.60 m'),
+        ('075x150', '0.75 x 1.50 m'),
+        ('320x160', '3.20 x 1.60 m'),
+        ('020xll', '0.20 x LL m'),
+        ('015xll', '0.15 x LL m'),
+        ('122x061', '1.22 x 0.61 m'),
+        ('100x050', '1.00 x 0.50 m'),
+        ('100x025', '1.00 x 0.25 m'),
+        ('120x278', '1.20 x 2.78 m'),
+        ('300x100', '3.00 x 1.00 m'),
+        ('324x162', '3.24 x 1.62 m'),
+    ], string='Formato', default='placa', help='Formato del producto (se guardará en el lote)')
+    
     # Campos related para mostrar en historial de movimientos
     x_grosor_lote = fields.Float(
         related='lot_id.x_grosor',
@@ -233,6 +384,27 @@ class StockMoveLine(models.Model):
     x_ancho_lote = fields.Float(
         related='lot_id.x_ancho',
         string='Ancho Lote (m)',
+        readonly=True,
+        store=False
+    )
+    
+    x_acabado_lote = fields.Selection(
+        related='lot_id.x_acabado',
+        string='Acabado Lote',
+        readonly=True,
+        store=False
+    )
+    
+    x_bloque_lote = fields.Char(
+        related='lot_id.x_bloque',
+        string='Bloque Lote',
+        readonly=True,
+        store=False
+    )
+    
+    x_formato_lote = fields.Selection(
+        related='lot_id.x_formato',
+        string='Formato Lote',
         readonly=True,
         store=False
     )
@@ -258,6 +430,9 @@ class StockMoveLine(models.Model):
             self.x_grosor_temp = self.lot_id.x_grosor
             self.x_alto_temp = self.lot_id.x_alto
             self.x_ancho_temp = self.lot_id.x_ancho
+            self.x_acabado_temp = self.lot_id.x_acabado
+            self.x_bloque_temp = self.lot_id.x_bloque
+            self.x_formato_temp = self.lot_id.x_formato
             # Si el lote tiene dimensiones, calcular cantidad
             if self.lot_id.x_alto and self.lot_id.x_ancho:
                 self.qty_done = self.lot_id.x_alto * self.lot_id.x_ancho
@@ -270,31 +445,47 @@ class StockMoveLine(models.Model):
 
     def write(self, vals):
         """Guardar dimensiones en el lote al confirmar"""
-        # Si se modificaron las dimensiones temporales y existe un lote, actualizar el lote
-        dimension_fields = ['x_grosor_temp', 'x_alto_temp', 'x_ancho_temp']
-        if any(field in vals for field in dimension_fields):
+        # Primero ejecutar el write original
+        result = super().write(vals)
+        
+        # Después del write, verificar si hay dimensiones que guardar en el lote
+        dimension_fields = ['x_grosor_temp', 'x_alto_temp', 'x_ancho_temp', 'x_acabado_temp', 'x_bloque_temp', 'x_formato_temp']
+        has_dimensions = any(field in vals for field in dimension_fields)
+        
+        # Si se modificó el lote_id o hay dimensiones, actualizar el lote
+        if 'lot_id' in vals or has_dimensions:
             for line in self:
                 if line.lot_id:
                     lot_vals = {}
-                    if 'x_grosor_temp' in vals:
-                        lot_vals['x_grosor'] = vals['x_grosor_temp']
-                    if 'x_alto_temp' in vals:
-                        lot_vals['x_alto'] = vals['x_alto_temp']
-                    if 'x_ancho_temp' in vals:
-                        lot_vals['x_ancho'] = vals['x_ancho_temp']
                     
+                    # Usar los valores actuales de la línea (ya actualizados por el super().write())
+                    if line.x_grosor_temp:
+                        lot_vals['x_grosor'] = line.x_grosor_temp
+                    if line.x_alto_temp:
+                        lot_vals['x_alto'] = line.x_alto_temp
+                    if line.x_ancho_temp:
+                        lot_vals['x_ancho'] = line.x_ancho_temp
+                    if line.x_acabado_temp:
+                        lot_vals['x_acabado'] = line.x_acabado_temp
+                    if line.x_bloque_temp:
+                        lot_vals['x_bloque'] = line.x_bloque_temp
+                    if line.x_formato_temp:
+                        lot_vals['x_formato'] = line.x_formato_temp
+                    
+                    # Solo actualizar si hay valores que guardar
                     if lot_vals:
                         line.lot_id.write(lot_vals)
         
-        # Calcular qty_done si se modifican alto o ancho
-        if 'x_alto_temp' in vals or 'x_ancho_temp' in vals:
+        # Calcular qty_done si se modifican alto o ancho (evitar recursión)
+        if ('x_alto_temp' in vals or 'x_ancho_temp' in vals) and 'qty_done' not in vals:
             for line in self:
-                alto = vals.get('x_alto_temp', line.x_alto_temp)
-                ancho = vals.get('x_ancho_temp', line.x_ancho_temp)
-                if alto and ancho and 'qty_done' not in vals:
-                    vals['qty_done'] = alto * ancho
+                alto = line.x_alto_temp
+                ancho = line.x_ancho_temp
+                if alto and ancho:
+                    # Usar super() para evitar recursión infinita
+                    super(StockMoveLine, line).write({'qty_done': alto * ancho})
         
-        return super().write(vals)
+        return result
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -307,16 +498,24 @@ class StockMoveLine(models.Model):
         
         lines = super().create(vals_list)
         
-        # Guardar dimensiones en el lote
+        # Guardar dimensiones en el lote después de crear la línea
         for line, vals in zip(lines, vals_list):
             if line.lot_id:
                 lot_vals = {}
-                if vals.get('x_grosor_temp'):
-                    lot_vals['x_grosor'] = vals['x_grosor_temp']
-                if vals.get('x_alto_temp'):
-                    lot_vals['x_alto'] = vals['x_alto_temp']
-                if vals.get('x_ancho_temp'):
-                    lot_vals['x_ancho'] = vals['x_ancho_temp']
+                
+                # Usar los valores de la línea recién creada
+                if line.x_grosor_temp:
+                    lot_vals['x_grosor'] = line.x_grosor_temp
+                if line.x_alto_temp:
+                    lot_vals['x_alto'] = line.x_alto_temp
+                if line.x_ancho_temp:
+                    lot_vals['x_ancho'] = line.x_ancho_temp
+                if line.x_acabado_temp:
+                    lot_vals['x_acabado'] = line.x_acabado_temp
+                if line.x_bloque_temp:
+                    lot_vals['x_bloque'] = line.x_bloque_temp
+                if line.x_formato_temp:
+                    lot_vals['x_formato'] = line.x_formato_temp
                 
                 if lot_vals:
                     line.lot_id.write(lot_vals)
@@ -366,6 +565,10 @@ class StockMoveLine(models.Model):
             }
         }```
 
+## ./models/stock_picking.py
+```py
+```
+
 ## ./models/stock_quant.py
 ```py
 # -*- coding: utf-8 -*-
@@ -391,6 +594,27 @@ class StockQuant(models.Model):
     x_ancho = fields.Float(
         related='lot_id.x_ancho',
         string='Ancho (m)',
+        readonly=True,
+        store=False
+    )
+    
+    x_acabado = fields.Selection(
+        related='lot_id.x_acabado',
+        string='Acabado',
+        readonly=True,
+        store=False
+    )
+    
+    x_bloque = fields.Char(
+        related='lot_id.x_bloque',
+        string='Bloque',
+        readonly=True,
+        store=False
+    )
+    
+    x_formato = fields.Selection(
+        related='lot_id.x_formato',
+        string='Formato',
         readonly=True,
         store=False
     )
@@ -790,6 +1014,9 @@ registry.category("fields").add("image_preview_clickable", {
                 <field name="x_grosor_temp" optional="show" string="Grosor (cm)"/>
                 <field name="x_alto_temp" optional="show" string="Alto (m)"/>
                 <field name="x_ancho_temp" optional="show" string="Ancho (m)"/>
+                <field name="x_acabado_temp" optional="show" string="Acabado"/>
+                <field name="x_bloque_temp" optional="show" string="Bloque"/>
+                <field name="x_formato_temp" optional="show" string="Formato"/>
             </xpath>
         </field>
     </record>
@@ -804,6 +1031,9 @@ registry.category("fields").add("image_preview_clickable", {
                 <field name="x_grosor_lote" optional="hide" string="Grosor (cm)"/>
                 <field name="x_alto_lote" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho_lote" optional="hide" string="Ancho (m)"/>
+                <field name="x_acabado_lote" optional="show" string="Acabado"/>
+                <field name="x_bloque_lote" optional="show" string="Bloque"/>
+                <field name="x_formato_lote" optional="show" string="Formato"/>
                 <field name="x_fotografia_principal_lote" widget="image_preview" options="{'size': [60, 60]}" optional="hide"/>
                 <field name="x_cantidad_fotos_lote" optional="show" string="Fotos"/>
             </xpath>
@@ -831,6 +1061,9 @@ registry.category("fields").add("image_preview_clickable", {
                     <field name="x_grosor_temp" string="Grosor (cm)"/>
                     <field name="x_alto_temp" string="Alto (m)"/>
                     <field name="x_ancho_temp" string="Ancho (m)"/>
+                    <field name="x_acabado_temp" string="Acabado"/>
+                    <field name="x_bloque_temp" string="Bloque"/>
+                    <field name="x_formato_temp" string="Formato"/>
                 </group>
             </xpath>
             
@@ -866,6 +1099,9 @@ registry.category("fields").add("image_preview_clickable", {
                 <field name="x_grosor" optional="hide" string="Grosor (cm)"/>
                 <field name="x_alto" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)"/>
+                <field name="x_acabado" optional="show" string="Acabado"/>
+                <field name="x_bloque" optional="show" string="Bloque"/>
+                <field name="x_formato" optional="show" string="Formato"/>
                 <field name="x_fotografia_principal" widget="image_preview" options="{'size': [60, 60]}" optional="hide"/>
                 <field name="x_cantidad_fotos" optional="show" string="Fotos"/>
             </xpath>
@@ -882,6 +1118,9 @@ registry.category("fields").add("image_preview_clickable", {
                 <field name="x_grosor" optional="hide" string="Grosor (cm)" readonly="1"/>
                 <field name="x_alto" optional="hide" string="Alto (m)" readonly="1"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)" readonly="1"/>
+                <field name="x_acabado" optional="show" string="Acabado" readonly="1"/>
+                <field name="x_bloque" optional="show" string="Bloque" readonly="1"/>
+                <field name="x_formato" optional="show" string="Formato" readonly="1"/>
                 <field name="x_fotografia_principal" widget="image_preview" options="{'size': [60, 60]}" optional="hide" readonly="1"/>
                 <field name="x_cantidad_fotos" optional="show" string="Fotos" readonly="1"/>
             </xpath>

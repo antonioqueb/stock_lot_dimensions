@@ -10,6 +10,9 @@
                 <field name="x_grosor_temp" optional="show" string="Grosor (cm)"/>
                 <field name="x_alto_temp" optional="show" string="Alto (m)"/>
                 <field name="x_ancho_temp" optional="show" string="Ancho (m)"/>
+                <field name="x_acabado_temp" optional="show" string="Acabado"/>
+                <field name="x_bloque_temp" optional="show" string="Bloque"/>
+                <field name="x_formato_temp" optional="show" string="Formato"/>
             </xpath>
         </field>
     </record>
@@ -24,6 +27,9 @@
                 <field name="x_grosor_lote" optional="hide" string="Grosor (cm)"/>
                 <field name="x_alto_lote" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho_lote" optional="hide" string="Ancho (m)"/>
+                <field name="x_acabado_lote" optional="show" string="Acabado"/>
+                <field name="x_bloque_lote" optional="show" string="Bloque"/>
+                <field name="x_formato_lote" optional="show" string="Formato"/>
                 <field name="x_fotografia_principal_lote" widget="image_preview" options="{'size': [60, 60]}" optional="hide"/>
                 <field name="x_cantidad_fotos_lote" optional="show" string="Fotos"/>
             </xpath>
@@ -51,6 +57,9 @@
                     <field name="x_grosor_temp" string="Grosor (cm)"/>
                     <field name="x_alto_temp" string="Alto (m)"/>
                     <field name="x_ancho_temp" string="Ancho (m)"/>
+                    <field name="x_acabado_temp" string="Acabado"/>
+                    <field name="x_bloque_temp" string="Bloque"/>
+                    <field name="x_formato_temp" string="Formato"/>
                 </group>
             </xpath>
             
