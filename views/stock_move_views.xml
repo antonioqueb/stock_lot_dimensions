@@ -7,12 +7,34 @@
         <field name="inherit_id" ref="stock.view_stock_move_line_operation_tree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='lot_id']" position="after">
-                <field name="x_grosor_temp" optional="show" string="Grosor (cm)"/>
-                <field name="x_alto_temp" optional="show" string="Alto (m)"/>
-                <field name="x_ancho_temp" optional="show" string="Ancho (m)"/>
-                <field name="x_acabado_temp" optional="show" string="Acabado"/>
-                <field name="x_bloque_temp" optional="show" string="Bloque"/>
-                <field name="x_formato_temp" optional="show" string="Formato"/>
+                <!-- Campo computed para determinar si es recepción -->
+                <field name="x_is_incoming" column_invisible="1"/>
+                
+                <!-- Campos temporales (editables solo en recepciones) -->
+                <field name="x_grosor_temp" 
+                       optional="show" 
+                       string="Grosor (cm)"
+                       readonly="not x_is_incoming"/>
+                <field name="x_alto_temp" 
+                       optional="show" 
+                       string="Alto (m)"
+                       readonly="not x_is_incoming"/>
+                <field name="x_ancho_temp" 
+                       optional="show" 
+                       string="Ancho (m)"
+                       readonly="not x_is_incoming"/>
+                <field name="x_acabado_temp" 
+                       optional="show" 
+                       string="Acabado"
+                       readonly="not x_is_incoming"/>
+                <field name="x_bloque_temp" 
+                       optional="show" 
+                       string="Bloque"
+                       readonly="not x_is_incoming"/>
+                <field name="x_formato_temp" 
+                       optional="show" 
+                       string="Formato"
+                       readonly="not x_is_incoming"/>
             </xpath>
         </field>
     </record>
@@ -53,13 +75,27 @@
         <field name="inherit_id" ref="stock.view_move_line_mobile_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='lot_id']" position="after">
+                <field name="x_is_incoming" invisible="1"/>
+                
                 <group string="Dimensiones del Lote" col="2">
-                    <field name="x_grosor_temp" string="Grosor (cm)"/>
-                    <field name="x_alto_temp" string="Alto (m)"/>
-                    <field name="x_ancho_temp" string="Ancho (m)"/>
-                    <field name="x_acabado_temp" string="Acabado"/>
-                    <field name="x_bloque_temp" string="Bloque"/>
-                    <field name="x_formato_temp" string="Formato"/>
+                    <field name="x_grosor_temp" 
+                           string="Grosor (cm)"
+                           readonly="not x_is_incoming"/>
+                    <field name="x_alto_temp" 
+                           string="Alto (m)"
+                           readonly="not x_is_incoming"/>
+                    <field name="x_ancho_temp" 
+                           string="Ancho (m)"
+                           readonly="not x_is_incoming"/>
+                    <field name="x_acabado_temp" 
+                           string="Acabado"
+                           readonly="not x_is_incoming"/>
+                    <field name="x_bloque_temp" 
+                           string="Bloque"
+                           readonly="not x_is_incoming"/>
+                    <field name="x_formato_temp" 
+                           string="Formato"
+                           readonly="not x_is_incoming"/>
                 </group>
             </xpath>
             

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="stock_lot_dimensions.StatusIconsWidget" owl="1">
+        <div class="d-flex" style="gap: 6px; align-items: center;">
+            <t t-if="estados.reservado">
+                <span class="badge bg-success" title="Reservado" style="font-size: 0.75rem;">
+                    <i class="fa fa-hand-paper-o"/> Reservado
+                </span>
+            </t>
+            
+            <t t-if="estados.entrega">
+                <span class="badge bg-info" title="En Orden de Entrega" style="font-size: 0.75rem;">
+                    <i class="fa fa-shopping-cart"/> En Entrega
+                </span>
+            </t>
+            
+            <t t-if="estados.detalles">
+                <button class="btn btn-sm btn-warning" 
+                        t-on-click="mostrarDetalles"
+                        style="padding: 2px 6px; font-size: 0.75rem;">
+                    <i class="fa fa-info-circle"/> Detalles
+                </button>
+            </t>
+            
+            <t t-if="!estados.reservado and !estados.entrega and !estados.detalles">
+                <span class="text-muted">—</span>
+            </t>
+        </div>
+    </t>
+</templates>

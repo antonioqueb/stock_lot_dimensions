@@ -121,6 +121,13 @@ class StockLot(models.Model):
         compute='_compute_cantidad_fotos',
         store=True
     )
+    
+    # ========== NUEVO CAMPO PARA DETALLES ==========
+    
+    x_detalles_placa = fields.Text(
+        string='Detalles de la Placa',
+        help='Detalles especiales: rota, barreno, release, etc.'
+    )
 
     @api.depends('x_fotografia_ids')
     def _compute_fotografia_principal(self):

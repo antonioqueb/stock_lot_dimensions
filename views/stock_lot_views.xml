@@ -12,6 +12,12 @@
                     <field name="x_ancho" string="Ancho (m)"/>
                     <field name="x_cantidad_fotos" readonly="1"/>
                 </group>
+                
+                <group string="Detalles Especiales">
+                    <field name="x_detalles_placa" 
+                           placeholder="Ej: Placa rota esquina superior, Barreno en centro, Release pendiente, etc."
+                           nolabel="1"/>
+                </group>
             </xpath>
             
             <xpath expr="//sheet" position="inside">

@@ -98,6 +98,13 @@ class StockMoveLine(models.Model):
         ('324x162', '3.24 x 1.62 m'),
     ], string='Formato', default='placa', help='Formato del producto (se guardará en el lote)')
     
+    # Campo computed para saber si es recepción
+    x_is_incoming = fields.Boolean(
+        string='Es Recepción',
+        compute='_compute_is_incoming',
+        store=False
+    )
+    
     # Campos related para mostrar en historial de movimientos
     x_grosor_lote = fields.Float(
         related='lot_id.x_grosor',
@@ -155,28 +162,39 @@ class StockMoveLine(models.Model):
         store=False
     )
 
+    @api.depends('picking_id', 'picking_id.picking_type_code')
+    def _compute_is_incoming(self):
+        """Determinar si la línea pertenece a una recepción"""
+        for line in self:
+            line.x_is_incoming = line.picking_id and line.picking_id.picking_type_code == 'incoming'
+
     @api.onchange('lot_id')
     def _onchange_lot_id_dimensions(self):
         """Cargar dimensiones del lote si ya existen"""
         if self.lot_id:
+            # Cargar valores en campos temporales
             self.x_grosor_temp = self.lot_id.x_grosor
             self.x_alto_temp = self.lot_id.x_alto
             self.x_ancho_temp = self.lot_id.x_ancho
             self.x_acabado_temp = self.lot_id.x_acabado
             self.x_bloque_temp = self.lot_id.x_bloque
             self.x_formato_temp = self.lot_id.x_formato
-            # Si el lote tiene dimensiones, calcular cantidad
-            if self.lot_id.x_alto and self.lot_id.x_ancho:
-                self.qty_done = self.lot_id.x_alto * self.lot_id.x_ancho
+            
+            # Si el lote tiene dimensiones, calcular cantidad solo en recepciones
+            if self.picking_id and self.picking_id.picking_type_code == 'incoming':
+                if self.lot_id.x_alto and self.lot_id.x_ancho:
+                    self.qty_done = self.lot_id.x_alto * self.lot_id.x_ancho
 
     @api.onchange('x_alto_temp', 'x_ancho_temp')
     def _onchange_calcular_cantidad(self):
-        """Calcular automáticamente qty_done (m²) cuando se ingresan alto y ancho"""
-        if self.x_alto_temp and self.x_ancho_temp:
-            self.qty_done = self.x_alto_temp * self.x_ancho_temp
+        """Calcular automáticamente qty_done (m²) cuando se ingresan alto y ancho
+        Solo aplica en recepciones"""
+        if self.picking_id and self.picking_id.picking_type_code == 'incoming':
+            if self.x_alto_temp and self.x_ancho_temp:
+                self.qty_done = self.x_alto_temp * self.x_ancho_temp
 
     def write(self, vals):
-        """Guardar dimensiones en el lote al confirmar"""
+        """Guardar dimensiones en el lote al confirmar (solo en recepciones)"""
         # Primero ejecutar el write original
         result = super().write(vals)
         
@@ -185,9 +203,10 @@ class StockMoveLine(models.Model):
         has_dimensions = any(field in vals for field in dimension_fields)
         
         # Si se modificó el lote_id o hay dimensiones, actualizar el lote
+        # SOLO en operaciones de entrada (recepciones)
         if 'lot_id' in vals or has_dimensions:
             for line in self:
-                if line.lot_id:
+                if line.lot_id and line.picking_id and line.picking_id.picking_type_code == 'incoming':
                     lot_vals = {}
                     
                     # Usar los valores actuales de la línea (ya actualizados por el super().write())
@@ -209,30 +228,38 @@ class StockMoveLine(models.Model):
                         line.lot_id.write(lot_vals)
         
         # Calcular qty_done si se modifican alto o ancho (evitar recursión)
+        # Solo en recepciones
         if ('x_alto_temp' in vals or 'x_ancho_temp' in vals) and 'qty_done' not in vals:
             for line in self:
-                alto = line.x_alto_temp
-                ancho = line.x_ancho_temp
-                if alto and ancho:
-                    # Usar super() para evitar recursión infinita
-                    super(StockMoveLine, line).write({'qty_done': alto * ancho})
+                if line.picking_id and line.picking_id.picking_type_code == 'incoming':
+                    alto = line.x_alto_temp
+                    ancho = line.x_ancho_temp
+                    if alto and ancho:
+                        # Usar super() para evitar recursión infinita
+                        super(StockMoveLine, line).write({'qty_done': alto * ancho})
         
         return result
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Guardar dimensiones en el lote y calcular cantidad al crear"""
-        # Calcular cantidad automáticamente si hay alto y ancho
+        """Guardar dimensiones en el lote y calcular cantidad al crear (solo en recepciones)"""
+        # Calcular cantidad automáticamente si hay alto y ancho (solo en recepciones)
         for vals in vals_list:
-            if vals.get('x_alto_temp') and vals.get('x_ancho_temp'):
-                # Sobrescribir qty_done con el cálculo de m²
-                vals['qty_done'] = vals['x_alto_temp'] * vals['x_ancho_temp']
+            # Verificar si es una recepción antes de calcular
+            picking_id = vals.get('picking_id')
+            if picking_id:
+                picking = self.env['stock.picking'].browse(picking_id)
+                if picking.picking_type_code == 'incoming':
+                    if vals.get('x_alto_temp') and vals.get('x_ancho_temp'):
+                        # Sobrescribir qty_done con el cálculo de m²
+                        vals['qty_done'] = vals['x_alto_temp'] * vals['x_ancho_temp']
         
         lines = super().create(vals_list)
         
         # Guardar dimensiones en el lote después de crear la línea
+        # SOLO en operaciones de entrada (recepciones)
         for line, vals in zip(lines, vals_list):
-            if line.lot_id:
+            if line.lot_id and line.picking_id and line.picking_id.picking_type_code == 'incoming':
                 lot_vals = {}
                 
                 # Usar los valores de la línea recién creada

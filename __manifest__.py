@@ -9,6 +9,7 @@
         - Capturar dimensiones (grosor, alto, ancho) y fotografías al recepcionar productos
         - Almacenar esta información en los lotes
         - Visualizar atributos en reportes de inventario
+        - Mostrar estados de reserva y detalles de placas
     """,
     'author': 'Alphaqueb Consulting',
     'website': 'https://alphaqueb.com',
@@ -24,9 +25,11 @@
         'web.assets_backend': [
             'stock_lot_dimensions/static/src/js/image_gallery_widget.js',
             'stock_lot_dimensions/static/src/js/image_preview_widget.js',
+            'stock_lot_dimensions/static/src/js/status_icons_widget.js',
             'stock_lot_dimensions/static/src/css/image_gallery.css',
             'stock_lot_dimensions/static/src/xml/image_gallery.xml',
             'stock_lot_dimensions/static/src/xml/image_preview_widget.xml',
+            'stock_lot_dimensions/static/src/xml/status_icons_widget.xml',
         ],
     },
     'installable': True,

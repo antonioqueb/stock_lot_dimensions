@@ -18,6 +18,7 @@ from . import wizard
         - Capturar dimensiones (grosor, alto, ancho) y fotografías al recepcionar productos
         - Almacenar esta información en los lotes
         - Visualizar atributos en reportes de inventario
+        - Mostrar estados de reserva y detalles de placas
     """,
     'author': 'Alphaqueb Consulting',
     'website': 'https://alphaqueb.com',
@@ -33,9 +34,11 @@ from . import wizard
         'web.assets_backend': [
             'stock_lot_dimensions/static/src/js/image_gallery_widget.js',
             'stock_lot_dimensions/static/src/js/image_preview_widget.js',
+            'stock_lot_dimensions/static/src/js/status_icons_widget.js',
             'stock_lot_dimensions/static/src/css/image_gallery.css',
             'stock_lot_dimensions/static/src/xml/image_gallery.xml',
             'stock_lot_dimensions/static/src/xml/image_preview_widget.xml',
+            'stock_lot_dimensions/static/src/xml/status_icons_widget.xml',
         ],
     },
     'installable': True,
@@ -178,6 +181,13 @@ class StockLot(models.Model):
         string='# Fotos',
         compute='_compute_cantidad_fotos',
         store=True
+    )
+    
+    # ========== NUEVO CAMPO PARA DETALLES ==========
+    
+    x_detalles_placa = fields.Text(
+        string='Detalles de la Placa',
+        help='Detalles especiales: rota, barreno, release, etc.'
     )
 
     @api.depends('x_fotografia_ids')
@@ -366,6 +376,13 @@ class StockMoveLine(models.Model):
         ('324x162', '3.24 x 1.62 m'),
     ], string='Formato', default='placa', help='Formato del producto (se guardará en el lote)')
     
+    # Campo computed para saber si es recepción
+    x_is_incoming = fields.Boolean(
+        string='Es Recepción',
+        compute='_compute_is_incoming',
+        store=False
+    )
+    
     # Campos related para mostrar en historial de movimientos
     x_grosor_lote = fields.Float(
         related='lot_id.x_grosor',
@@ -423,28 +440,39 @@ class StockMoveLine(models.Model):
         store=False
     )
 
+    @api.depends('picking_id', 'picking_id.picking_type_code')
+    def _compute_is_incoming(self):
+        """Determinar si la línea pertenece a una recepción"""
+        for line in self:
+            line.x_is_incoming = line.picking_id and line.picking_id.picking_type_code == 'incoming'
+
     @api.onchange('lot_id')
     def _onchange_lot_id_dimensions(self):
         """Cargar dimensiones del lote si ya existen"""
         if self.lot_id:
+            # Cargar valores en campos temporales
             self.x_grosor_temp = self.lot_id.x_grosor
             self.x_alto_temp = self.lot_id.x_alto
             self.x_ancho_temp = self.lot_id.x_ancho
             self.x_acabado_temp = self.lot_id.x_acabado
             self.x_bloque_temp = self.lot_id.x_bloque
             self.x_formato_temp = self.lot_id.x_formato
-            # Si el lote tiene dimensiones, calcular cantidad
-            if self.lot_id.x_alto and self.lot_id.x_ancho:
-                self.qty_done = self.lot_id.x_alto * self.lot_id.x_ancho
+            
+            # Si el lote tiene dimensiones, calcular cantidad solo en recepciones
+            if self.picking_id and self.picking_id.picking_type_code == 'incoming':
+                if self.lot_id.x_alto and self.lot_id.x_ancho:
+                    self.qty_done = self.lot_id.x_alto * self.lot_id.x_ancho
 
     @api.onchange('x_alto_temp', 'x_ancho_temp')
     def _onchange_calcular_cantidad(self):
-        """Calcular automáticamente qty_done (m²) cuando se ingresan alto y ancho"""
-        if self.x_alto_temp and self.x_ancho_temp:
-            self.qty_done = self.x_alto_temp * self.x_ancho_temp
+        """Calcular automáticamente qty_done (m²) cuando se ingresan alto y ancho
+        Solo aplica en recepciones"""
+        if self.picking_id and self.picking_id.picking_type_code == 'incoming':
+            if self.x_alto_temp and self.x_ancho_temp:
+                self.qty_done = self.x_alto_temp * self.x_ancho_temp
 
     def write(self, vals):
-        """Guardar dimensiones en el lote al confirmar"""
+        """Guardar dimensiones en el lote al confirmar (solo en recepciones)"""
         # Primero ejecutar el write original
         result = super().write(vals)
         
@@ -453,9 +481,10 @@ class StockMoveLine(models.Model):
         has_dimensions = any(field in vals for field in dimension_fields)
         
         # Si se modificó el lote_id o hay dimensiones, actualizar el lote
+        # SOLO en operaciones de entrada (recepciones)
         if 'lot_id' in vals or has_dimensions:
             for line in self:
-                if line.lot_id:
+                if line.lot_id and line.picking_id and line.picking_id.picking_type_code == 'incoming':
                     lot_vals = {}
                     
                     # Usar los valores actuales de la línea (ya actualizados por el super().write())
@@ -477,30 +506,38 @@ class StockMoveLine(models.Model):
                         line.lot_id.write(lot_vals)
         
         # Calcular qty_done si se modifican alto o ancho (evitar recursión)
+        # Solo en recepciones
         if ('x_alto_temp' in vals or 'x_ancho_temp' in vals) and 'qty_done' not in vals:
             for line in self:
-                alto = line.x_alto_temp
-                ancho = line.x_ancho_temp
-                if alto and ancho:
-                    # Usar super() para evitar recursión infinita
-                    super(StockMoveLine, line).write({'qty_done': alto * ancho})
+                if line.picking_id and line.picking_id.picking_type_code == 'incoming':
+                    alto = line.x_alto_temp
+                    ancho = line.x_ancho_temp
+                    if alto and ancho:
+                        # Usar super() para evitar recursión infinita
+                        super(StockMoveLine, line).write({'qty_done': alto * ancho})
         
         return result
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Guardar dimensiones en el lote y calcular cantidad al crear"""
-        # Calcular cantidad automáticamente si hay alto y ancho
+        """Guardar dimensiones en el lote y calcular cantidad al crear (solo en recepciones)"""
+        # Calcular cantidad automáticamente si hay alto y ancho (solo en recepciones)
         for vals in vals_list:
-            if vals.get('x_alto_temp') and vals.get('x_ancho_temp'):
-                # Sobrescribir qty_done con el cálculo de m²
-                vals['qty_done'] = vals['x_alto_temp'] * vals['x_ancho_temp']
+            # Verificar si es una recepción antes de calcular
+            picking_id = vals.get('picking_id')
+            if picking_id:
+                picking = self.env['stock.picking'].browse(picking_id)
+                if picking.picking_type_code == 'incoming':
+                    if vals.get('x_alto_temp') and vals.get('x_ancho_temp'):
+                        # Sobrescribir qty_done con el cálculo de m²
+                        vals['qty_done'] = vals['x_alto_temp'] * vals['x_ancho_temp']
         
         lines = super().create(vals_list)
         
         # Guardar dimensiones en el lote después de crear la línea
+        # SOLO en operaciones de entrada (recepciones)
         for line, vals in zip(lines, vals_list):
-            if line.lot_id:
+            if line.lot_id and line.picking_id and line.picking_id.picking_type_code == 'incoming':
                 lot_vals = {}
                 
                 # Usar los valores de la línea recién creada
@@ -572,7 +609,7 @@ class StockMoveLine(models.Model):
 ## ./models/stock_quant.py
 ```py
 # -*- coding: utf-8 -*-
-from odoo import models, fields
+from odoo import models, fields, api
 
 class StockQuant(models.Model):
     _inherit = 'stock.quant'
@@ -632,6 +669,76 @@ class StockQuant(models.Model):
         readonly=True,
         store=False
     )
+    
+    # ========== NUEVOS CAMPOS PARA ESTADOS ==========
+    
+    x_esta_reservado = fields.Boolean(
+        string='Está Reservado',
+        compute='_compute_estados_placa',
+        store=False,
+        help='Indica si el lote está reservado'
+    )
+    
+    x_en_orden_entrega = fields.Boolean(
+        string='En Orden de Entrega',
+        compute='_compute_estados_placa',
+        store=False,
+        help='Indica si el lote está en una orden de entrega'
+    )
+    
+    x_tiene_detalles = fields.Boolean(
+        string='Tiene Detalles',
+        compute='_compute_tiene_detalles',
+        store=False,
+        help='Indica si el lote tiene detalles especiales'
+    )
+    
+    x_detalles_placa = fields.Text(
+        related='lot_id.x_detalles_placa',
+        string='Detalles de la Placa',
+        readonly=True,
+        store=False
+    )
+    
+    estado_placa = fields.Char(
+        string='Estado',
+        compute='_compute_estado_placa',
+        store=False
+    )
+    
+    # ========== MÉTODOS COMPUTE ==========
+    
+    @api.depends('lot_id', 'reserved_quantity')
+    def _compute_estados_placa(self):
+        """Calcular si está reservado o en orden de entrega"""
+        for quant in self:
+            # Verificar si está reservado (tiene cantidad reservada)
+            quant.x_esta_reservado = quant.reserved_quantity > 0
+            
+            # Verificar si está en una orden de entrega (picking en proceso)
+            if quant.lot_id:
+                en_orden = self.env['stock.move.line'].search([
+                    ('lot_id', '=', quant.lot_id.id),
+                    ('picking_id.picking_type_code', '=', 'outgoing'),
+                    ('picking_id.state', 'in', ['assigned', 'confirmed', 'waiting'])
+                ], limit=1)
+                quant.x_en_orden_entrega = bool(en_orden)
+            else:
+                quant.x_en_orden_entrega = False
+    
+    @api.depends('lot_id.x_detalles_placa')
+    def _compute_tiene_detalles(self):
+        """Verificar si el lote tiene detalles"""
+        for quant in self:
+            quant.x_tiene_detalles = bool(quant.lot_id and quant.lot_id.x_detalles_placa)
+    
+    @api.depends('x_esta_reservado', 'x_en_orden_entrega', 'x_tiene_detalles')
+    def _compute_estado_placa(self):
+        """Campo dummy para el widget de iconos"""
+        for quant in self:
+            quant.estado_placa = 'status'
+    
+    # ========== MÉTODOS DE ACCIÓN ==========
     
     def action_view_lot_photos(self):
         """Ver y gestionar fotografías del lote"""
@@ -795,6 +902,57 @@ registry.category("fields").add("image_preview_clickable", {
     component: ImagePreviewWidget,
 });```
 
+## ./static/src/js/status_icons_widget.js
+```js
+/** @odoo-module **/
+
+import { registry } from "@web/core/registry";
+import { Component } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
+
+export class StatusIconsWidget extends Component {
+    setup() {
+        this.notification = useService("notification");
+    }
+
+    get showReserved() {
+        // Acceder correctamente a los datos del record
+        const record = this.props.record;
+        return record.data.x_esta_reservado || false;
+    }
+
+    get showInDelivery() {
+        const record = this.props.record;
+        return record.data.x_en_orden_entrega || false;
+    }
+
+    get showDetails() {
+        const record = this.props.record;
+        return record.data.x_tiene_detalles || false;
+    }
+
+    get detailsText() {
+        const record = this.props.record;
+        return record.data.x_detalles_placa || 'Sin detalles';
+    }
+
+    onClickDetails(ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        this.notification.add(this.detailsText, {
+            title: "Detalles de la Placa",
+            type: "info",
+        });
+    }
+}
+
+StatusIconsWidget.template = "stock_lot_dimensions.StatusIconsWidget";
+StatusIconsWidget.supportedTypes = ["char"]; // Importante: especificar el tipo de campo
+
+registry.category("fields").add("status_icons", {
+    component: StatusIconsWidget,
+});```
+
 ## ./static/src/xml/image_gallery.xml
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -873,6 +1031,45 @@ registry.category("fields").add("image_preview_clickable", {
     </t>
 </templates>```
 
+## ./static/src/xml/status_icons_widget.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="stock_lot_dimensions.StatusIconsWidget" owl="1">
+        <div class="d-flex align-items-center" style="gap: 8px;">
+            <t t-if="showReserved">
+                <span class="badge bg-success" 
+                      title="Reservado"
+                      style="cursor: help; padding: 4px 8px;">
+                    <i class="fa fa-hand-paper-o"/>
+                </span>
+            </t>
+            
+            <t t-if="showInDelivery">
+                <span class="badge bg-info" 
+                      title="En Orden de Entrega"
+                      style="cursor: help; padding: 4px 8px;">
+                    <i class="fa fa-shopping-cart"/>
+                </span>
+            </t>
+            
+            <t t-if="showDetails">
+                <a href="#" 
+                   class="btn btn-sm btn-link p-0" 
+                   t-on-click.prevent="onClickDetails"
+                   title="Ver Detalles"
+                   style="text-decoration: none;">
+                    <i class="fa fa-info-circle text-warning" style="font-size: 1.3em;"/>
+                </a>
+            </t>
+            
+            <t t-if="!showReserved and !showInDelivery and !showDetails">
+                <span class="text-muted" style="font-size: 0.9em;">—</span>
+            </t>
+        </div>
+    </t>
+</templates>```
+
 ## ./views/stock_lot_image_wizard_views.xml
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -935,6 +1132,12 @@ registry.category("fields").add("image_preview_clickable", {
                     <field name="x_alto" string="Alto (m)"/>
                     <field name="x_ancho" string="Ancho (m)"/>
                     <field name="x_cantidad_fotos" readonly="1"/>
+                </group>
+                
+                <group string="Detalles Especiales">
+                    <field name="x_detalles_placa" 
+                           placeholder="Ej: Placa rota esquina superior, Barreno en centro, Release pendiente, etc."
+                           nolabel="1"/>
                 </group>
             </xpath>
             
@@ -1011,12 +1214,34 @@ registry.category("fields").add("image_preview_clickable", {
         <field name="inherit_id" ref="stock.view_stock_move_line_operation_tree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='lot_id']" position="after">
-                <field name="x_grosor_temp" optional="show" string="Grosor (cm)"/>
-                <field name="x_alto_temp" optional="show" string="Alto (m)"/>
-                <field name="x_ancho_temp" optional="show" string="Ancho (m)"/>
-                <field name="x_acabado_temp" optional="show" string="Acabado"/>
-                <field name="x_bloque_temp" optional="show" string="Bloque"/>
-                <field name="x_formato_temp" optional="show" string="Formato"/>
+                <!-- Campo computed para determinar si es recepción -->
+                <field name="x_is_incoming" column_invisible="1"/>
+                
+                <!-- Campos temporales (editables solo en recepciones) -->
+                <field name="x_grosor_temp" 
+                       optional="show" 
+                       string="Grosor (cm)"
+                       readonly="not x_is_incoming"/>
+                <field name="x_alto_temp" 
+                       optional="show" 
+                       string="Alto (m)"
+                       readonly="not x_is_incoming"/>
+                <field name="x_ancho_temp" 
+                       optional="show" 
+                       string="Ancho (m)"
+                       readonly="not x_is_incoming"/>
+                <field name="x_acabado_temp" 
+                       optional="show" 
+                       string="Acabado"
+                       readonly="not x_is_incoming"/>
+                <field name="x_bloque_temp" 
+                       optional="show" 
+                       string="Bloque"
+                       readonly="not x_is_incoming"/>
+                <field name="x_formato_temp" 
+                       optional="show" 
+                       string="Formato"
+                       readonly="not x_is_incoming"/>
             </xpath>
         </field>
     </record>
@@ -1057,13 +1282,27 @@ registry.category("fields").add("image_preview_clickable", {
         <field name="inherit_id" ref="stock.view_move_line_mobile_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='lot_id']" position="after">
+                <field name="x_is_incoming" invisible="1"/>
+                
                 <group string="Dimensiones del Lote" col="2">
-                    <field name="x_grosor_temp" string="Grosor (cm)"/>
-                    <field name="x_alto_temp" string="Alto (m)"/>
-                    <field name="x_ancho_temp" string="Ancho (m)"/>
-                    <field name="x_acabado_temp" string="Acabado"/>
-                    <field name="x_bloque_temp" string="Bloque"/>
-                    <field name="x_formato_temp" string="Formato"/>
+                    <field name="x_grosor_temp" 
+                           string="Grosor (cm)"
+                           readonly="not x_is_incoming"/>
+                    <field name="x_alto_temp" 
+                           string="Alto (m)"
+                           readonly="not x_is_incoming"/>
+                    <field name="x_ancho_temp" 
+                           string="Ancho (m)"
+                           readonly="not x_is_incoming"/>
+                    <field name="x_acabado_temp" 
+                           string="Acabado"
+                           readonly="not x_is_incoming"/>
+                    <field name="x_bloque_temp" 
+                           string="Bloque"
+                           readonly="not x_is_incoming"/>
+                    <field name="x_formato_temp" 
+                           string="Formato"
+                           readonly="not x_is_incoming"/>
                 </group>
             </xpath>
             
@@ -1104,6 +1343,19 @@ registry.category("fields").add("image_preview_clickable", {
                 <field name="x_formato" optional="show" string="Formato"/>
                 <field name="x_fotografia_principal" widget="image_preview" options="{'size': [60, 60]}" optional="hide"/>
                 <field name="x_cantidad_fotos" optional="show" string="Fotos"/>
+                
+                <!-- Campos invisibles necesarios para el widget -->
+                <field name="x_esta_reservado" column_invisible="1"/>
+                <field name="x_en_orden_entrega" column_invisible="1"/>
+                <field name="x_tiene_detalles" column_invisible="1"/>
+                <field name="x_detalles_placa" column_invisible="1"/>
+                
+                <!-- Columna de estado con iconos -->
+                <field name="estado_placa" 
+                       string="Estado" 
+                       widget="status_icons" 
+                       nolabel="1"
+                       optional="show"/>
             </xpath>
         </field>
     </record>
@@ -1114,6 +1366,7 @@ registry.category("fields").add("image_preview_clickable", {
         <field name="model">stock.quant</field>
         <field name="inherit_id" ref="stock.view_stock_quant_tree_editable"/>
         <field name="arch" type="xml">
+            <!-- Agregar campos después de lot_id -->
             <xpath expr="//field[@name='lot_id']" position="after">
                 <field name="x_grosor" optional="hide" string="Grosor (cm)" readonly="1"/>
                 <field name="x_alto" optional="hide" string="Alto (m)" readonly="1"/>
@@ -1123,9 +1376,23 @@ registry.category("fields").add("image_preview_clickable", {
                 <field name="x_formato" optional="show" string="Formato" readonly="1"/>
                 <field name="x_fotografia_principal" widget="image_preview" options="{'size': [60, 60]}" optional="hide" readonly="1"/>
                 <field name="x_cantidad_fotos" optional="show" string="Fotos" readonly="1"/>
+                
+                <!-- Campos invisibles necesarios para el widget -->
+                <field name="x_esta_reservado" column_invisible="1"/>
+                <field name="x_en_orden_entrega" column_invisible="1"/>
+                <field name="x_tiene_detalles" column_invisible="1"/>
+                <field name="x_detalles_placa" column_invisible="1"/>
+                
+                <!-- Columna de estado con iconos -->
+                <field name="estado_placa" 
+                       string="Estado" 
+                       widget="status_icons" 
+                       nolabel="1"
+                       optional="show"
+                       readonly="1"/>
             </xpath>
             
-            <!-- Agregar botón para agregar fotos en popup -->
+            <!-- Agregar botones después del botón de Replenishment -->
             <xpath expr="//button[@name='action_view_orderpoints']" position="after">
                 <button name="action_add_photos" 
                         string="Agregar Foto" 
@@ -1133,6 +1400,12 @@ registry.category("fields").add("image_preview_clickable", {
                         class="btn-link" 
                         icon="fa-camera"
                         invisible="not lot_id"/>
+                <button name="action_view_lot_photos" 
+                        string="Ver Fotos" 
+                        type="object" 
+                        class="btn-link" 
+                        icon="fa-picture-o"
+                        invisible="not lot_id or not x_cantidad_fotos"/>
             </xpath>
         </field>
     </record>

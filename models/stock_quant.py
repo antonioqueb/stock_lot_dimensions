@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields
+from odoo import models, fields, api
 
 class StockQuant(models.Model):
     _inherit = 'stock.quant'
@@ -59,6 +59,76 @@ class StockQuant(models.Model):
         readonly=True,
         store=False
     )
+    
+    # ========== NUEVOS CAMPOS PARA ESTADOS ==========
+    
+    x_esta_reservado = fields.Boolean(
+        string='Está Reservado',
+        compute='_compute_estados_placa',
+        store=False,
+        help='Indica si el lote está reservado'
+    )
+    
+    x_en_orden_entrega = fields.Boolean(
+        string='En Orden de Entrega',
+        compute='_compute_estados_placa',
+        store=False,
+        help='Indica si el lote está en una orden de entrega'
+    )
+    
+    x_tiene_detalles = fields.Boolean(
+        string='Tiene Detalles',
+        compute='_compute_tiene_detalles',
+        store=False,
+        help='Indica si el lote tiene detalles especiales'
+    )
+    
+    x_detalles_placa = fields.Text(
+        related='lot_id.x_detalles_placa',
+        string='Detalles de la Placa',
+        readonly=True,
+        store=False
+    )
+    
+    estado_placa = fields.Char(
+        string='Estado',
+        compute='_compute_estado_placa',
+        store=False
+    )
+    
+    # ========== MÉTODOS COMPUTE ==========
+    
+    @api.depends('lot_id', 'reserved_quantity')
+    def _compute_estados_placa(self):
+        """Calcular si está reservado o en orden de entrega"""
+        for quant in self:
+            # Verificar si está reservado (tiene cantidad reservada)
+            quant.x_esta_reservado = quant.reserved_quantity > 0
+            
+            # Verificar si está en una orden de entrega (picking en proceso)
+            if quant.lot_id:
+                en_orden = self.env['stock.move.line'].search([
+                    ('lot_id', '=', quant.lot_id.id),
+                    ('picking_id.picking_type_code', '=', 'outgoing'),
+                    ('picking_id.state', 'in', ['assigned', 'confirmed', 'waiting'])
+                ], limit=1)
+                quant.x_en_orden_entrega = bool(en_orden)
+            else:
+                quant.x_en_orden_entrega = False
+    
+    @api.depends('lot_id.x_detalles_placa')
+    def _compute_tiene_detalles(self):
+        """Verificar si el lote tiene detalles"""
+        for quant in self:
+            quant.x_tiene_detalles = bool(quant.lot_id and quant.lot_id.x_detalles_placa)
+    
+    @api.depends('x_esta_reservado', 'x_en_orden_entrega', 'x_tiene_detalles')
+    def _compute_estado_placa(self):
+        """Campo dummy para el widget de iconos"""
+        for quant in self:
+            quant.estado_placa = 'status'
+    
+    # ========== MÉTODOS DE ACCIÓN ==========
     
     def action_view_lot_photos(self):
         """Ver y gestionar fotografías del lote"""
