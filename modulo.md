@@ -83,49 +83,49 @@ class StockLot(models.Model):
         help='Ancho del producto en metros'
     )
     
-    x_acabado = fields.Selection([
-        ('pulido', 'Pulido'),
-        ('mate', 'Mate'),
-        ('busardeado', 'Busardeado'),
-        ('sandblasteado', 'Sandblasteado'),
-        ('acido_ligero', 'Acido Ligero'),
-        ('acido_rugoso', 'Acido Rugoso'),
-        ('cepillado', 'Cepillado'),
-        ('busardeado_cepillado', 'Busardeado + Cepillado'),
-        ('sandblasteado_cepillado', 'Sandblasteado + Cepillado'),
-        ('macheteado', 'Macheteado'),
-        ('century', 'Century'),
-        ('apomazado', 'Apomazado'),
-        ('routeado_nivel1', 'Routeado Nivel 1 (2cm)'),
-        ('routeado_nivel2', 'Routeado Nivel 2 (4cm)'),
-        ('routeado_nivel3', 'Routeado Nivel 3 (6cm)'),
-        ('flameado', 'Flameado'),
-        ('al_corte', 'Al corte'),
-        ('natural', 'Natural'),
-        ('tomboleado', 'Tomboleado'),
-        ('lino', 'Lino'),
-        ('raw', 'Raw'),
-        ('bamboo', 'Bamboo'),
-        ('r10', 'R10'),
-        ('r11', 'R11'),
-        ('polvo', 'Polvo'),
-        ('liquido', 'Liquido'),
-        ('satinado', 'Satinado'),
-        ('cepillado_mate', 'Cepillado / Mate'),
-        ('cepillado_brillado', 'Cepillado / Brillado'),
-        ('rockface', 'Rockface'),
-        ('bamboo_alt', 'Bamboo'),
-        ('moonface', 'Moonface'),
-        ('corte_disco', 'Corte Disco'),
-        ('guillotina', 'Guillotina'),
-        ('mate_destapado', 'Mate Destapado'),
-        ('mate_retapado', 'Mate Retapado'),
-        ('sandblasteado_retapado', 'Sandblasteado Retapado'),
-        ('pulido_brillado_retapado', 'Pulido Brillado Retapado'),
-        ('cepillado_retapado', 'Cepillado Retapado'),
-        ('riverwashed', 'Riverwashed'),
-        ('slate', 'Slate'),
-    ], string='Acabado', help='Tipo de acabado del producto')
+    # x_acabado = fields.Selection([
+    #     ('pulido', 'Pulido'),
+    #     ('mate', 'Mate'),
+    #     ('busardeado', 'Busardeado'),
+    #     ('sandblasteado', 'Sandblasteado'),
+    #     ('acido_ligero', 'Acido Ligero'),
+    #     ('acido_rugoso', 'Acido Rugoso'),
+    #     ('cepillado', 'Cepillado'),
+    #     ('busardeado_cepillado', 'Busardeado + Cepillado'),
+    #     ('sandblasteado_cepillado', 'Sandblasteado + Cepillado'),
+    #     ('macheteado', 'Macheteado'),
+    #     ('century', 'Century'),
+    #     ('apomazado', 'Apomazado'),
+    #     ('routeado_nivel1', 'Routeado Nivel 1 (2cm)'),
+    #     ('routeado_nivel2', 'Routeado Nivel 2 (4cm)'),
+    #     ('routeado_nivel3', 'Routeado Nivel 3 (6cm)'),
+    #     ('flameado', 'Flameado'),
+    #     ('al_corte', 'Al corte'),
+    #     ('natural', 'Natural'),
+    #     ('tomboleado', 'Tomboleado'),
+    #     ('lino', 'Lino'),
+    #     ('raw', 'Raw'),
+    #     ('bamboo', 'Bamboo'),
+    #     ('r10', 'R10'),
+    #     ('r11', 'R11'),
+    #     ('polvo', 'Polvo'),
+    #     ('liquido', 'Liquido'),
+    #     ('satinado', 'Satinado'),
+    #     ('cepillado_mate', 'Cepillado / Mate'),
+    #     ('cepillado_brillado', 'Cepillado / Brillado'),
+    #     ('rockface', 'Rockface'),
+    #     ('bamboo_alt', 'Bamboo'),
+    #     ('moonface', 'Moonface'),
+    #     ('corte_disco', 'Corte Disco'),
+    #     ('guillotina', 'Guillotina'),
+    #     ('mate_destapado', 'Mate Destapado'),
+    #     ('mate_retapado', 'Mate Retapado'),
+    #     ('sandblasteado_retapado', 'Sandblasteado Retapado'),
+    #     ('pulido_brillado_retapado', 'Pulido Brillado Retapado'),
+    #     ('cepillado_retapado', 'Cepillado Retapado'),
+    #     ('riverwashed', 'Riverwashed'),
+    #     ('slate', 'Slate'),
+    # ], string='Acabado', help='Tipo de acabado del producto')
     
     x_bloque = fields.Char(
         string='Bloque',
@@ -183,8 +183,6 @@ class StockLot(models.Model):
         store=True
     )
     
-    # ========== NUEVO CAMPO PARA DETALLES ==========
-    
     x_detalles_placa = fields.Text(
         string='Detalles de la Placa',
         help='Detalles especiales: rota, barreno, release, etc.'
@@ -209,7 +207,23 @@ class StockLot(models.Model):
     def _compute_cantidad_fotos(self):
         """Contar número de fotografías"""
         for record in self:
-            record.x_cantidad_fotos = len(record.x_fotografia_ids)```
+            record.x_cantidad_fotos = len(record.x_fotografia_ids)
+
+    def action_view_images(self):
+        """Abrir vista de galería de imágenes del lote"""
+        self.ensure_one()
+        return {
+            'name': f'Fotografías de {self.name}',
+            'type': 'ir.actions.act_window',
+            'res_model': 'stock.lot.image',
+            'view_mode': 'kanban,tree,form',
+            'domain': [('lot_id', '=', self.id)],
+            'context': {
+                'default_lot_id': self.id,
+                'create': True,
+            },
+            'target': 'current',
+        }```
 
 ## ./models/stock_lot_image.py
 ```py
@@ -301,49 +315,49 @@ class StockMoveLine(models.Model):
         help='Ancho del producto en metros (se guardará en el lote)'
     )
     
-    x_acabado_temp = fields.Selection([
-        ('pulido', 'Pulido'),
-        ('mate', 'Mate'),
-        ('busardeado', 'Busardeado'),
-        ('sandblasteado', 'Sandblasteado'),
-        ('acido_ligero', 'Acido Ligero'),
-        ('acido_rugoso', 'Acido Rugoso'),
-        ('cepillado', 'Cepillado'),
-        ('busardeado_cepillado', 'Busardeado + Cepillado'),
-        ('sandblasteado_cepillado', 'Sandblasteado + Cepillado'),
-        ('macheteado', 'Macheteado'),
-        ('century', 'Century'),
-        ('apomazado', 'Apomazado'),
-        ('routeado_nivel1', 'Routeado Nivel 1 (2cm)'),
-        ('routeado_nivel2', 'Routeado Nivel 2 (4cm)'),
-        ('routeado_nivel3', 'Routeado Nivel 3 (6cm)'),
-        ('flameado', 'Flameado'),
-        ('al_corte', 'Al corte'),
-        ('natural', 'Natural'),
-        ('tomboleado', 'Tomboleado'),
-        ('lino', 'Lino'),
-        ('raw', 'Raw'),
-        ('bamboo', 'Bamboo'),
-        ('r10', 'R10'),
-        ('r11', 'R11'),
-        ('polvo', 'Polvo'),
-        ('liquido', 'Liquido'),
-        ('satinado', 'Satinado'),
-        ('cepillado_mate', 'Cepillado / Mate'),
-        ('cepillado_brillado', 'Cepillado / Brillado'),
-        ('rockface', 'Rockface'),
-        ('bamboo_alt', 'Bamboo'),
-        ('moonface', 'Moonface'),
-        ('corte_disco', 'Corte Disco'),
-        ('guillotina', 'Guillotina'),
-        ('mate_destapado', 'Mate Destapado'),
-        ('mate_retapado', 'Mate Retapado'),
-        ('sandblasteado_retapado', 'Sandblasteado Retapado'),
-        ('pulido_brillado_retapado', 'Pulido Brillado Retapado'),
-        ('cepillado_retapado', 'Cepillado Retapado'),
-        ('riverwashed', 'Riverwashed'),
-        ('slate', 'Slate'),
-    ], string='Acabado', help='Tipo de acabado del producto (se guardará en el lote)')
+    # x_acabado_temp = fields.Selection([
+    #     ('pulido', 'Pulido'),
+    #     ('mate', 'Mate'),
+    #     ('busardeado', 'Busardeado'),
+    #     ('sandblasteado', 'Sandblasteado'),
+    #     ('acido_ligero', 'Acido Ligero'),
+    #     ('acido_rugoso', 'Acido Rugoso'),
+    #     ('cepillado', 'Cepillado'),
+    #     ('busardeado_cepillado', 'Busardeado + Cepillado'),
+    #     ('sandblasteado_cepillado', 'Sandblasteado + Cepillado'),
+    #     ('macheteado', 'Macheteado'),
+    #     ('century', 'Century'),
+    #     ('apomazado', 'Apomazado'),
+    #     ('routeado_nivel1', 'Routeado Nivel 1 (2cm)'),
+    #     ('routeado_nivel2', 'Routeado Nivel 2 (4cm)'),
+    #     ('routeado_nivel3', 'Routeado Nivel 3 (6cm)'),
+    #     ('flameado', 'Flameado'),
+    #     ('al_corte', 'Al corte'),
+    #     ('natural', 'Natural'),
+    #     ('tomboleado', 'Tomboleado'),
+    #     ('lino', 'Lino'),
+    #     ('raw', 'Raw'),
+    #     ('bamboo', 'Bamboo'),
+    #     ('r10', 'R10'),
+    #     ('r11', 'R11'),
+    #     ('polvo', 'Polvo'),
+    #     ('liquido', 'Liquido'),
+    #     ('satinado', 'Satinado'),
+    #     ('cepillado_mate', 'Cepillado / Mate'),
+    #     ('cepillado_brillado', 'Cepillado / Brillado'),
+    #     ('rockface', 'Rockface'),
+    #     ('bamboo_alt', 'Bamboo'),
+    #     ('moonface', 'Moonface'),
+    #     ('corte_disco', 'Corte Disco'),
+    #     ('guillotina', 'Guillotina'),
+    #     ('mate_destapado', 'Mate Destapado'),
+    #     ('mate_retapado', 'Mate Retapado'),
+    #     ('sandblasteado_retapado', 'Sandblasteado Retapado'),
+    #     ('pulido_brillado_retapado', 'Pulido Brillado Retapado'),
+    #     ('cepillado_retapado', 'Cepillado Retapado'),
+    #     ('riverwashed', 'Riverwashed'),
+    #     ('slate', 'Slate'),
+    # ], string='Acabado', help='Tipo de acabado del producto (se guardará en el lote)')
     
     x_bloque_temp = fields.Char(
         string='Bloque',
@@ -405,12 +419,12 @@ class StockMoveLine(models.Model):
         store=False
     )
     
-    x_acabado_lote = fields.Selection(
-        related='lot_id.x_acabado',
-        string='Acabado Lote',
-        readonly=True,
-        store=False
-    )
+    # x_acabado_lote = fields.Selection(
+    #     related='lot_id.x_acabado',
+    #     string='Acabado Lote',
+    #     readonly=True,
+    #     store=False
+    # )
     
     x_bloque_lote = fields.Char(
         related='lot_id.x_bloque',
@@ -454,7 +468,7 @@ class StockMoveLine(models.Model):
             self.x_grosor_temp = self.lot_id.x_grosor
             self.x_alto_temp = self.lot_id.x_alto
             self.x_ancho_temp = self.lot_id.x_ancho
-            self.x_acabado_temp = self.lot_id.x_acabado
+            # self.x_acabado_temp = self.lot_id.x_acabado
             self.x_bloque_temp = self.lot_id.x_bloque
             self.x_formato_temp = self.lot_id.x_formato
             
@@ -477,7 +491,7 @@ class StockMoveLine(models.Model):
         result = super().write(vals)
         
         # Después del write, verificar si hay dimensiones que guardar en el lote
-        dimension_fields = ['x_grosor_temp', 'x_alto_temp', 'x_ancho_temp', 'x_acabado_temp', 'x_bloque_temp', 'x_formato_temp']
+        dimension_fields = ['x_grosor_temp', 'x_alto_temp', 'x_ancho_temp', 'x_bloque_temp', 'x_formato_temp']
         has_dimensions = any(field in vals for field in dimension_fields)
         
         # Si se modificó el lote_id o hay dimensiones, actualizar el lote
@@ -494,8 +508,8 @@ class StockMoveLine(models.Model):
                         lot_vals['x_alto'] = line.x_alto_temp
                     if line.x_ancho_temp:
                         lot_vals['x_ancho'] = line.x_ancho_temp
-                    if line.x_acabado_temp:
-                        lot_vals['x_acabado'] = line.x_acabado_temp
+                    # if line.x_acabado_temp:
+                    #     lot_vals['x_acabado'] = line.x_acabado_temp
                     if line.x_bloque_temp:
                         lot_vals['x_bloque'] = line.x_bloque_temp
                     if line.x_formato_temp:
@@ -547,8 +561,8 @@ class StockMoveLine(models.Model):
                     lot_vals['x_alto'] = line.x_alto_temp
                 if line.x_ancho_temp:
                     lot_vals['x_ancho'] = line.x_ancho_temp
-                if line.x_acabado_temp:
-                    lot_vals['x_acabado'] = line.x_acabado_temp
+                # if line.x_acabado_temp:
+                #     lot_vals['x_acabado'] = line.x_acabado_temp
                 if line.x_bloque_temp:
                     lot_vals['x_bloque'] = line.x_bloque_temp
                 if line.x_formato_temp:
@@ -635,12 +649,12 @@ class StockQuant(models.Model):
         store=False
     )
     
-    x_acabado = fields.Selection(
-        related='lot_id.x_acabado',
-        string='Acabado',
-        readonly=True,
-        store=False
-    )
+    # x_acabado = fields.Selection(
+    #     related='lot_id.x_acabado',
+    #     string='Acabado',
+    #     readonly=True,
+    #     store=False
+    # )
     
     x_bloque = fields.Char(
         related='lot_id.x_bloque',
@@ -911,43 +925,32 @@ import { Component } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
 export class StatusIconsWidget extends Component {
+    static template = "stock_lot_dimensions.StatusIconsWidget";
+    static supportedTypes = ["char"];
+
     setup() {
         this.notification = useService("notification");
     }
 
-    get showReserved() {
-        // Acceder correctamente a los datos del record
-        const record = this.props.record;
-        return record.data.x_esta_reservado || false;
+    get estados() {
+        const data = this.props.record.data;
+        return {
+            reservado: data.x_esta_reservado || false,
+            entrega: data.x_en_orden_entrega || false,
+            detalles: data.x_tiene_detalles || false,
+            textoDetalles: data.x_detalles_placa || 'Sin detalles'
+        };
     }
 
-    get showInDelivery() {
-        const record = this.props.record;
-        return record.data.x_en_orden_entrega || false;
-    }
-
-    get showDetails() {
-        const record = this.props.record;
-        return record.data.x_tiene_detalles || false;
-    }
-
-    get detailsText() {
-        const record = this.props.record;
-        return record.data.x_detalles_placa || 'Sin detalles';
-    }
-
-    onClickDetails(ev) {
+    mostrarDetalles(ev) {
         ev.stopPropagation();
         ev.preventDefault();
-        this.notification.add(this.detailsText, {
+        this.notification.add(this.estados.textoDetalles, {
             title: "Detalles de la Placa",
             type: "info",
         });
     }
 }
-
-StatusIconsWidget.template = "stock_lot_dimensions.StatusIconsWidget";
-StatusIconsWidget.supportedTypes = ["char"]; // Importante: especificar el tipo de campo
 
 registry.category("fields").add("status_icons", {
     component: StatusIconsWidget,
@@ -1036,35 +1039,29 @@ registry.category("fields").add("status_icons", {
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="stock_lot_dimensions.StatusIconsWidget" owl="1">
-        <div class="d-flex align-items-center" style="gap: 8px;">
-            <t t-if="showReserved">
-                <span class="badge bg-success" 
-                      title="Reservado"
-                      style="cursor: help; padding: 4px 8px;">
-                    <i class="fa fa-hand-paper-o"/>
+        <div class="d-flex" style="gap: 6px; align-items: center;">
+            <t t-if="estados.reservado">
+                <span class="badge bg-success" title="Reservado" style="font-size: 0.75rem;">
+                    <i class="fa fa-hand-paper-o"/> Reservado
                 </span>
             </t>
             
-            <t t-if="showInDelivery">
-                <span class="badge bg-info" 
-                      title="En Orden de Entrega"
-                      style="cursor: help; padding: 4px 8px;">
-                    <i class="fa fa-shopping-cart"/>
+            <t t-if="estados.entrega">
+                <span class="badge bg-info" title="En Orden de Entrega" style="font-size: 0.75rem;">
+                    <i class="fa fa-shopping-cart"/> En Entrega
                 </span>
             </t>
             
-            <t t-if="showDetails">
-                <a href="#" 
-                   class="btn btn-sm btn-link p-0" 
-                   t-on-click.prevent="onClickDetails"
-                   title="Ver Detalles"
-                   style="text-decoration: none;">
-                    <i class="fa fa-info-circle text-warning" style="font-size: 1.3em;"/>
-                </a>
+            <t t-if="estados.detalles">
+                <button class="btn btn-sm btn-warning" 
+                        t-on-click="mostrarDetalles"
+                        style="padding: 2px 6px; font-size: 0.75rem;">
+                    <i class="fa fa-info-circle"/> Detalles
+                </button>
             </t>
             
-            <t t-if="!showReserved and !showInDelivery and !showDetails">
-                <span class="text-muted" style="font-size: 0.9em;">—</span>
+            <t t-if="!estados.reservado and !estados.entrega and !estados.detalles">
+                <span class="text-muted">—</span>
             </t>
         </div>
     </t>
@@ -1121,62 +1118,104 @@ registry.category("fields").add("status_icons", {
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="view_stock_lot_form_inherit" model="ir.ui.view">
+    <!-- Vista de formulario mejorada del lote -->
+    <record id="view_production_lot_form_inherit" model="ir.ui.view">
         <field name="name">stock.lot.form.inherit.dimensions</field>
         <field name="model">stock.lot</field>
         <field name="inherit_id" ref="stock.view_production_lot_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='product_id']" position="after">
-                <group string="Dimensiones" col="4">
-                    <field name="x_grosor" string="Grosor (cm)"/>
-                    <field name="x_alto" string="Alto (m)"/>
-                    <field name="x_ancho" string="Ancho (m)"/>
-                    <field name="x_cantidad_fotos" readonly="1"/>
-                </group>
-                
-                <group string="Detalles Especiales">
-                    <field name="x_detalles_placa" 
-                           placeholder="Ej: Placa rota esquina superior, Barreno en centro, Release pendiente, etc."
-                           nolabel="1"/>
-                </group>
-            </xpath>
-            
-            <xpath expr="//sheet" position="inside">
+            <!-- Agregar botón smartbutton para ver fotografías -->
+            <div name="button_box" position="inside">
+                <button class="oe_stat_button" 
+                        type="object" 
+                        name="action_view_images" 
+                        icon="fa-camera"
+                        invisible="x_cantidad_fotos == 0">
+                    <field name="x_cantidad_fotos" widget="statinfo" string="Fotos"/>
+                </button>
+            </div>
+
+            <!-- Campos invisibles computados -->
+            <field name="product_id" position="after">
+                <field name="x_tiene_fotografias" invisible="1"/>
+                <field name="x_fotografia_principal" invisible="1"/>
+            </field>
+
+            <!-- Sección de Dimensiones y Características -->
+            <xpath expr="//group[@name='main_group']" position="after">
                 <notebook>
-                    <page string="Fotografías" name="fotografias">
-                        <field name="x_fotografia_ids" mode="kanban">
-                            <kanban>
+                    <page string="Dimensiones y Características" name="dimensions">
+                        <group>
+                            <group string="Dimensiones" name="dimensions_group">
+                                <field name="x_grosor" 
+                                       widget="float" 
+                                       placeholder="0.00"/>
+                                <field name="x_alto" 
+                                       widget="float" 
+                                       placeholder="0.0000"/>
+                                <field name="x_ancho" 
+                                       widget="float" 
+                                       placeholder="0.0000"/>
+                            </group>
+
+                            <group string="Características" name="characteristics_group">
+                                <!-- <field name="x_acabado" 
+                                       placeholder="Selecciona un acabado..."/> -->
+                                <field name="x_formato" 
+                                       placeholder="Selecciona un formato..."/>
+                                <field name="x_bloque" 
+                                       placeholder="Identificación del bloque"/>
+                            </group>
+                        </group>
+
+                        <group string="Detalles Adicionales" name="details_group">
+                            <field name="x_detalles_placa" 
+                                   placeholder="Detalles especiales: rota, barreno, release, etc."
+                                   nolabel="1"/>
+                        </group>
+                    </page>
+
+                    <page string="Fotografías" name="photos" invisible="x_cantidad_fotos == 0">
+                        <field name="x_fotografia_ids" 
+                               widget="image_gallery" 
+                               mode="kanban" 
+                               nolabel="1">
+                            <kanban class="o_kanban_mobile">
                                 <field name="id"/>
                                 <field name="name"/>
-                                <field name="image_small"/>
+                                <field name="image"/>
                                 <field name="sequence"/>
                                 <templates>
                                     <t t-name="kanban-box">
-                                        <div class="oe_kanban_global_click" style="text-align: center;">
+                                        <div class="oe_kanban_global_click o_kanban_record_has_image_fill">
                                             <div class="o_kanban_image">
-                                                <img t-att-src="kanban_image('stock.lot.image', 'image_small', record.id.raw_value)" 
-                                                     alt="Fotografía" 
-                                                     style="max-width: 150px; max-height: 150px; border: 1px solid #ddd; border-radius: 4px;"/>
+                                                <img t-att-src="kanban_image('stock.lot.image', 'image', record.id.raw_value)" 
+                                                     alt="Foto" 
+                                                     class="o_image_64_cover"/>
                                             </div>
                                             <div class="oe_kanban_details">
-                                                <strong><field name="name"/></strong>
+                                                <strong class="o_kanban_record_title">
+                                                    <field name="name"/>
+                                                </strong>
+                                                <div class="o_kanban_record_subtitle">
+                                                    <field name="notas"/>
+                                                </div>
                                             </div>
                                         </div>
                                     </t>
                                 </templates>
                             </kanban>
-                            <form>
+                            <form string="Fotografía">
                                 <sheet>
                                     <group>
                                         <field name="name"/>
                                         <field name="sequence"/>
-                                        <field name="fecha_captura" readonly="1"/>
                                     </group>
                                     <group>
-                                        <field name="image" widget="image" options="{'size': [800, 600]}"/>
+                                        <field name="image" widget="image" class="oe_avatar"/>
                                     </group>
                                     <group>
-                                        <field name="notas" placeholder="Notas adicionales sobre esta fotografía..."/>
+                                        <field name="notas" placeholder="Notas adicionales..."/>
                                     </group>
                                 </sheet>
                             </form>
@@ -1187,20 +1226,28 @@ registry.category("fields").add("status_icons", {
         </field>
     </record>
 
-    <record id="view_stock_lot_tree_inherit" model="ir.ui.view">
+    <!-- Vista tree de lotes con dimensiones -->
+    <record id="view_production_lot_tree_inherit" model="ir.ui.view">
         <field name="name">stock.lot.tree.inherit.dimensions</field>
         <field name="model">stock.lot</field>
         <field name="inherit_id" ref="stock.view_production_lot_tree"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='name']" position="after">
+            <xpath expr="//field[@name='product_id']" position="after">
                 <field name="x_grosor" optional="hide" string="Grosor (cm)"/>
                 <field name="x_alto" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)"/>
-                <field name="x_fotografia_principal" widget="image" optional="hide"/>
-                <field name="x_cantidad_fotos" optional="show"/>
+                <!-- <field name="x_acabado" optional="show" string="Acabado"/> -->
+                <field name="x_bloque" optional="show" string="Bloque"/>
+                <field name="x_formato" optional="show" string="Formato"/>
+                <field name="x_fotografia_principal" 
+                       widget="image_preview" 
+                       options="{'size': [60, 60]}" 
+                       optional="hide"/>
+                <field name="x_cantidad_fotos" optional="show" string="Fotos"/>
             </xpath>
         </field>
     </record>
+
 </odoo>```
 
 ## ./views/stock_move_views.xml
@@ -1230,10 +1277,10 @@ registry.category("fields").add("status_icons", {
                        optional="show" 
                        string="Ancho (m)"
                        readonly="not x_is_incoming"/>
-                <field name="x_acabado_temp" 
+                <!-- <field name="x_acabado_temp" 
                        optional="show" 
                        string="Acabado"
-                       readonly="not x_is_incoming"/>
+                       readonly="not x_is_incoming"/> -->
                 <field name="x_bloque_temp" 
                        optional="show" 
                        string="Bloque"
@@ -1256,7 +1303,7 @@ registry.category("fields").add("status_icons", {
                 <field name="x_grosor_lote" optional="hide" string="Grosor (cm)"/>
                 <field name="x_alto_lote" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho_lote" optional="hide" string="Ancho (m)"/>
-                <field name="x_acabado_lote" optional="show" string="Acabado"/>
+                <!-- <field name="x_acabado_lote" optional="show" string="Acabado"/> -->
                 <field name="x_bloque_lote" optional="show" string="Bloque"/>
                 <field name="x_formato_lote" optional="show" string="Formato"/>
                 <field name="x_fotografia_principal_lote" widget="image_preview" options="{'size': [60, 60]}" optional="hide"/>
@@ -1294,9 +1341,9 @@ registry.category("fields").add("status_icons", {
                     <field name="x_ancho_temp" 
                            string="Ancho (m)"
                            readonly="not x_is_incoming"/>
-                    <field name="x_acabado_temp" 
+                    <!-- <field name="x_acabado_temp" 
                            string="Acabado"
-                           readonly="not x_is_incoming"/>
+                           readonly="not x_is_incoming"/> -->
                     <field name="x_bloque_temp" 
                            string="Bloque"
                            readonly="not x_is_incoming"/>
@@ -1338,7 +1385,7 @@ registry.category("fields").add("status_icons", {
                 <field name="x_grosor" optional="hide" string="Grosor (cm)"/>
                 <field name="x_alto" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)"/>
-                <field name="x_acabado" optional="show" string="Acabado"/>
+                <!-- <field name="x_acabado" optional="show" string="Acabado"/> -->
                 <field name="x_bloque" optional="show" string="Bloque"/>
                 <field name="x_formato" optional="show" string="Formato"/>
                 <field name="x_fotografia_principal" widget="image_preview" options="{'size': [60, 60]}" optional="hide"/>
@@ -1371,7 +1418,7 @@ registry.category("fields").add("status_icons", {
                 <field name="x_grosor" optional="hide" string="Grosor (cm)" readonly="1"/>
                 <field name="x_alto" optional="hide" string="Alto (m)" readonly="1"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)" readonly="1"/>
-                <field name="x_acabado" optional="show" string="Acabado" readonly="1"/>
+                <!-- <field name="x_acabado" optional="show" string="Acabado" readonly="1"/> -->
                 <field name="x_bloque" optional="show" string="Bloque" readonly="1"/>
                 <field name="x_formato" optional="show" string="Formato" readonly="1"/>
                 <field name="x_fotografia_principal" widget="image_preview" options="{'size': [60, 60]}" optional="hide" readonly="1"/>

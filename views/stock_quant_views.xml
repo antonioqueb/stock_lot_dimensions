@@ -10,7 +10,7 @@
                 <field name="x_grosor" optional="hide" string="Grosor (cm)"/>
                 <field name="x_alto" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)"/>
-                <field name="x_acabado" optional="show" string="Acabado"/>
+                <!-- <field name="x_acabado" optional="show" string="Acabado"/> -->
                 <field name="x_bloque" optional="show" string="Bloque"/>
                 <field name="x_formato" optional="show" string="Formato"/>
                 <field name="x_fotografia_principal" widget="image_preview" options="{'size': [60, 60]}" optional="hide"/>
@@ -43,7 +43,7 @@
                 <field name="x_grosor" optional="hide" string="Grosor (cm)" readonly="1"/>
                 <field name="x_alto" optional="hide" string="Alto (m)" readonly="1"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)" readonly="1"/>
-                <field name="x_acabado" optional="show" string="Acabado" readonly="1"/>
+                <!-- <field name="x_acabado" optional="show" string="Acabado" readonly="1"/> -->
                 <field name="x_bloque" optional="show" string="Bloque" readonly="1"/>
                 <field name="x_formato" optional="show" string="Formato" readonly="1"/>
                 <field name="x_fotografia_principal" widget="image_preview" options="{'size': [60, 60]}" optional="hide" readonly="1"/>

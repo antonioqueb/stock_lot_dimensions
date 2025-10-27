@@ -23,10 +23,10 @@
                        optional="show" 
                        string="Ancho (m)"
                        readonly="not x_is_incoming"/>
-                <field name="x_acabado_temp" 
+                <!-- <field name="x_acabado_temp" 
                        optional="show" 
                        string="Acabado"
-                       readonly="not x_is_incoming"/>
+                       readonly="not x_is_incoming"/> -->
                 <field name="x_bloque_temp" 
                        optional="show" 
                        string="Bloque"
@@ -49,7 +49,7 @@
                 <field name="x_grosor_lote" optional="hide" string="Grosor (cm)"/>
                 <field name="x_alto_lote" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho_lote" optional="hide" string="Ancho (m)"/>
-                <field name="x_acabado_lote" optional="show" string="Acabado"/>
+                <!-- <field name="x_acabado_lote" optional="show" string="Acabado"/> -->
                 <field name="x_bloque_lote" optional="show" string="Bloque"/>
                 <field name="x_formato_lote" optional="show" string="Formato"/>
                 <field name="x_fotografia_principal_lote" widget="image_preview" options="{'size': [60, 60]}" optional="hide"/>
@@ -87,9 +87,9 @@
                     <field name="x_ancho_temp" 
                            string="Ancho (m)"
                            readonly="not x_is_incoming"/>
-                    <field name="x_acabado_temp" 
+                    <!-- <field name="x_acabado_temp" 
                            string="Acabado"
-                           readonly="not x_is_incoming"/>
+                           readonly="not x_is_incoming"/> -->
                     <field name="x_bloque_temp" 
                            string="Bloque"
                            readonly="not x_is_incoming"/>

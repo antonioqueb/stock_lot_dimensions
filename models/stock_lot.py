@@ -22,49 +22,49 @@ class StockLot(models.Model):
         help='Ancho del producto en metros'
     )
     
-    x_acabado = fields.Selection([
-        ('pulido', 'Pulido'),
-        ('mate', 'Mate'),
-        ('busardeado', 'Busardeado'),
-        ('sandblasteado', 'Sandblasteado'),
-        ('acido_ligero', 'Acido Ligero'),
-        ('acido_rugoso', 'Acido Rugoso'),
-        ('cepillado', 'Cepillado'),
-        ('busardeado_cepillado', 'Busardeado + Cepillado'),
-        ('sandblasteado_cepillado', 'Sandblasteado + Cepillado'),
-        ('macheteado', 'Macheteado'),
-        ('century', 'Century'),
-        ('apomazado', 'Apomazado'),
-        ('routeado_nivel1', 'Routeado Nivel 1 (2cm)'),
-        ('routeado_nivel2', 'Routeado Nivel 2 (4cm)'),
-        ('routeado_nivel3', 'Routeado Nivel 3 (6cm)'),
-        ('flameado', 'Flameado'),
-        ('al_corte', 'Al corte'),
-        ('natural', 'Natural'),
-        ('tomboleado', 'Tomboleado'),
-        ('lino', 'Lino'),
-        ('raw', 'Raw'),
-        ('bamboo', 'Bamboo'),
-        ('r10', 'R10'),
-        ('r11', 'R11'),
-        ('polvo', 'Polvo'),
-        ('liquido', 'Liquido'),
-        ('satinado', 'Satinado'),
-        ('cepillado_mate', 'Cepillado / Mate'),
-        ('cepillado_brillado', 'Cepillado / Brillado'),
-        ('rockface', 'Rockface'),
-        ('bamboo_alt', 'Bamboo'),
-        ('moonface', 'Moonface'),
-        ('corte_disco', 'Corte Disco'),
-        ('guillotina', 'Guillotina'),
-        ('mate_destapado', 'Mate Destapado'),
-        ('mate_retapado', 'Mate Retapado'),
-        ('sandblasteado_retapado', 'Sandblasteado Retapado'),
-        ('pulido_brillado_retapado', 'Pulido Brillado Retapado'),
-        ('cepillado_retapado', 'Cepillado Retapado'),
-        ('riverwashed', 'Riverwashed'),
-        ('slate', 'Slate'),
-    ], string='Acabado', help='Tipo de acabado del producto')
+    # x_acabado = fields.Selection([
+    #     ('pulido', 'Pulido'),
+    #     ('mate', 'Mate'),
+    #     ('busardeado', 'Busardeado'),
+    #     ('sandblasteado', 'Sandblasteado'),
+    #     ('acido_ligero', 'Acido Ligero'),
+    #     ('acido_rugoso', 'Acido Rugoso'),
+    #     ('cepillado', 'Cepillado'),
+    #     ('busardeado_cepillado', 'Busardeado + Cepillado'),
+    #     ('sandblasteado_cepillado', 'Sandblasteado + Cepillado'),
+    #     ('macheteado', 'Macheteado'),
+    #     ('century', 'Century'),
+    #     ('apomazado', 'Apomazado'),
+    #     ('routeado_nivel1', 'Routeado Nivel 1 (2cm)'),
+    #     ('routeado_nivel2', 'Routeado Nivel 2 (4cm)'),
+    #     ('routeado_nivel3', 'Routeado Nivel 3 (6cm)'),
+    #     ('flameado', 'Flameado'),
+    #     ('al_corte', 'Al corte'),
+    #     ('natural', 'Natural'),
+    #     ('tomboleado', 'Tomboleado'),
+    #     ('lino', 'Lino'),
+    #     ('raw', 'Raw'),
+    #     ('bamboo', 'Bamboo'),
+    #     ('r10', 'R10'),
+    #     ('r11', 'R11'),
+    #     ('polvo', 'Polvo'),
+    #     ('liquido', 'Liquido'),
+    #     ('satinado', 'Satinado'),
+    #     ('cepillado_mate', 'Cepillado / Mate'),
+    #     ('cepillado_brillado', 'Cepillado / Brillado'),
+    #     ('rockface', 'Rockface'),
+    #     ('bamboo_alt', 'Bamboo'),
+    #     ('moonface', 'Moonface'),
+    #     ('corte_disco', 'Corte Disco'),
+    #     ('guillotina', 'Guillotina'),
+    #     ('mate_destapado', 'Mate Destapado'),
+    #     ('mate_retapado', 'Mate Retapado'),
+    #     ('sandblasteado_retapado', 'Sandblasteado Retapado'),
+    #     ('pulido_brillado_retapado', 'Pulido Brillado Retapado'),
+    #     ('cepillado_retapado', 'Cepillado Retapado'),
+    #     ('riverwashed', 'Riverwashed'),
+    #     ('slate', 'Slate'),
+    # ], string='Acabado', help='Tipo de acabado del producto')
     
     x_bloque = fields.Char(
         string='Bloque',
@@ -122,8 +122,6 @@ class StockLot(models.Model):
         store=True
     )
     
-    # ========== NUEVO CAMPO PARA DETALLES ==========
-    
     x_detalles_placa = fields.Text(
         string='Detalles de la Placa',
         help='Detalles especiales: rota, barreno, release, etc.'
@@ -149,3 +147,19 @@ class StockLot(models.Model):
         """Contar número de fotografías"""
         for record in self:
             record.x_cantidad_fotos = len(record.x_fotografia_ids)
+
+    def action_view_images(self):
+        """Abrir vista de galería de imágenes del lote"""
+        self.ensure_one()
+        return {
+            'name': f'Fotografías de {self.name}',
+            'type': 'ir.actions.act_window',
+            'res_model': 'stock.lot.image',
+            'view_mode': 'kanban,tree,form',
+            'domain': [('lot_id', '=', self.id)],
+            'context': {
+                'default_lot_id': self.id,
+                'create': True,
+            },
+            'target': 'current',
+        }
