@@ -1,5 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_stock_lot_image_user,stock.lot.image.user,model_stock_lot_image,stock.group_stock_user,1,1,1,1
-access_stock_lot_image_manager,stock.lot.image.manager,model_stock_lot_image,stock.group_stock_manager,1,1,1,1
-access_stock_lot_image_wizard_user,stock.lot.image.wizard.user,model_stock_lot_image_wizard,stock.group_stock_user,1,1,1,1
-access_stock_lot_image_wizard_manager,stock.lot.image.wizard.manager,model_stock_lot_image_wizard,stock.group_stock_manager,1,1,1,1
+access_stock_lot_image_user,access_stock_lot_image_user,model_stock_lot_image,stock.group_stock_user,1,1,1,1
+access_stock_lot_image_manager,access_stock_lot_image_manager,model_stock_lot_image,stock.group_stock_manager,1,1,1,1
+access_stock_lot_image_wizard_user,access_stock_lot_image_wizard_user,model_stock_lot_image_wizard,stock.group_stock_user,1,1,1,1
+access_stock_lot_hold_user,access_stock_lot_hold_user,model_stock_lot_hold,stock.group_stock_user,1,1,1,0
+access_stock_lot_hold_manager,access_stock_lot_hold_manager,model_stock_lot_hold,stock.group_stock_manager,1,1,1,1
+access_stock_lot_hold_wizard_user,access_stock_lot_hold_wizard_user,model_stock_lot_hold_wizard,stock.group_stock_user,1,1,1,1

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Vista tree de ubicaciones con dimensiones -->
+    <!-- Vista tree de ubicaciones con dimensiones y hold -->
     <record id="view_stock_quant_tree_inherit" model="ir.ui.view">
         <field name="name">stock.quant.tree.inherit.dimensions</field>
         <field name="model">stock.quant</field>
@@ -10,7 +10,6 @@
                 <field name="x_grosor" optional="hide" string="Grosor (cm)"/>
                 <field name="x_alto" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)"/>
-                <!-- <field name="x_acabado" optional="show" string="Acabado"/> -->
                 <field name="x_bloque" optional="show" string="Bloque"/>
                 <field name="x_formato" optional="show" string="Formato"/>
                 <field name="x_fotografia_principal" widget="image_preview" options="{'size': [60, 60]}" optional="hide"/>
@@ -22,6 +21,13 @@
                 <field name="x_tiene_detalles" column_invisible="1"/>
                 <field name="x_detalles_placa" column_invisible="1"/>
                 
+                <!-- NUEVOS CAMPOS DE HOLD -->
+                <field name="x_tiene_hold" column_invisible="1"/>
+                <field name="x_hold_para" optional="show" string="Hold Para"/>
+                <field name="x_hold_dias_restantes" optional="show" string="Días Hold"
+                       decoration-danger="x_tiene_hold and x_hold_dias_restantes &lt;= 3"
+                       decoration-warning="x_tiene_hold and x_hold_dias_restantes &lt;= 5 and x_hold_dias_restantes &gt; 3"/>
+                
                 <!-- Columna de estado con iconos -->
                 <field name="estado_placa" 
                        string="Estado" 
@@ -32,7 +38,7 @@
         </field>
     </record>
 
-    <!-- Vista tree editable (para ubicaciones) con botón de fotos -->
+    <!-- Vista tree editable (para ubicaciones) con botones de hold -->
     <record id="view_stock_quant_tree_editable_inherit" model="ir.ui.view">
         <field name="name">stock.quant.tree.editable.inherit.dimensions</field>
         <field name="model">stock.quant</field>
@@ -43,7 +49,6 @@
                 <field name="x_grosor" optional="hide" string="Grosor (cm)" readonly="1"/>
                 <field name="x_alto" optional="hide" string="Alto (m)" readonly="1"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)" readonly="1"/>
-                <!-- <field name="x_acabado" optional="show" string="Acabado" readonly="1"/> -->
                 <field name="x_bloque" optional="show" string="Bloque" readonly="1"/>
                 <field name="x_formato" optional="show" string="Formato" readonly="1"/>
                 <field name="x_fotografia_principal" widget="image_preview" options="{'size': [60, 60]}" optional="hide" readonly="1"/>
@@ -55,6 +60,13 @@
                 <field name="x_tiene_detalles" column_invisible="1"/>
                 <field name="x_detalles_placa" column_invisible="1"/>
                 
+                <!-- NUEVOS CAMPOS DE HOLD -->
+                <field name="x_tiene_hold" column_invisible="1"/>
+                <field name="x_hold_para" optional="show" string="Hold Para" readonly="1"/>
+                <field name="x_hold_dias_restantes" optional="show" string="Días Hold" readonly="1"
+                       decoration-danger="x_tiene_hold and x_hold_dias_restantes &lt;= 3"
+                       decoration-warning="x_tiene_hold and x_hold_dias_restantes &lt;= 5 and x_hold_dias_restantes &gt; 3"/>
+                
                 <!-- Columna de estado con iconos -->
                 <field name="estado_placa" 
                        string="Estado" 
@@ -64,8 +76,37 @@
                        readonly="1"/>
             </xpath>
             
-            <!-- Agregar botones después del botón de Replenishment -->
+            <!-- Agregar botones de HOLD después del botón de Replenishment -->
             <xpath expr="//button[@name='action_view_orderpoints']" position="after">
+                <!-- Botón para crear hold (solo si no tiene hold activo) -->
+                <button name="action_crear_hold" 
+                        string="Reservar Lote" 
+                        type="object" 
+                        class="btn-link text-success" 
+                        icon="fa-lock"
+                        invisible="not lot_id or x_tiene_hold"
+                        help="Crear reserva manual para este lote"/>
+                
+                <!-- Botón para ver hold (solo si tiene hold activo) -->
+                <button name="action_ver_hold" 
+                        string="Ver Reserva" 
+                        type="object" 
+                        class="btn-link text-info" 
+                        icon="fa-eye"
+                        invisible="not x_tiene_hold"
+                        help="Ver detalles de la reserva activa"/>
+                
+                <!-- Botón para cancelar hold (solo si tiene hold activo) -->
+                <button name="action_cancelar_hold" 
+                        string="Cancelar Hold" 
+                        type="object" 
+                        class="btn-link text-danger" 
+                        icon="fa-times"
+                        invisible="not x_tiene_hold"
+                        confirm="¿Está seguro de cancelar esta reserva?"
+                        help="Cancelar la reserva activa"/>
+                
+                <!-- Botones existentes de fotos -->
                 <button name="action_add_photos" 
                         string="Agregar Foto" 
                         type="object" 

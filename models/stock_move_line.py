@@ -23,50 +23,6 @@ class StockMoveLine(models.Model):
         help='Ancho del producto en metros (se guardará en el lote)'
     )
     
-    # x_acabado_temp = fields.Selection([
-    #     ('pulido', 'Pulido'),
-    #     ('mate', 'Mate'),
-    #     ('busardeado', 'Busardeado'),
-    #     ('sandblasteado', 'Sandblasteado'),
-    #     ('acido_ligero', 'Acido Ligero'),
-    #     ('acido_rugoso', 'Acido Rugoso'),
-    #     ('cepillado', 'Cepillado'),
-    #     ('busardeado_cepillado', 'Busardeado + Cepillado'),
-    #     ('sandblasteado_cepillado', 'Sandblasteado + Cepillado'),
-    #     ('macheteado', 'Macheteado'),
-    #     ('century', 'Century'),
-    #     ('apomazado', 'Apomazado'),
-    #     ('routeado_nivel1', 'Routeado Nivel 1 (2cm)'),
-    #     ('routeado_nivel2', 'Routeado Nivel 2 (4cm)'),
-    #     ('routeado_nivel3', 'Routeado Nivel 3 (6cm)'),
-    #     ('flameado', 'Flameado'),
-    #     ('al_corte', 'Al corte'),
-    #     ('natural', 'Natural'),
-    #     ('tomboleado', 'Tomboleado'),
-    #     ('lino', 'Lino'),
-    #     ('raw', 'Raw'),
-    #     ('bamboo', 'Bamboo'),
-    #     ('r10', 'R10'),
-    #     ('r11', 'R11'),
-    #     ('polvo', 'Polvo'),
-    #     ('liquido', 'Liquido'),
-    #     ('satinado', 'Satinado'),
-    #     ('cepillado_mate', 'Cepillado / Mate'),
-    #     ('cepillado_brillado', 'Cepillado / Brillado'),
-    #     ('rockface', 'Rockface'),
-    #     ('bamboo_alt', 'Bamboo'),
-    #     ('moonface', 'Moonface'),
-    #     ('corte_disco', 'Corte Disco'),
-    #     ('guillotina', 'Guillotina'),
-    #     ('mate_destapado', 'Mate Destapado'),
-    #     ('mate_retapado', 'Mate Retapado'),
-    #     ('sandblasteado_retapado', 'Sandblasteado Retapado'),
-    #     ('pulido_brillado_retapado', 'Pulido Brillado Retapado'),
-    #     ('cepillado_retapado', 'Cepillado Retapado'),
-    #     ('riverwashed', 'Riverwashed'),
-    #     ('slate', 'Slate'),
-    # ], string='Acabado', help='Tipo de acabado del producto (se guardará en el lote)')
-    
     x_bloque_temp = fields.Char(
         string='Bloque',
         help='Identificación del bloque de origen (se guardará en el lote)'
@@ -127,13 +83,6 @@ class StockMoveLine(models.Model):
         store=False
     )
     
-    # x_acabado_lote = fields.Selection(
-    #     related='lot_id.x_acabado',
-    #     string='Acabado Lote',
-    #     readonly=True,
-    #     store=False
-    # )
-    
     x_bloque_lote = fields.Char(
         related='lot_id.x_bloque',
         string='Bloque Lote',
@@ -168,6 +117,81 @@ class StockMoveLine(models.Model):
         for line in self:
             line.x_is_incoming = line.picking_id and line.picking_id.picking_type_code == 'incoming'
 
+    @api.onchange('product_id', 'location_id')
+    def _onchange_product_location_filter_lots(self):
+        """
+        Filtrar el dominio de lotes disponibles basado en:
+        1. Lotes sin hold (disponibles para todos)
+        2. Lotes con hold para el cliente de este picking
+        
+        Esto hace que en el campo lot_id solo aparezcan lotes válidos.
+        Solo aplica en pickings de salida (entregas).
+        
+        IMPORTANTE: Este es solo un filtro VISUAL para ayudar al usuario.
+        NO es una validación - el usuario técnicamente podría seleccionar otro lote,
+        pero el sistema automático no asignará lotes con hold gracias al método
+        _get_available_quantity en stock_quant.py
+        """
+        if not self.product_id or not self.picking_id:
+            return {}
+        
+        # Solo aplicar filtro en pickings de salida (entregas)
+        if self.picking_id.picking_type_code != 'outgoing':
+            return {}
+        
+        # Obtener el cliente del picking
+        cliente_picking = self.picking_id.partner_id
+        if self.move_id and self.move_id.sale_line_id:
+            cliente_picking = self.move_id.sale_line_id.order_id.partner_id
+        
+        if not cliente_picking:
+            return {}
+        
+        # Buscar todos los quants del producto en la ubicación
+        quants = self.env['stock.quant'].search([
+            ('product_id', '=', self.product_id.id),
+            ('location_id', '=', self.location_id.id),
+            ('quantity', '>', 0),
+        ])
+        
+        # Filtrar lotes válidos:
+        # 1. Lotes SIN hold (disponibles para todos)
+        # 2. Lotes CON hold pero para ESTE cliente
+        lotes_validos = []
+        
+        for quant in quants:
+            if quant.lot_id:
+                # Si no tiene hold, está disponible
+                if not quant.x_tiene_hold:
+                    lotes_validos.append(quant.lot_id.id)
+                # Si tiene hold pero es para este cliente, está disponible
+                elif quant.x_hold_activo_id and quant.x_hold_activo_id.partner_id == cliente_picking:
+                    lotes_validos.append(quant.lot_id.id)
+                # Si tiene hold para otro cliente, NO aparece en la lista
+        
+        # Retornar dominio que filtra los lotes
+        if lotes_validos:
+            return {
+                'domain': {
+                    'lot_id': [
+                        ('id', 'in', lotes_validos),
+                        ('product_id', '=', self.product_id.id)
+                    ]
+                }
+            }
+        else:
+            # Si no hay lotes válidos, mostrar dominio vacío
+            return {
+                'domain': {
+                    'lot_id': [('id', '=', False)]
+                }
+            }
+
+    # ✅ ELIMINADO: @api.constrains('lot_id', 'quantity', 'picking_id')
+    # Ya NO validamos aquí porque causaba el error al confirmar la orden
+    # La restricción real está en stock_quant._get_available_quantity()
+    # que previene la asignación automática de lotes con hold
+
     @api.onchange('lot_id')
     def _onchange_lot_id_dimensions(self):
         """Cargar dimensiones del lote si ya existen"""
@@ -176,7 +200,6 @@ class StockMoveLine(models.Model):
             self.x_grosor_temp = self.lot_id.x_grosor
             self.x_alto_temp = self.lot_id.x_alto
             self.x_ancho_temp = self.lot_id.x_ancho
-            # self.x_acabado_temp = self.lot_id.x_acabado
             self.x_bloque_temp = self.lot_id.x_bloque
             self.x_formato_temp = self.lot_id.x_formato
             
@@ -216,8 +239,6 @@ class StockMoveLine(models.Model):
                         lot_vals['x_alto'] = line.x_alto_temp
                     if line.x_ancho_temp:
                         lot_vals['x_ancho'] = line.x_ancho_temp
-                    # if line.x_acabado_temp:
-                    #     lot_vals['x_acabado'] = line.x_acabado_temp
                     if line.x_bloque_temp:
                         lot_vals['x_bloque'] = line.x_bloque_temp
                     if line.x_formato_temp:
@@ -269,8 +290,6 @@ class StockMoveLine(models.Model):
                     lot_vals['x_alto'] = line.x_alto_temp
                 if line.x_ancho_temp:
                     lot_vals['x_ancho'] = line.x_ancho_temp
-                # if line.x_acabado_temp:
-                #     lot_vals['x_acabado'] = line.x_acabado_temp
                 if line.x_bloque_temp:
                     lot_vals['x_bloque'] = line.x_bloque_temp
                 if line.x_formato_temp:

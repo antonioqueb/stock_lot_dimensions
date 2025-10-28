@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Cron Job para expirar reservas automáticamente -->
+    <record id="ir_cron_expire_lot_holds" model="ir.cron">
+        <field name="name">Expirar Reservas de Lotes</field>
+        <field name="model_id" ref="model_stock_lot_hold"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_expire_holds()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active">True</field>
+        <field name="priority">10</field>
+    </record>
+</odoo>

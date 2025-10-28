@@ -1,25 +1,30 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Atributos Adicionales para Lotes',
-    'version': '18.0.1.0.0',
+    'version': '18.0.2.0.0',
     'category': 'Inventory/Inventory',
-    'summary': 'Captura dimensiones y fotografías en lotes durante la recepción',
+    'summary': 'Captura dimensiones, fotografías y gestión de reservas manuales (hold) en lotes',
     'description': """
-        Módulo minimalista que permite:
+        Módulo que permite:
         - Capturar dimensiones (grosor, alto, ancho) y fotografías al recepcionar productos
         - Almacenar esta información en los lotes
         - Visualizar atributos en reportes de inventario
         - Mostrar estados de reserva y detalles de placas
+        - Gestionar reservas manuales (holds) independientes de órdenes de venta
+        - Expiración automática de reservas a los 10 días
     """,
     'author': 'Alphaqueb Consulting',
     'website': 'https://alphaqueb.com',
-    'depends': ['stock', 'web'],
+    'depends': ['stock', 'sale', 'web'],
     'data': [
         'security/ir.model.access.csv',
+        'data/stock_lot_hold_cron.xml',
         'views/stock_lot_views.xml',
         'views/stock_move_views.xml',
         'views/stock_quant_views.xml',
         'views/stock_lot_image_wizard_views.xml',
+        'views/stock_lot_hold_views.xml',
+        'views/stock_lot_hold_wizard_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

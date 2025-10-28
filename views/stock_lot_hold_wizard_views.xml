@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista Form del Wizard de Hold -->
+    <record id="view_stock_lot_hold_wizard_form" model="ir.ui.view">
+        <field name="name">stock.lot.hold.wizard.form</field>
+        <field name="model">stock.lot.hold.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reservar Lote">
+                <group>
+                    <group string="Información del Lote">
+                        <field name="lot_id" readonly="1"/>
+                        <field name="producto_id" readonly="1"/>
+                        <field name="ubicacion_id" readonly="1"/>
+                        <field name="cantidad_disponible" readonly="1"/>
+                    </group>
+                    
+                    <group string="Dimensiones">
+                        <field name="x_formato" readonly="1"/>
+                        <field name="x_grosor" readonly="1"/>
+                        <field name="x_alto" readonly="1"/>
+                        <field name="x_ancho" readonly="1"/>
+                        <field name="x_bloque" readonly="1"/>
+                    </group>
+                </group>
+                
+                <group>
+                    <group string="Reserva">
+                        <field name="partner_id" 
+                               placeholder="Seleccione el cliente..."
+                               options="{'no_create': True}"/>
+                        <field name="fecha_expiracion" readonly="1"/>
+                    </group>
+                    
+                    <group string="Notas">
+                        <field name="notas" 
+                               nolabel="1" 
+                               placeholder="Ej: Para proyecto X, Cotización Y, etc."/>
+                    </group>
+                </group>
+                
+                <div class="alert alert-info" role="alert">
+                    <strong>Nota:</strong> La reserva expirará automáticamente en 10 días. 
+                    Puede renovarla desde la vista de reservas si es necesario.
+                </div>
+                
+                <footer>
+                    <button name="action_crear_hold" 
+                            string="Crear Reserva" 
+                            type="object" 
+                            class="btn-primary"/>
+                    <button string="Cancelar" 
+                            class="btn-secondary" 
+                            special="cancel"/>
+                </footer>
+                
+                <!-- Campos ocultos necesarios -->
+                <field name="quant_id" invisible="1"/>
+            </form>
+        </field>
+    </record>
+</odoo>
