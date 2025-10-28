@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class StockMoveLine(models.Model):
     _inherit = 'stock.move.line'
@@ -117,35 +120,53 @@ class StockMoveLine(models.Model):
         for line in self:
             line.x_is_incoming = line.picking_id and line.picking_id.picking_type_code == 'incoming'
 
-    @api.onchange('product_id', 'location_id')
-    def _onchange_product_location_filter_lots(self):
+    def _get_lotes_disponibles_ids(self):
         """
-        Filtrar el dominio de lotes disponibles basado en:
-        1. Lotes sin hold (disponibles para todos)
-        2. Lotes con hold para el cliente de este picking
-        
-        Esto hace que en el campo lot_id solo aparezcan lotes válidos.
-        Solo aplica en pickings de salida (entregas).
-        
-        IMPORTANTE: Este es solo un filtro VISUAL para ayudar al usuario.
-        NO es una validación - el usuario técnicamente podría seleccionar otro lote,
-        pero el sistema automático no asignará lotes con hold gracias al método
-        _get_available_quantity en stock_quant.py
+        🔍 FILTRADO DE LOTES - CON DEPURACIÓN COMPLETA
         """
-        if not self.product_id or not self.picking_id:
-            return {}
+        self.ensure_one()
+        
+        _logger.info("🔵"*50)
+        _logger.info("🔵 [FILTRO LOTES] _get_lotes_disponibles_ids() INICIANDO")
+        _logger.info("🔵 [FILTRO LOTES] Move Line ID: %s", self.id)
         
         # Solo aplicar filtro en pickings de salida (entregas)
+        if not self.picking_id:
+            _logger.warning("🔵 [FILTRO LOTES] ❌ NO HAY PICKING - Retornando lista vacía")
+            return []
+            
         if self.picking_id.picking_type_code != 'outgoing':
-            return {}
+            _logger.info("🔵 [FILTRO LOTES] ⏭️ Picking NO es outgoing (es: %s) - No filtrar", 
+                        self.picking_id.picking_type_code)
+            return []
+        
+        _logger.info("🔵 [FILTRO LOTES] ✅ Picking es OUTGOING: %s", self.picking_id.name)
         
         # Obtener el cliente del picking
         cliente_picking = self.picking_id.partner_id
+        _logger.info("🔵 [FILTRO LOTES] Cliente del picking: %s (ID: %s)", 
+                    cliente_picking.name if cliente_picking else 'SIN CLIENTE',
+                    cliente_picking.id if cliente_picking else 'N/A')
+        
         if self.move_id and self.move_id.sale_line_id:
             cliente_picking = self.move_id.sale_line_id.order_id.partner_id
+            _logger.info("🔵 [FILTRO LOTES] ✅ Cliente actualizado desde sale_line_id: %s (ID: %s)", 
+                        cliente_picking.name, cliente_picking.id)
         
         if not cliente_picking:
-            return {}
+            _logger.warning("🔵 [FILTRO LOTES] ❌ NO HAY CLIENTE - Retornando lista vacía")
+            return []
+            
+        if not self.product_id:
+            _logger.warning("🔵 [FILTRO LOTES] ❌ NO HAY PRODUCTO - Retornando lista vacía")
+            return []
+            
+        if not self.location_id:
+            _logger.warning("🔵 [FILTRO LOTES] ❌ NO HAY UBICACIÓN - Retornando lista vacía")
+            return []
+        
+        _logger.info("🔵 [FILTRO LOTES] Producto: %s (ID: %s)", self.product_id.name, self.product_id.id)
+        _logger.info("🔵 [FILTRO LOTES] Ubicación: %s (ID: %s)", self.location_id.name, self.location_id.id)
         
         # Buscar todos los quants del producto en la ubicación
         quants = self.env['stock.quant'].search([
@@ -154,24 +175,82 @@ class StockMoveLine(models.Model):
             ('quantity', '>', 0),
         ])
         
-        # Filtrar lotes válidos:
-        # 1. Lotes SIN hold (disponibles para todos)
-        # 2. Lotes CON hold pero para ESTE cliente
+        _logger.info("🔵 [FILTRO LOTES] Total quants encontrados: %s", len(quants))
+        
+        # Filtrar lotes válidos
         lotes_validos = []
         
         for quant in quants:
             if quant.lot_id:
-                # Si no tiene hold, está disponible
-                if not quant.x_tiene_hold:
-                    lotes_validos.append(quant.lot_id.id)
-                # Si tiene hold pero es para este cliente, está disponible
-                elif quant.x_hold_activo_id and quant.x_hold_activo_id.partner_id == cliente_picking:
-                    lotes_validos.append(quant.lot_id.id)
-                # Si tiene hold para otro cliente, NO aparece en la lista
+                lote_nombre = quant.lot_id.name
+                lote_id = quant.lot_id.id
+                tiene_hold = quant.x_tiene_hold
+                
+                _logger.info("🔵 [FILTRO LOTES] ─────────────────────────────────────")
+                _logger.info("🔵 [FILTRO LOTES] Analizando Lote: %s (ID: %s)", lote_nombre, lote_id)
+                _logger.info("🔵 [FILTRO LOTES] Cantidad: %.2f", quant.quantity)
+                _logger.info("🔵 [FILTRO LOTES] Tiene Hold: %s", tiene_hold)
+                
+                # CASO 1: Sin hold → Disponible para TODOS
+                if not tiene_hold:
+                    _logger.info("🔵 [FILTRO LOTES] ✅ SIN HOLD - Agregando a lista válida")
+                    lotes_validos.append(lote_id)
+                    continue
+                
+                # CASO 2: Con hold → Verificar para quién es
+                if quant.x_hold_activo_id:
+                    hold_partner = quant.x_hold_activo_id.partner_id
+                    hold_partner_id = hold_partner.id if hold_partner else None
+                    hold_partner_name = hold_partner.name if hold_partner else 'SIN CLIENTE'
+                    
+                    _logger.info("🔵 [FILTRO LOTES] Hold encontrado:")
+                    _logger.info("🔵 [FILTRO LOTES]   - Partner Hold: %s (ID: %s)", 
+                                hold_partner_name, hold_partner_id)
+                    _logger.info("🔵 [FILTRO LOTES]   - Partner Picking: %s (ID: %s)", 
+                                cliente_picking.name, cliente_picking.id)
+                    
+                    if hold_partner_id == cliente_picking.id:
+                        _logger.info("🔵 [FILTRO LOTES] ✅ HOLD PARA ESTE CLIENTE - Agregando a lista válida")
+                        lotes_validos.append(lote_id)
+                    else:
+                        _logger.warning("🔵 [FILTRO LOTES] ❌ HOLD PARA OTRO CLIENTE - NO agregando")
+                        _logger.warning("🔵 [FILTRO LOTES]    Este lote NO debe aparecer en la lista")
+                else:
+                    _logger.warning("🔵 [FILTRO LOTES] ⚠️ Tiene hold pero sin x_hold_activo_id - NO agregando")
+        
+        _logger.info("🔵 [FILTRO LOTES] ═════════════════════════════════════════")
+        _logger.info("🔵 [FILTRO LOTES] RESUMEN FINAL:")
+        _logger.info("🔵 [FILTRO LOTES] Total quants analizados: %s", len(quants))
+        _logger.info("🔵 [FILTRO LOTES] Lotes válidos encontrados: %s", len(lotes_validos))
+        _logger.info("🔵 [FILTRO LOTES] IDs de lotes válidos: %s", lotes_validos)
+        _logger.info("🔵 [FILTRO LOTES] _get_lotes_disponibles_ids() FINALIZADO")
+        _logger.info("🔵"*50)
+        
+        return lotes_validos
+
+    @api.onchange('product_id', 'location_id', 'picking_id')
+    def _onchange_product_location_filter_lots(self):
+        """
+        🎨 ONCHANGE - Filtrar lotes cuando el usuario cambia producto/ubicación
+        """
+        _logger.info("🟢"*50)
+        _logger.info("🟢 [ONCHANGE] _onchange_product_location_filter_lots() EJECUTADO")
+        
+        if not self.product_id or not self.picking_id:
+            _logger.info("🟢 [ONCHANGE] Sin producto o picking - retornando {}")
+            return {}
+        
+        # Solo aplicar filtro en pickings de salida (entregas)
+        if self.picking_id.picking_type_code != 'outgoing':
+            _logger.info("🟢 [ONCHANGE] Picking NO es outgoing - retornando {}")
+            return {}
+        
+        _logger.info("🟢 [ONCHANGE] Llamando a _get_lotes_disponibles_ids()...")
+        lotes_validos = self._get_lotes_disponibles_ids()
         
         # Retornar dominio que filtra los lotes
         if lotes_validos:
-            return {
+            domain_result = {
                 'domain': {
                     'lot_id': [
                         ('id', 'in', lotes_validos),
@@ -179,22 +258,25 @@ class StockMoveLine(models.Model):
                     ]
                 }
             }
+            _logger.info("🟢 [ONCHANGE] ✅ Retornando dominio con %s lotes", len(lotes_validos))
+            _logger.info("🟢 [ONCHANGE] Dominio: %s", domain_result)
+            _logger.info("🟢"*50)
+            return domain_result
         else:
-            # Si no hay lotes válidos, mostrar dominio vacío
-            return {
+            domain_result = {
                 'domain': {
                     'lot_id': [('id', '=', False)]
                 }
             }
-
-    # ✅ ELIMINADO: @api.constrains('lot_id', 'quantity', 'picking_id')
-    # Ya NO validamos aquí porque causaba el error al confirmar la orden
-    # La restricción real está en stock_quant._get_available_quantity()
-    # que previene la asignación automática de lotes con hold
+            _logger.info("🟢 [ONCHANGE] ⚠️ NO HAY LOTES VÁLIDOS - Retornando dominio vacío")
+            _logger.info("🟢"*50)
+            return domain_result
 
     @api.onchange('lot_id')
     def _onchange_lot_id_dimensions(self):
-        """Cargar dimensiones del lote si ya existen"""
+        """
+        Cargar dimensiones del lote si ya existen y calcular cantidad.
+        """
         if self.lot_id:
             # Cargar valores en campos temporales
             self.x_grosor_temp = self.lot_id.x_grosor
@@ -203,21 +285,119 @@ class StockMoveLine(models.Model):
             self.x_bloque_temp = self.lot_id.x_bloque
             self.x_formato_temp = self.lot_id.x_formato
             
-            # Si el lote tiene dimensiones, calcular cantidad solo en recepciones
-            if self.picking_id and self.picking_id.picking_type_code == 'incoming':
-                if self.lot_id.x_alto and self.lot_id.x_ancho:
-                    self.qty_done = self.lot_id.x_alto * self.lot_id.x_ancho
+            if self.picking_id:
+                if self.picking_id.picking_type_code == 'incoming':
+                    # RECEPCIÓN: Calcular por dimensiones
+                    if self.lot_id.x_alto and self.lot_id.x_ancho:
+                        self.qty_done = self.lot_id.x_alto * self.lot_id.x_ancho
+                
+                elif self.picking_id.picking_type_code == 'outgoing':
+                    # ENTREGA: Buscar cantidad disponible del lote
+                    quant = self.env['stock.quant'].search([
+                        ('lot_id', '=', self.lot_id.id),
+                        ('location_id', '=', self.location_id.id),
+                        ('product_id', '=', self.product_id.id)
+                    ], limit=1)
+                    
+                    if quant:
+                        cantidad_disponible = quant.available_quantity
+                        if cantidad_disponible > 0:
+                            if self.move_id and self.move_id.product_uom_qty:
+                                self.qty_done = min(cantidad_disponible, self.move_id.product_uom_qty)
+                            else:
+                                self.qty_done = cantidad_disponible
+                        else:
+                            self.qty_done = 0.0
+                    else:
+                        self.qty_done = 0.0
 
     @api.onchange('x_alto_temp', 'x_ancho_temp')
     def _onchange_calcular_cantidad(self):
-        """Calcular automáticamente qty_done (m²) cuando se ingresan alto y ancho
-        Solo aplica en recepciones"""
+        """Calcular automáticamente qty_done (m²) cuando se ingresan alto y ancho"""
         if self.picking_id and self.picking_id.picking_type_code == 'incoming':
             if self.x_alto_temp and self.x_ancho_temp:
                 self.qty_done = self.x_alto_temp * self.x_ancho_temp
 
     def write(self, vals):
         """Guardar dimensiones en el lote al confirmar (solo en recepciones)"""
+        from odoo.exceptions import UserError
+        
+        _logger.info("🟣"*50)
+        _logger.info("🟣 [WRITE] write() EJECUTADO en stock.move.line")
+        _logger.info("🟣 [WRITE] vals: %s", vals)
+        
+        # ================================================================
+        # VALIDACIÓN CRÍTICA: Si se está modificando lot_id, verificar hold
+        # ================================================================
+        if 'lot_id' in vals and vals['lot_id']:
+            _logger.info("🟣 [WRITE] ⚠️ Detectado cambio de lot_id a: %s", vals['lot_id'])
+            
+            for line in self:
+                # Solo validar en pickings de salida (entregas)
+                if line.picking_id and line.picking_id.picking_type_code == 'outgoing':
+                    _logger.info("🟣 [WRITE] Picking es OUTGOING - Validando hold")
+                    _logger.info("🟣 [WRITE] Picking: %s", line.picking_id.name)
+                    
+                    # Obtener el cliente del picking
+                    cliente_picking = line.picking_id.partner_id
+                    if line.move_id and line.move_id.sale_line_id:
+                        cliente_picking = line.move_id.sale_line_id.order_id.partner_id
+                    
+                    if cliente_picking:
+                        _logger.info("🟣 [WRITE] Cliente picking: %s (ID: %s)", 
+                                    cliente_picking.name, cliente_picking.id)
+                        
+                        # Buscar el quant del lote que se intenta asignar
+                        new_lot = self.env['stock.lot'].browse(vals['lot_id'])
+                        _logger.info("🟣 [WRITE] Nuevo lote a asignar: %s (ID: %s)", 
+                                    new_lot.name, new_lot.id)
+                        
+                        quant = self.env['stock.quant'].search([
+                            ('lot_id', '=', vals['lot_id']),
+                            ('location_id', '=', line.location_id.id),
+                            ('product_id', '=', line.product_id.id)
+                        ], limit=1)
+                        
+                        if quant:
+                            _logger.info("🟣 [WRITE] Quant encontrado - ID: %s", quant.id)
+                            _logger.info("🟣 [WRITE] Tiene hold: %s", quant.x_tiene_hold)
+                            
+                            # Si tiene hold, verificar que sea para este cliente
+                            if quant.x_tiene_hold and quant.x_hold_activo_id:
+                                hold_partner = quant.x_hold_activo_id.partner_id
+                                _logger.info("🟣 [WRITE] Hold partner: %s (ID: %s)", 
+                                            hold_partner.name, hold_partner.id)
+                                
+                                # Si el hold NO es para este cliente, BLOQUEAR
+                                if hold_partner.id != cliente_picking.id:
+                                    _logger.error("🟣 [WRITE] ❌❌❌ BLOQUEANDO WRITE!")
+                                    _logger.error("🟣 [WRITE] Lote tiene hold para otro cliente")
+                                    
+                                    raise UserError(
+                                        f"🔒 NO PUEDE ASIGNAR ESTE LOTE\n\n"
+                                        f"El lote '{new_lot.name}' está RESERVADO para:\n"
+                                        f"👤 {hold_partner.name}\n"
+                                        f"📅 Hasta: {quant.x_hold_expira.strftime('%d/%m/%Y %H:%M')}\n"
+                                        f"⏱️ Días restantes: {quant.x_hold_dias_restantes}\n\n"
+                                        f"❌ Esta entrega es para '{cliente_picking.name}'\n\n"
+                                        f"Por favor, seleccione un lote disponible de la lista."
+                                    )
+                                else:
+                                    _logger.info("🟣 [WRITE] ✅ Hold es para este cliente - Permitiendo")
+                            else:
+                                _logger.info("🟣 [WRITE] ✅ No tiene hold - Permitiendo")
+                        else:
+                            _logger.warning("🟣 [WRITE] ⚠️ No se encontró quant para este lote")
+                    else:
+                        _logger.warning("🟣 [WRITE] ⚠️ No hay cliente en el picking")
+                else:
+                    if line.picking_id:
+                        _logger.info("🟣 [WRITE] Picking NO es outgoing (es: %s) - No validar", 
+                                    line.picking_id.picking_type_code)
+        
+        _logger.info("🟣 [WRITE] ✅ Validaciones pasadas - Ejecutando super().write()")
+        _logger.info("🟣"*50)
+        
         # Primero ejecutar el write original
         result = super().write(vals)
         
@@ -226,13 +406,11 @@ class StockMoveLine(models.Model):
         has_dimensions = any(field in vals for field in dimension_fields)
         
         # Si se modificó el lote_id o hay dimensiones, actualizar el lote
-        # SOLO en operaciones de entrada (recepciones)
         if 'lot_id' in vals or has_dimensions:
             for line in self:
                 if line.lot_id and line.picking_id and line.picking_id.picking_type_code == 'incoming':
                     lot_vals = {}
                     
-                    # Usar los valores actuales de la línea (ya actualizados por el super().write())
                     if line.x_grosor_temp:
                         lot_vals['x_grosor'] = line.x_grosor_temp
                     if line.x_alto_temp:
@@ -244,46 +422,37 @@ class StockMoveLine(models.Model):
                     if line.x_formato_temp:
                         lot_vals['x_formato'] = line.x_formato_temp
                     
-                    # Solo actualizar si hay valores que guardar
                     if lot_vals:
                         line.lot_id.write(lot_vals)
         
-        # Calcular qty_done si se modifican alto o ancho (evitar recursión)
-        # Solo en recepciones
+        # Calcular qty_done si se modifican alto o ancho
         if ('x_alto_temp' in vals or 'x_ancho_temp' in vals) and 'qty_done' not in vals:
             for line in self:
                 if line.picking_id and line.picking_id.picking_type_code == 'incoming':
                     alto = line.x_alto_temp
                     ancho = line.x_ancho_temp
                     if alto and ancho:
-                        # Usar super() para evitar recursión infinita
                         super(StockMoveLine, line).write({'qty_done': alto * ancho})
         
         return result
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Guardar dimensiones en el lote y calcular cantidad al crear (solo en recepciones)"""
-        # Calcular cantidad automáticamente si hay alto y ancho (solo en recepciones)
+        """Guardar dimensiones en el lote y calcular cantidad al crear"""
         for vals in vals_list:
-            # Verificar si es una recepción antes de calcular
             picking_id = vals.get('picking_id')
             if picking_id:
                 picking = self.env['stock.picking'].browse(picking_id)
                 if picking.picking_type_code == 'incoming':
                     if vals.get('x_alto_temp') and vals.get('x_ancho_temp'):
-                        # Sobrescribir qty_done con el cálculo de m²
                         vals['qty_done'] = vals['x_alto_temp'] * vals['x_ancho_temp']
         
         lines = super().create(vals_list)
         
-        # Guardar dimensiones en el lote después de crear la línea
-        # SOLO en operaciones de entrada (recepciones)
         for line, vals in zip(lines, vals_list):
             if line.lot_id and line.picking_id and line.picking_id.picking_type_code == 'incoming':
                 lot_vals = {}
                 
-                # Usar los valores de la línea recién creada
                 if line.x_grosor_temp:
                     lot_vals['x_grosor'] = line.x_grosor_temp
                 if line.x_alto_temp:
@@ -342,3 +511,73 @@ class StockMoveLine(models.Model):
                 'default_lot_id': self.lot_id.id,
             }
         }
+
+
+class StockLot(models.Model):
+    _inherit = 'stock.lot'
+    
+    @api.model
+    def name_search(self, name='', args=None, operator='ilike', limit=100):
+        """
+        🔒 FILTRADO ADICIONAL - En name_search
+        
+        Este método se ejecuta cuando Odoo busca lotes para el selector.
+        Aquí agregamos el filtrado de holds TAMBIÉN en la búsqueda.
+        """
+        _logger.info("🟡"*50)
+        _logger.info("🟡 [NAME_SEARCH] name_search() EJECUTADO en stock.lot")
+        _logger.info("🟡 [NAME_SEARCH] name: %s", name)
+        _logger.info("🟡 [NAME_SEARCH] args: %s", args)
+        _logger.info("🟡 [NAME_SEARCH] Context: %s", self.env.context)
+        
+        # Verificar si estamos en el contexto de una move_line
+        move_line_id = self.env.context.get('move_line_id')
+        
+        if move_line_id:
+            _logger.info("🟡 [NAME_SEARCH] ✅ Contexto tiene move_line_id: %s", move_line_id)
+            
+            move_line = self.env['stock.move.line'].browse(move_line_id)
+            
+            if move_line.picking_id and move_line.picking_id.picking_type_code == 'outgoing':
+                _logger.info("🟡 [NAME_SEARCH] ✅ Es un picking OUTGOING - Aplicando filtro")
+                
+                # Obtener cliente
+                cliente_picking = move_line.picking_id.partner_id
+                if move_line.move_id and move_line.move_id.sale_line_id:
+                    cliente_picking = move_line.move_id.sale_line_id.order_id.partner_id
+                
+                if cliente_picking:
+                    _logger.info("🟡 [NAME_SEARCH] Cliente: %s (ID: %s)", 
+                                cliente_picking.name, cliente_picking.id)
+                    
+                    # Buscar quants válidos
+                    domain = [
+                        ('product_id', '=', move_line.product_id.id),
+                        ('location_id', '=', move_line.location_id.id),
+                        ('quantity', '>', 0),
+                    ]
+                    
+                    quants = self.env['stock.quant'].search(domain)
+                    _logger.info("🟡 [NAME_SEARCH] Quants encontrados: %s", len(quants))
+                    
+                    lotes_validos = []
+                    for quant in quants:
+                        if quant.lot_id:
+                            if not quant.x_tiene_hold:
+                                lotes_validos.append(quant.lot_id.id)
+                            elif quant.x_hold_activo_id and quant.x_hold_activo_id.partner_id.id == cliente_picking.id:
+                                lotes_validos.append(quant.lot_id.id)
+                    
+                    _logger.info("🟡 [NAME_SEARCH] Lotes válidos: %s", lotes_validos)
+                    
+                    # Agregar filtro a args
+                    if args is None:
+                        args = []
+                    args = list(args) + [('id', 'in', lotes_validos)]
+                    
+                    _logger.info("🟡 [NAME_SEARCH] Args actualizado: %s", args)
+        
+        _logger.info("🟡"*50)
+        
+        # Llamar al método original con args posiblemente modificado
+        return super(StockLot, self).name_search(name=name, args=args, operator=operator, limit=limit)
