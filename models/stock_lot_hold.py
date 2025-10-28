@@ -70,12 +70,13 @@ class StockLotHold(models.Model):
     dias_restantes = fields.Integer(
         string='Días Restantes',
         compute='_compute_dias_restantes',
+        store=False,  # CAMBIADO: No se guarda en BD
         help='Días restantes hasta la expiración'
     )
     
     esta_expirado = fields.Boolean(
         string='Expirado',
-        compute='_compute_dias_restantes',
+        compute='_compute_esta_expirado',  # CAMBIADO: Método separado
         store=True,
         help='Indica si la reserva ya expiró'
     )
@@ -105,17 +106,26 @@ class StockLotHold(models.Model):
             else:
                 record.fecha_expiracion = fields.Datetime.now() + timedelta(days=10)
 
-    @api.depends('fecha_expiracion', 'estado')
+    @api.depends('fecha_expiracion')
     def _compute_dias_restantes(self):
-        """Calcular días restantes y marcar si está expirado"""
+        """Calcular días restantes hasta expiración"""
         now = fields.Datetime.now()
         for record in self:
             if record.fecha_expiracion:
                 delta = record.fecha_expiracion - now
                 record.dias_restantes = delta.days
-                record.esta_expirado = delta.days < 0 and record.estado == 'activo'
             else:
                 record.dias_restantes = 0
+
+    @api.depends('fecha_expiracion', 'estado')
+    def _compute_esta_expirado(self):
+        """Marcar si la reserva está expirada"""
+        now = fields.Datetime.now()
+        for record in self:
+            if record.fecha_expiracion and record.estado == 'activo':
+                delta = record.fecha_expiracion - now
+                record.esta_expirado = delta.days < 0
+            else:
                 record.esta_expirado = False
 
     @api.model
