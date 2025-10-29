@@ -9,8 +9,8 @@ class StockQuant(models.Model):
     x_grosor = fields.Float(related='lot_id.x_grosor', string='Grosor', readonly=True)
     x_alto = fields.Float(related='lot_id.x_alto', string='Alto', readonly=True)
     x_ancho = fields.Float(related='lot_id.x_ancho', string='Ancho', readonly=True)
-    # x_acabado = fields.Selection(related='lot_id.x_acabado', string='Acabado', readonly=True)
     x_bloque = fields.Char(related='lot_id.x_bloque', string='Bloque', readonly=True)
+    x_atado = fields.Char(related='lot_id.x_atado', string='Atado', readonly=True)
     x_formato = fields.Selection(related='lot_id.x_formato', string='Formato', readonly=True)
     x_fotografia_principal = fields.Binary(related='lot_id.x_fotografia_principal', readonly=True)
     x_cantidad_fotos = fields.Integer(related='lot_id.x_cantidad_fotos', readonly=True)
@@ -38,7 +38,7 @@ class StockQuant(models.Model):
         help='Indica si la placa tiene detalles especiales registrados'
     )
     
-    # NUEVOS CAMPOS PARA HOLD MANUAL
+    # CAMPOS PARA HOLD MANUAL
     x_tiene_hold = fields.Boolean(
         string='Tiene Hold',
         compute='_compute_estado_hold',
@@ -226,7 +226,7 @@ class StockQuant(models.Model):
             }
         }
 
-    # NUEVAS ACCIONES PARA HOLD
+    # ACCIONES PARA HOLD
     def action_crear_hold(self):
         """Abrir wizard para crear un hold manual en este quant"""
         self.ensure_one()
@@ -288,15 +288,10 @@ class StockQuant(models.Model):
 
     def _get_available_quantity(self, product_id, location_id, lot_id=None, package_id=None, owner_id=None, strict=False, allow_negative=False):
         """
-        ✅ CORRECCIÓN COMPLETA del método _get_available_quantity
+        ✅ CORRECCIÓN COMPLETA del método _get_available_quantity con soporte multi-empresa
         
-        Este método se llama sobre un RECORDSET de múltiples quants,
-        NO sobre un solo quant, por lo que NO podemos usar self.x_tiene_hold directamente.
-        
-        El método debe:
-        1. Llamar al padre para obtener la cantidad disponible base
-        2. Filtrar los quants con hold que NO son para el cliente actual
-        3. Restar esas cantidades del total disponible
+        Este método se llama sobre un RECORDSET de múltiples quants.
+        Debe filtrar correctamente los holds considerando la empresa.
         """
         # Llamar al método padre para obtener la cantidad base disponible
         available_qty = super(StockQuant, self)._get_available_quantity(
@@ -310,10 +305,17 @@ class StockQuant(models.Model):
         # Obtener el cliente permitido del contexto (si existe)
         cliente_permitido_id = self._context.get('allowed_partner_id')
         
+        # ✅ CORRECCIÓN: Obtener la empresa del contexto o la empresa actual
+        company_id = self._context.get('company_id', self.env.company.id)
+        
         # Iterar sobre los quants de este recordset y restar cantidades bloqueadas por holds
         cantidad_bloqueada = 0.0
         
         for quant in self:
+            # ✅ CORRECCIÓN: Solo procesar quants de la empresa correcta
+            if quant.company_id.id != company_id:
+                continue
+            
             # Verificar si este quant tiene un hold activo
             if quant.x_tiene_hold and quant.x_hold_activo_id:
                 # Si hay un cliente permitido y es el mismo del hold, este quant NO está bloqueado

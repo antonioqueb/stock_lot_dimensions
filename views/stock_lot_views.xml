@@ -47,6 +47,8 @@
                                        placeholder="Selecciona un formato..."/>
                                 <field name="x_bloque" 
                                        placeholder="Identificación del bloque"/>
+                                <field name="x_atado" 
+                                    placeholder="Identificación del atado"/>
                             </group>
                         </group>
 
@@ -120,6 +122,7 @@
                 <field name="x_ancho" optional="hide" string="Ancho (m)"/>
                 <!-- <field name="x_acabado" optional="show" string="Acabado"/> -->
                 <field name="x_bloque" optional="show" string="Bloque"/>
+                <field name="x_atado" optional="show" string="Atado"/>
                 <field name="x_formato" optional="show" string="Formato"/>
                 <field name="x_fotografia_principal" 
                        widget="image_preview" 

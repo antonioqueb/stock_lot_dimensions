@@ -65,6 +65,7 @@ class StockLotHoldWizard(models.TransientModel):
     x_ancho = fields.Float(related='lot_id.x_ancho', readonly=True)
     x_formato = fields.Selection(related='lot_id.x_formato', readonly=True)
     x_bloque = fields.Char(related='lot_id.x_bloque', readonly=True)
+    x_atado = fields.Char(related='lot_id.x_atado', readonly=True)
 
     @api.depends('create_date')
     def _compute_fecha_expiracion(self):

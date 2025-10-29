@@ -20,6 +20,7 @@
                         <field name="x_alto" readonly="1"/>
                         <field name="x_ancho" readonly="1"/>
                         <field name="x_bloque" readonly="1"/>
+                        <field name="x_atado" readonly="1"/>
                     </group>
                 </group>
                 

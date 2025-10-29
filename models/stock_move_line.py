@@ -30,6 +30,11 @@ class StockMoveLine(models.Model):
         string='Bloque',
         help='Identificación del bloque de origen (se guardará en el lote)'
     )
+
+    x_atado_temp = fields.Char(
+        string='Atado',
+        help='Identificación del atado (se guardará en el lote)'
+    )
     
     x_formato_temp = fields.Selection([
         ('placa', 'Placa'),
@@ -89,6 +94,13 @@ class StockMoveLine(models.Model):
     x_bloque_lote = fields.Char(
         related='lot_id.x_bloque',
         string='Bloque Lote',
+        readonly=True,
+        store=False
+    )
+
+    x_atado_lote = fields.Char(
+        related='lot_id.x_atado',
+        string='Atado Lote',
         readonly=True,
         store=False
     )
@@ -228,6 +240,82 @@ class StockMoveLine(models.Model):
         
         return lotes_validos
 
+    @api.constrains('lot_id', 'picking_id')
+    def _check_lot_hold(self):
+        """
+        🔒 CONSTRAINT - Validación SQL que se ejecuta SIEMPRE
+        
+        Esta validación se ejecuta automáticamente cuando:
+        - Se crea un move_line con lot_id
+        - Se modifica el lot_id de un move_line existente
+        - Se intenta guardar cambios
+        
+        NO se puede bypasear - es una restricción a nivel de base de datos
+        """
+        from odoo.exceptions import ValidationError
+        
+        for line in self:
+            # Solo validar si hay lote asignado y es un picking de salida
+            if line.lot_id and line.picking_id and line.picking_id.picking_type_code == 'outgoing':
+                _logger.info("🔒"*50)
+                _logger.info("🔒 [CONSTRAINT] _check_lot_hold() EJECUTADO")
+                _logger.info("🔒 [CONSTRAINT] Move Line ID: %s", line.id)
+                _logger.info("🔒 [CONSTRAINT] Lote: %s (ID: %s)", line.lot_id.name, line.lot_id.id)
+                _logger.info("🔒 [CONSTRAINT] Picking: %s", line.picking_id.name)
+                
+                # Obtener el cliente del picking
+                cliente_picking = line.picking_id.partner_id
+                if line.move_id and line.move_id.sale_line_id:
+                    cliente_picking = line.move_id.sale_line_id.order_id.partner_id
+                
+                if cliente_picking:
+                    _logger.info("🔒 [CONSTRAINT] Cliente: %s (ID: %s)", 
+                                cliente_picking.name, cliente_picking.id)
+                    
+                    # Buscar el quant del lote
+                    quant = self.env['stock.quant'].search([
+                        ('lot_id', '=', line.lot_id.id),
+                        ('location_id', '=', line.location_id.id),
+                        ('product_id', '=', line.product_id.id)
+                    ], limit=1)
+                    
+                    if quant:
+                        _logger.info("🔒 [CONSTRAINT] Quant encontrado - Tiene hold: %s", 
+                                    quant.x_tiene_hold)
+                        
+                        # Si tiene hold, verificar que sea para este cliente
+                        if quant.x_tiene_hold and quant.x_hold_activo_id:
+                            hold_partner = quant.x_hold_activo_id.partner_id
+                            
+                            _logger.info("🔒 [CONSTRAINT] Hold para: %s (ID: %s)", 
+                                        hold_partner.name, hold_partner.id)
+                            
+                            # Si el hold NO es para este cliente, BLOQUEAR
+                            if hold_partner.id != cliente_picking.id:
+                                _logger.error("🔒 [CONSTRAINT] ❌❌❌ BLOQUEANDO - Hold para otro cliente")
+                                _logger.info("🔒"*50)
+                                
+                                raise ValidationError(
+                                    f"🔒 NO PUEDE USAR ESTE LOTE\n\n"
+                                    f"El lote '{line.lot_id.name}' está RESERVADO para:\n"
+                                    f"👤 {hold_partner.name}\n"
+                                    f"📅 Hasta: {quant.x_hold_expira.strftime('%d/%m/%Y %H:%M')}\n"
+                                    f"⏱️ Días restantes: {quant.x_hold_dias_restantes}\n\n"
+                                    f"❌ Esta entrega es para '{cliente_picking.name}'\n\n"
+                                    f"Por favor, seleccione un lote disponible.\n"
+                                    f"Los lotes apartados para otros clientes no aparecen en la lista."
+                                )
+                            else:
+                                _logger.info("🔒 [CONSTRAINT] ✅ Hold es para este cliente")
+                        else:
+                            _logger.info("🔒 [CONSTRAINT] ✅ Lote sin hold")
+                    else:
+                        _logger.warning("🔒 [CONSTRAINT] ⚠️ No se encontró quant")
+                else:
+                    _logger.warning("🔒 [CONSTRAINT] ⚠️ No hay cliente en picking")
+                
+                _logger.info("🔒"*50)
+
     @api.onchange('product_id', 'location_id', 'picking_id')
     def _onchange_product_location_filter_lots(self):
         """
@@ -283,6 +371,7 @@ class StockMoveLine(models.Model):
             self.x_alto_temp = self.lot_id.x_alto
             self.x_ancho_temp = self.lot_id.x_ancho
             self.x_bloque_temp = self.lot_id.x_bloque
+            self.x_atado_temp = self.lot_id.x_atado 
             self.x_formato_temp = self.lot_id.x_formato
             
             if self.picking_id:
@@ -402,7 +491,7 @@ class StockMoveLine(models.Model):
         result = super().write(vals)
         
         # Después del write, verificar si hay dimensiones que guardar en el lote
-        dimension_fields = ['x_grosor_temp', 'x_alto_temp', 'x_ancho_temp', 'x_bloque_temp', 'x_formato_temp']
+        dimension_fields = ['x_grosor_temp', 'x_alto_temp', 'x_ancho_temp', 'x_bloque_temp', 'x_atado_temp', 'x_formato_temp']
         has_dimensions = any(field in vals for field in dimension_fields)
         
         # Si se modificó el lote_id o hay dimensiones, actualizar el lote
@@ -419,6 +508,8 @@ class StockMoveLine(models.Model):
                         lot_vals['x_ancho'] = line.x_ancho_temp
                     if line.x_bloque_temp:
                         lot_vals['x_bloque'] = line.x_bloque_temp
+                    if line.x_atado_temp:
+                        lot_vals['x_atado'] = line.x_atado_temp
                     if line.x_formato_temp:
                         lot_vals['x_formato'] = line.x_formato_temp
                     

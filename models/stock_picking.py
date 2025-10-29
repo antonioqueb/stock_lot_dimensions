@@ -14,8 +14,12 @@ class StockPicking(models.Model):
         
         for picking in self:
             if picking.picking_type_code == 'outgoing' and picking.partner_id:
-                # Pasar el cliente permitido en el contexto
-                self = self.with_context(allowed_partner_id=picking.partner_id.id)
+                # ✅ CORRECCIÓN: Pasar el cliente permitido Y la empresa en el contexto
+                company_id = picking.company_id.id if picking.company_id else self.env.company.id
+                self = self.with_context(
+                    allowed_partner_id=picking.partner_id.id,
+                    company_id=company_id
+                )
         
         result = super(StockPicking, self).action_assign()
         _logger.info("🟢 [STOCK PICKING] action_assign() completado")
@@ -24,12 +28,11 @@ class StockPicking(models.Model):
     def _action_assign(self):
         """
         Override para limpiar lotes automáticos después de la asignación
-        Este método se ejecuta cuando Odoo asigna/reserva inventario automáticamente
         """
         _logger.info("="*80)
         _logger.info("🟡 [STOCK PICKING] _action_assign() INICIANDO para picking(s): %s", self.mapped('name'))
         
-        # Ejecutar el proceso normal de asignación (esto crea los lotes automáticamente)
+        # Ejecutar el proceso normal de asignación
         res = super(StockPicking, self)._action_assign()
         _logger.info("🟡 [STOCK PICKING] Super _action_assign() completado")
         
@@ -38,6 +41,9 @@ class StockPicking(models.Model):
             _logger.info("🟡 [STOCK PICKING] Procesando picking: %s (ID: %s)", picking.name, picking.id)
             _logger.info("🟡 [STOCK PICKING] Sale Order: %s", picking.sale_id.name if picking.sale_id else 'No tiene sale_id')
             _logger.info("🟡 [STOCK PICKING] Picking Type: %s", picking.picking_type_code)
+            _logger.info("🟡 [STOCK PICKING] Company: %s (ID: %s)", 
+                        picking.company_id.name if picking.company_id else 'N/A',
+                        picking.company_id.id if picking.company_id else 'N/A')
             
             # Verificar si este picking viene de una orden de venta
             if picking.sale_id:
@@ -69,7 +75,7 @@ class StockPicking(models.Model):
                         })
                         _logger.info("🟡 [STOCK PICKING] ✅ Write ejecutado exitosamente")
                         
-                        # Forzar commit para asegurar que se guardan los cambios
+                        # Forzar commit
                         self.env.cr.commit()
                         _logger.info("🟡 [STOCK PICKING] ✅ Commit ejecutado")
                         
@@ -99,15 +105,22 @@ class StockPicking(models.Model):
         
         for picking in self:
             if picking.picking_type_code == 'outgoing':
+                # ✅ CORRECCIÓN: Obtener la empresa del picking
+                company_id = picking.company_id.id if picking.company_id else self.env.company.id
+                _logger.info("🔴 [STOCK PICKING] Validando con empresa: %s (ID: %s)", 
+                            picking.company_id.name if picking.company_id else 'N/A',
+                            company_id)
+                
                 for move_line in picking.move_line_ids:
                     if move_line.lot_id:
                         _logger.info("🔴 [STOCK PICKING] Verificando lote: %s para move_line: %s", 
                                     move_line.lot_id.name, move_line.id)
                         
-                        # Verificar si el lote tiene hold
+                        # ✅ CORRECCIÓN: Verificar si el lote tiene hold EN LA EMPRESA CORRECTA
                         quant = self.env['stock.quant'].search([
                             ('lot_id', '=', move_line.lot_id.id),
                             ('location_id', '=', move_line.location_id.id),
+                            ('company_id', '=', company_id),
                             ('x_tiene_hold', '=', True),
                         ], limit=1)
                         

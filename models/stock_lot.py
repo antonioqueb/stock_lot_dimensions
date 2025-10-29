@@ -70,6 +70,11 @@ class StockLot(models.Model):
         string='Bloque',
         help='Identificación del bloque de origen'
     )
+
+    x_atado = fields.Char(
+        string='Atado',
+        help='Identificación del atado'
+    )
     
     x_formato = fields.Selection([
         ('placa', 'Placa'),
