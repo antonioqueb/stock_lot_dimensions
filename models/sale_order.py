@@ -17,14 +17,32 @@ class SaleOrder(models.Model):
     
     def action_confirm(self):
         """
-        Override del método action_confirm para limpiar lotes automáticos
-        después de confirmar la orden de venta
+        Override del método action_confirm para:
+        1. Pasar el cliente al contexto ANTES de confirmar (para filtrar FIFO/LIFO)
+        2. Limpiar lotes automáticos DESPUÉS de confirmar
         """
         _logger.info("="*80)
         _logger.info("🔵 [SALE ORDER] Iniciando action_confirm() para orden: %s", self.name)
         
-        # Primero ejecutar el proceso normal de confirmación
-        res = super(SaleOrder, self).action_confirm()
+        for order in self:
+            if order.partner_id:
+                _logger.info("🔵 [SALE ORDER] Cliente: %s (ID: %s)", 
+                            order.partner_id.name, order.partner_id.id)
+                
+                # 🔑 CRÍTICO: Pasar el cliente al contexto ANTES de confirmar
+                # Esto permite que _gather() filtre correctamente los quants con holds
+                context_with_partner = dict(self.env.context)
+                context_with_partner['allowed_partner_id'] = order.partner_id.id
+                
+                _logger.info("🔵 [SALE ORDER] ✅ Contexto actualizado con allowed_partner_id: %s", 
+                            order.partner_id.id)
+                
+                # Ejecutar el proceso normal de confirmación CON el contexto actualizado
+                res = super(SaleOrder, order.with_context(context_with_partner)).action_confirm()
+            else:
+                _logger.warning("🔵 [SALE ORDER] ⚠️ Orden sin cliente - confirmando sin filtro")
+                res = super(SaleOrder, order).action_confirm()
+        
         _logger.info("🔵 [SALE ORDER] Super action_confirm() completado")
         
         # Después de confirmar, limpiar TODOS los lotes asignados automáticamente
@@ -38,16 +56,10 @@ class SaleOrder(models.Model):
             for picking in pickings:
                 _logger.info("🔵 [SALE ORDER] Procesando picking: %s (ID: %s)", picking.name, picking.id)
                 
-                # ============================================
-                # SOLUCIÓN DEFINITIVA: ELIMINAR move_lines
-                # ============================================
-                # En lugar de solo limpiar los lotes, ELIMINAMOS las move_lines
-                # Esto fuerza que cuando el usuario abra "Operaciones Detalladas"
-                # no haya ninguna línea pre-creada con lotes
-                
+                # SOLUCIÓN: ELIMINAR move_lines
                 move_lines_to_delete = self.env['stock.move.line'].search([
                     ('picking_id', '=', picking.id),
-                    ('state', 'not in', ['done', 'cancel'])  # Solo las que no están finalizadas
+                    ('state', 'not in', ['done', 'cancel'])
                 ])
                 
                 _logger.info("🔵 [SALE ORDER] Move lines encontradas para ELIMINAR: %s", len(move_lines_to_delete))
@@ -70,9 +82,7 @@ class SaleOrder(models.Model):
                 else:
                     _logger.info("🔵 [SALE ORDER] No hay move_lines para eliminar")
                 
-                # ============================================
                 # Resetear el estado del picking si es necesario
-                # ============================================
                 if picking.state == 'assigned':
                     _logger.info("🔵 [SALE ORDER] Picking está 'assigned' - cambiando a 'confirmed'")
                     try:
@@ -81,9 +91,7 @@ class SaleOrder(models.Model):
                     except Exception as e:
                         _logger.error("🔵 [SALE ORDER] ⚠️ No se pudo cambiar state del picking: %s", str(e))
                 
-                # ============================================
                 # Resetear los moves también
-                # ============================================
                 for move in picking.move_ids:
                     if move.state == 'assigned':
                         _logger.info("🔵 [SALE ORDER] Move %s está 'assigned' - reseteando", move.id)
@@ -93,9 +101,7 @@ class SaleOrder(models.Model):
                         except Exception as e:
                             _logger.error("🔵 [SALE ORDER] ⚠️ Error reseteando move: %s", str(e))
                 
-                # ============================================
                 # INVALIDAR CACHE para forzar recarga
-                # ============================================
                 self.env['stock.move.line'].invalidate_model()
                 self.env['stock.move'].invalidate_model()
                 self.env['stock.picking'].invalidate_model()

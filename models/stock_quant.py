@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
 import json
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class StockQuant(models.Model):
     _inherit = 'stock.quant'
@@ -286,44 +289,84 @@ class StockQuant(models.Model):
             }
         }
 
-    def _get_available_quantity(self, product_id, location_id, lot_id=None, package_id=None, owner_id=None, strict=False, allow_negative=False):
+    def _gather(self, product_id, location_id, lot_id=None, package_id=None, owner_id=None, strict=False, qty=None):
         """
-        ✅ CORRECCIÓN COMPLETA del método _get_available_quantity con soporte multi-empresa
+        🔑 OVERRIDE CRÍTICO: Este método es llamado por Odoo para SELECCIONAR qué quants usar.
         
-        Este método se llama sobre un RECORDSET de múltiples quants.
-        Debe filtrar correctamente los holds considerando la empresa.
+        Aquí es donde debemos filtrar los lotes con holds ANTES de que sean asignados.
+        
+        Este método se ejecuta ANTES de _get_available_quantity y es el lugar correcto
+        para filtrar quants basándonos en holds.
+        
+        Parámetros Odoo 18:
+        - qty: Cantidad requerida (nuevo en Odoo 18)
         """
-        # Llamar al método padre para obtener la cantidad base disponible
-        available_qty = super(StockQuant, self)._get_available_quantity(
-            product_id, location_id, lot_id, package_id, owner_id, strict, allow_negative
+        _logger.info("🟢" * 50)
+        _logger.info("🟢 [_GATHER] Iniciando _gather")
+        _logger.info("🟢 [_GATHER] Product: %s", product_id.name if product_id else 'N/A')
+        _logger.info("🟢 [_GATHER] Location: %s", location_id.name if location_id else 'N/A')
+        _logger.info("🟢 [_GATHER] Lot: %s", lot_id.name if lot_id else 'N/A')
+        _logger.info("🟢 [_GATHER] Qty: %s", qty)
+        
+        # Llamar al método original con todos los parámetros
+        quants = super(StockQuant, self)._gather(
+            product_id, location_id, lot_id=lot_id, package_id=package_id, 
+            owner_id=owner_id, strict=strict, qty=qty
         )
         
-        # Si no hay cantidad disponible, retornar inmediatamente
-        if available_qty <= 0:
-            return available_qty
+        _logger.info("🟢 [_GATHER] Quants originales encontrados: %s", len(quants))
         
-        # Obtener el cliente permitido del contexto (si existe)
+        # Si no hay cliente permitido en contexto, retornar todos los quants
         cliente_permitido_id = self._context.get('allowed_partner_id')
         
-        # ✅ CORRECCIÓN: Obtener la empresa del contexto o la empresa actual
-        company_id = self._context.get('company_id', self.env.company.id)
+        if not cliente_permitido_id:
+            _logger.info("🟢 [_GATHER] ⚠️ No hay allowed_partner_id en contexto")
+            _logger.info("🟢 [_GATHER] Retornando todos los quants sin filtrar")
+            _logger.info("🟢" * 50)
+            return quants
         
-        # Iterar sobre los quants de este recordset y restar cantidades bloqueadas por holds
-        cantidad_bloqueada = 0.0
+        _logger.info("🟢 [_GATHER] ✅ Cliente permitido en contexto: ID %s", cliente_permitido_id)
         
-        for quant in self:
-            # ✅ CORRECCIÓN: Solo procesar quants de la empresa correcta
-            if quant.company_id.id != company_id:
+        # Filtrar quants que tienen hold para OTRO cliente
+        quants_validos = self.env['stock.quant']
+        
+        for quant in quants:
+            lot_name = quant.lot_id.name if quant.lot_id else 'Sin lote'
+            tiene_hold = quant.x_tiene_hold
+            
+            _logger.info("🟢 [_GATHER] ─────────────────────────────────────")
+            _logger.info("🟢 [_GATHER] Analizando Quant ID: %s, Lote: %s", quant.id, lot_name)
+            _logger.info("🟢 [_GATHER] Cantidad: %.2f, Tiene hold: %s", quant.quantity, tiene_hold)
+            
+            # Si no tiene hold, es válido
+            if not tiene_hold:
+                _logger.info("🟢 [_GATHER] ✅ SIN HOLD - Agregando a lista válida")
+                quants_validos |= quant
                 continue
             
-            # Verificar si este quant tiene un hold activo
-            if quant.x_tiene_hold and quant.x_hold_activo_id:
-                # Si hay un cliente permitido y es el mismo del hold, este quant NO está bloqueado
-                if cliente_permitido_id and quant.x_hold_activo_id.partner_id.id == cliente_permitido_id:
-                    continue  # Este quant está disponible para este cliente
+            # Si tiene hold, verificar que sea para este cliente
+            if quant.x_hold_activo_id:
+                hold_partner_id = quant.x_hold_activo_id.partner_id.id
+                hold_partner_name = quant.x_hold_activo_id.partner_id.name
                 
-                # Si no hay cliente permitido o es diferente, bloquear este quant
-                cantidad_bloqueada += quant.quantity
+                _logger.info("🟢 [_GATHER] Hold activo encontrado:")
+                _logger.info("🟢 [_GATHER]   - Partner del hold: %s (ID: %s)", hold_partner_name, hold_partner_id)
+                _logger.info("🟢 [_GATHER]   - Partner permitido: ID %s", cliente_permitido_id)
+                
+                if hold_partner_id == cliente_permitido_id:
+                    _logger.info("🟢 [_GATHER] ✅ HOLD PARA CLIENTE PERMITIDO - Agregando a lista válida")
+                    quants_validos |= quant
+                else:
+                    _logger.warning("🟢 [_GATHER] ❌ HOLD PARA OTRO CLIENTE - NO agregando")
+                    _logger.warning("🟢 [_GATHER]    Este quant NO debe ser usado por FIFO/LIFO")
+            else:
+                _logger.warning("🟢 [_GATHER] ⚠️ Tiene hold pero sin x_hold_activo_id - NO agregando")
         
-        # Retornar la cantidad disponible menos la cantidad bloqueada por holds
-        return max(0.0, available_qty - cantidad_bloqueada)
+        _logger.info("🟢 [_GATHER] ═════════════════════════════════════════")
+        _logger.info("🟢 [_GATHER] RESUMEN:")
+        _logger.info("🟢 [_GATHER] Quants originales: %s", len(quants))
+        _logger.info("🟢 [_GATHER] Quants válidos después del filtro: %s", len(quants_validos))
+        _logger.info("🟢 [_GATHER] _gather() FINALIZADO")
+        _logger.info("🟢" * 50)
+        
+        return quants_validos

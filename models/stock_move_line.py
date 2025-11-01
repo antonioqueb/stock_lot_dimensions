@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
+from odoo.exceptions import UserError, ValidationError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -240,81 +241,101 @@ class StockMoveLine(models.Model):
         
         return lotes_validos
 
-    @api.constrains('lot_id', 'picking_id')
+    @api.constrains('lot_id', 'picking_id', 'state')
     def _check_lot_hold(self):
         """
-        🔒 CONSTRAINT - Validación SQL que se ejecuta SIEMPRE
+        🔒 CONSTRAINT: Validación de holds al asignar/confirmar lotes
         
-        Esta validación se ejecuta automáticamente cuando:
-        - Se crea un move_line con lot_id
-        - Se modifica el lot_id de un move_line existente
-        - Se intenta guardar cambios
-        
-        NO se puede bypasear - es una restricción a nivel de base de datos
+        IMPORTANTE:
+        - Respeta el contexto skip_hold_validation cuando los lotes ya fueron validados
+        - Solo valida en pickings de salida (outgoing)
+        - Solo valida cuando el lote ya está asignado
+        - Solo valida si hay un hold activo (x_tiene_hold=True)
+        - Permite holds del mismo cliente
+        - Bloquea holds de otros clientes
         """
-        from odoo.exceptions import ValidationError
+        # 🔑 BYPASS: Si el contexto indica que ya se validó, saltar
+        if self._context.get('skip_hold_validation'):
+            _logger.info("🔒 [CONSTRAINT] BYPASS activado - Saltando validación de holds")
+            return
         
         for line in self:
-            # Solo validar si hay lote asignado y es un picking de salida
-            if line.lot_id and line.picking_id and line.picking_id.picking_type_code == 'outgoing':
-                _logger.info("🔒"*50)
-                _logger.info("🔒 [CONSTRAINT] _check_lot_hold() EJECUTADO")
-                _logger.info("🔒 [CONSTRAINT] Move Line ID: %s", line.id)
-                _logger.info("🔒 [CONSTRAINT] Lote: %s (ID: %s)", line.lot_id.name, line.lot_id.id)
-                _logger.info("🔒 [CONSTRAINT] Picking: %s", line.picking_id.name)
+            _logger.info("🔒" * 50)
+            _logger.info("🔒 [CONSTRAINT] _check_lot_hold() EJECUTADO")
+            _logger.info("🔒 [CONSTRAINT] Move Line ID: %s", line.id)
+            _logger.info("🔒 [CONSTRAINT] Lote: %s (ID: %s)", 
+                        line.lot_id.name if line.lot_id else 'Sin lote', 
+                        line.lot_id.id if line.lot_id else None)
+            _logger.info("🔒 [CONSTRAINT] Location: %s (ID: %s)", 
+                        line.location_id.name if line.location_id else 'Sin location', 
+                        line.location_id.id if line.location_id else None)
+            _logger.info("🔒 [CONSTRAINT] Picking: %s", 
+                        line.picking_id.name if line.picking_id else 'Sin picking')
+            
+            # Skip si no hay lote asignado
+            if not line.lot_id:
+                _logger.info("🔒 [CONSTRAINT] ⏭️ Sin lote - skipping")
+                _logger.info("🔒" * 50)
+                continue
+            
+            # Skip si no es picking de salida
+            if not line.picking_id or line.picking_id.picking_type_code != 'outgoing':
+                _logger.info("🔒 [CONSTRAINT] ⏭️ No es picking outgoing - skipping")
+                _logger.info("🔒" * 50)
+                continue
+            
+            # Obtener cliente del picking
+            partner = line.picking_id.partner_id
+            _logger.info("🔒 [CONSTRAINT] Cliente: %s (ID: %s)", 
+                        partner.name if partner else 'Sin cliente',
+                        partner.id if partner else None)
+            
+            if not partner:
+                _logger.info("🔒 [CONSTRAINT] ⏭️ Sin cliente - skipping")
+                _logger.info("🔒" * 50)
+                continue
+            
+            # Buscar quant específico CON HOLD ACTIVO para este lote Y ubicación
+            quant = self.env['stock.quant'].search([
+                ('lot_id', '=', line.lot_id.id),
+                ('location_id', '=', line.location_id.id),
+                ('quantity', '>', 0),
+                ('x_tiene_hold', '=', True),  # 🔑 FILTRO CRÍTICO: Solo quants con hold activo
+            ], limit=1)
+            
+            if not quant:
+                _logger.info("🔒 [CONSTRAINT] ✅ No se encontró quant con hold activo - OK para usar")
+                _logger.info("🔒" * 50)
+                continue
+            
+            _logger.info("🔒 [CONSTRAINT] ⚠️ Quant con hold encontrado - ID: %s", quant.id)
+            
+            hold_partner = quant.x_hold_activo_id.partner_id
+            _logger.info("🔒 [CONSTRAINT] Hold para: %s (ID: %s)", 
+                        hold_partner.name if hold_partner else 'Sin partner',
+                        hold_partner.id if hold_partner else None)
+            
+            if hold_partner and hold_partner.id != partner.id:
+                dias_restantes = quant.x_hold_dias_restantes
+                fecha_expiracion = quant.x_hold_expira.strftime('%d/%m/%Y %H:%M') if quant.x_hold_expira else 'N/A'
                 
-                # Obtener el cliente del picking
-                cliente_picking = line.picking_id.partner_id
-                if line.move_id and line.move_id.sale_line_id:
-                    cliente_picking = line.move_id.sale_line_id.order_id.partner_id
+                _logger.error("🔒 [CONSTRAINT] ❌❌❌ BLOQUEANDO - Hold para otro cliente")
+                _logger.info("🔒" * 50)
                 
-                if cliente_picking:
-                    _logger.info("🔒 [CONSTRAINT] Cliente: %s (ID: %s)", 
-                                cliente_picking.name, cliente_picking.id)
-                    
-                    # Buscar el quant del lote
-                    quant = self.env['stock.quant'].search([
-                        ('lot_id', '=', line.lot_id.id),
-                        ('location_id', '=', line.location_id.id),
-                        ('product_id', '=', line.product_id.id)
-                    ], limit=1)
-                    
-                    if quant:
-                        _logger.info("🔒 [CONSTRAINT] Quant encontrado - Tiene hold: %s", 
-                                    quant.x_tiene_hold)
-                        
-                        # Si tiene hold, verificar que sea para este cliente
-                        if quant.x_tiene_hold and quant.x_hold_activo_id:
-                            hold_partner = quant.x_hold_activo_id.partner_id
-                            
-                            _logger.info("🔒 [CONSTRAINT] Hold para: %s (ID: %s)", 
-                                        hold_partner.name, hold_partner.id)
-                            
-                            # Si el hold NO es para este cliente, BLOQUEAR
-                            if hold_partner.id != cliente_picking.id:
-                                _logger.error("🔒 [CONSTRAINT] ❌❌❌ BLOQUEANDO - Hold para otro cliente")
-                                _logger.info("🔒"*50)
-                                
-                                raise ValidationError(
-                                    f"🔒 NO PUEDE USAR ESTE LOTE\n\n"
-                                    f"El lote '{line.lot_id.name}' está RESERVADO para:\n"
-                                    f"👤 {hold_partner.name}\n"
-                                    f"📅 Hasta: {quant.x_hold_expira.strftime('%d/%m/%Y %H:%M')}\n"
-                                    f"⏱️ Días restantes: {quant.x_hold_dias_restantes}\n\n"
-                                    f"❌ Esta entrega es para '{cliente_picking.name}'\n\n"
-                                    f"Por favor, seleccione un lote disponible.\n"
-                                    f"Los lotes apartados para otros clientes no aparecen en la lista."
-                                )
-                            else:
-                                _logger.info("🔒 [CONSTRAINT] ✅ Hold es para este cliente")
-                        else:
-                            _logger.info("🔒 [CONSTRAINT] ✅ Lote sin hold")
-                    else:
-                        _logger.warning("🔒 [CONSTRAINT] ⚠️ No se encontró quant")
-                else:
-                    _logger.warning("🔒 [CONSTRAINT] ⚠️ No hay cliente en picking")
-                
-                _logger.info("🔒"*50)
+                raise ValidationError(
+                    f"🔒 NO PUEDE USAR ESTE LOTE\n\n"
+                    f"El lote '{line.lot_id.name}' está RESERVADO para:\n"
+                    f"👤 {hold_partner.name}\n"
+                    f"📅 Hasta: {fecha_expiracion}\n"
+                    f"⏱️ Días restantes: {dias_restantes}\n\n"
+                    f"❌ Esta entrega es para '{partner.name}'\n\n"
+                    f"Por favor, seleccione un lote disponible.\n"
+                    f"Los lotes apartados para otros clientes no aparecen en la lista."
+                )
+            else:
+                _logger.info("🔒 [CONSTRAINT] ✅ Hold es para este cliente - OK")
+            
+            _logger.info("🔒" * 50)
 
     @api.onchange('product_id', 'location_id', 'picking_id')
     def _onchange_product_location_filter_lots(self):
@@ -409,8 +430,6 @@ class StockMoveLine(models.Model):
 
     def write(self, vals):
         """Guardar dimensiones en el lote al confirmar (solo en recepciones)"""
-        from odoo.exceptions import UserError
-        
         _logger.info("🟣"*50)
         _logger.info("🟣 [WRITE] write() EJECUTADO en stock.move.line")
         _logger.info("🟣 [WRITE] vals: %s", vals)
