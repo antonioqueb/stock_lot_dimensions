@@ -1,61 +1,86 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Vista Form del Wizard de Hold -->
-    <record id="view_stock_lot_hold_wizard_form" model="ir.ui.view">
-        <field name="name">stock.lot.hold.wizard.form</field>
-        <field name="model">stock.lot.hold.wizard</field>
+    <record id="view_stock_lot_hold_tree" model="ir.ui.view">
+        <field name="name">stock.lot.hold.tree</field>
+        <field name="model">stock.lot.hold</field>
         <field name="arch" type="xml">
-            <form string="Reservar Lote">
-                <group>
-                    <group string="Información del Lote">
-                        <field name="lot_id" readonly="1"/>
-                        <field name="producto_id" readonly="1"/>
-                        <field name="ubicacion_id" readonly="1"/>
-                        <field name="cantidad_disponible" readonly="1"/>
-                    </group>
-                    
-                    <group string="Dimensiones">
-                        <field name="x_formato" readonly="1"/>
-                        <field name="x_grosor" readonly="1"/>
-                        <field name="x_alto" readonly="1"/>
-                        <field name="x_ancho" readonly="1"/>
-                        <field name="x_bloque" readonly="1"/>
-                    </group>
-                </group>
-                
-                <group>
-                    <group string="Reserva">
-                        <field name="partner_id" 
-                               placeholder="Seleccione el cliente..."
-                               options="{'no_create': True}"/>
-                        <field name="fecha_expiracion" readonly="1"/>
-                    </group>
-                    
-                    <group string="Notas">
-                        <field name="notas" 
-                               nolabel="1" 
-                               placeholder="Ej: Para proyecto X, Cotización Y, etc."/>
-                    </group>
-                </group>
-                
-                <div class="alert alert-info" role="alert">
-                    <strong>Nota:</strong> La reserva expirará automáticamente en 10 días. 
-                    Puede renovarla desde la vista de reservas si es necesario.
-                </div>
-                
-                <footer>
-                    <button name="action_crear_hold" 
-                            string="Crear Reserva" 
+            <list string="Reservas de Lotes">
+                <field name="lot_id"/>
+                <field name="producto_id"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="project_id"/>
+                <field name="arquitecto_id"/>
+                <field name="fecha_inicio"/>
+                <field name="fecha_expiracion"/>
+                <field name="dias_restantes" 
+                       decoration-danger="dias_restantes &lt;= 3"
+                       decoration-warning="dias_restantes &lt;= 5 and dias_restantes &gt; 3"/>
+                <field name="estado" 
+                       decoration-success="estado == 'activo'"
+                       decoration-danger="estado == 'expirado'"
+                       decoration-muted="estado == 'cancelado'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_stock_lot_hold_form" model="ir.ui.view">
+        <field name="name">stock.lot.hold.form</field>
+        <field name="model">stock.lot.hold</field>
+        <field name="arch" type="xml">
+            <form string="Reserva de Lote">
+                <header>
+                    <button name="action_renovar_hold" 
+                            string="Renovar Reserva" 
                             type="object" 
-                            class="btn-primary"/>
-                    <button string="Cancelar" 
-                            class="btn-secondary" 
-                            special="cancel"/>
-                </footer>
-                
-                <!-- Campos ocultos necesarios -->
-                <field name="quant_id" invisible="1"/>
+                            class="btn-primary"
+                            invisible="estado != 'activo'"/>
+                    <button name="action_cancelar_hold" 
+                            string="Cancelar Reserva" 
+                            type="object" 
+                            class="btn-warning"
+                            confirm="¿Está seguro de cancelar esta reserva?"
+                            invisible="estado != 'activo'"/>
+                    <field name="estado" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Información del Lote">
+                            <field name="lot_id"/>
+                            <field name="producto_id"/>
+                            <field name="ubicacion_id"/>
+                        </group>
+                        <group string="Información de Reserva">
+                            <field name="user_id"/>
+                            <field name="partner_id"/>
+                            <field name="project_id"/>
+                            <field name="arquitecto_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Fechas">
+                            <field name="fecha_inicio"/>
+                            <field name="fecha_expiracion"/>
+                            <field name="dias_restantes"/>
+                        </group>
+                        <group string="Notas">
+                            <field name="notas" nolabel="1"/>
+                        </group>
+                    </group>
+                </sheet>
             </form>
         </field>
     </record>
+
+    <record id="action_stock_lot_hold" model="ir.actions.act_window">
+        <field name="name">Reservas de Lotes</field>
+        <field name="res_model">stock.lot.hold</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_stock_lot_hold"
+              name="Reservas de Lotes"
+              parent="stock.menu_stock_warehouse_mgmt"
+              action="action_stock_lot_hold"
+              sequence="100"/>
 </odoo>

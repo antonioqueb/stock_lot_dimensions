@@ -26,6 +26,11 @@ class StockMoveLine(models.Model):
         digits=(10, 4),
         help='Ancho del producto en metros (se guardará en el lote)'
     )
+
+    x_tipo_temp = fields.Selection([
+        ('placa', 'Placa'),
+        ('formato', 'Formato'),
+    ], string='Tipo', help='Tipo de producto (se guardará en el lote)')
     
     x_bloque_temp = fields.Char(
         string='Bloque',
@@ -37,31 +42,28 @@ class StockMoveLine(models.Model):
         help='Identificación del atado (se guardará en el lote)'
     )
     
-    x_formato_temp = fields.Selection([
-        ('placa', 'Placa'),
-        ('060x120', '0.60 x 1.20 m'),
-        ('060x060', '0.60 x 0.60 m'),
-        ('060x040', '0.60 x 0.40 m'),
-        ('060x020', '0.60 x 0.20 m'),
-        ('060x010', '0.60 x 0.10 m'),
-        ('060x030', '0.60 x 0.30 m'),
-        ('060xll', '0.60 x LL m'),
-        ('050xll', '0.50 x LL m'),
-        ('040xll', '0.40 x LL m'),
-        ('010xll', '0.10 x LL m'),
-        ('005xll', '0.05 x LL m'),
-        ('080x160', '0.80 x 1.60 m'),
-        ('075x150', '0.75 x 1.50 m'),
-        ('320x160', '3.20 x 1.60 m'),
-        ('020xll', '0.20 x LL m'),
-        ('015xll', '0.15 x LL m'),
-        ('122x061', '1.22 x 0.61 m'),
-        ('100x050', '1.00 x 0.50 m'),
-        ('100x025', '1.00 x 0.25 m'),
-        ('120x278', '1.20 x 2.78 m'),
-        ('300x100', '3.00 x 1.00 m'),
-        ('324x162', '3.24 x 1.62 m'),
-    ], string='Formato', default='placa', help='Formato del producto (se guardará en el lote)')
+   
+    
+    x_grupo_temp = fields.Many2many(
+        'stock.lot.group',
+        string='Grupo',
+        help='Grupos del lote (se guardarán en el lote)'
+    )
+
+    x_pedimento_temp = fields.Char(
+        string='Pedimento',
+        help='Número de pedimento (se guardará en el lote)'
+    )
+
+    x_contenedor_temp = fields.Char(
+        string='Contenedor',
+        help='Número de contenedor (se guardará en el lote)'
+    )
+
+    x_referencia_proveedor_temp = fields.Char(
+        string='Referencia Proveedor',
+        help='Referencia del proveedor (se guardará en el lote)'
+    )
     
     # Campo computed para saber si es recepción
     x_is_incoming = fields.Boolean(
@@ -91,6 +93,14 @@ class StockMoveLine(models.Model):
         readonly=True,
         store=False
     )
+
+    x_tipo_lote = fields.Selection(
+        related='lot_id.x_tipo',
+        string='Tipo Lote',
+        readonly=True,
+        store=False
+    )
+
     
     x_bloque_lote = fields.Char(
         related='lot_id.x_bloque',
@@ -106,9 +116,31 @@ class StockMoveLine(models.Model):
         store=False
     )
     
-    x_formato_lote = fields.Selection(
-        related='lot_id.x_formato',
-        string='Formato Lote',
+
+    x_grupo_lote = fields.Many2many(
+        related='lot_id.x_grupo',
+        string='Grupo Lote',
+        readonly=True,
+        store=False
+    )
+
+    x_pedimento_lote = fields.Char(
+        related='lot_id.x_pedimento',
+        string='Pedimento Lote',
+        readonly=True,
+        store=False
+    )
+
+    x_contenedor_lote = fields.Char(
+        related='lot_id.x_contenedor',
+        string='Contenedor Lote',
+        readonly=True,
+        store=False
+    )
+
+    x_referencia_proveedor_lote = fields.Char(
+        related='lot_id.x_referencia_proveedor',
+        string='Ref. Proveedor Lote',
         readonly=True,
         store=False
     )
@@ -392,8 +424,8 @@ class StockMoveLine(models.Model):
             self.x_alto_temp = self.lot_id.x_alto
             self.x_ancho_temp = self.lot_id.x_ancho
             self.x_bloque_temp = self.lot_id.x_bloque
-            self.x_atado_temp = self.lot_id.x_atado 
-            self.x_formato_temp = self.lot_id.x_formato
+            self.x_atado_temp = self.lot_id.x_atado
+            self.x_tipo_temp = self.lot_id.x_tipo 
             
             if self.picking_id:
                 if self.picking_id.picking_type_code == 'incoming':
@@ -510,7 +542,7 @@ class StockMoveLine(models.Model):
         result = super().write(vals)
         
         # Después del write, verificar si hay dimensiones que guardar en el lote
-        dimension_fields = ['x_grosor_temp', 'x_alto_temp', 'x_ancho_temp', 'x_bloque_temp', 'x_atado_temp', 'x_formato_temp']
+        dimension_fields = ['x_grosor_temp', 'x_alto_temp', 'x_ancho_temp', 'x_bloque_temp', 'x_atado_temp']
         has_dimensions = any(field in vals for field in dimension_fields)
         
         # Si se modificó el lote_id o hay dimensiones, actualizar el lote
@@ -529,8 +561,16 @@ class StockMoveLine(models.Model):
                         lot_vals['x_bloque'] = line.x_bloque_temp
                     if line.x_atado_temp:
                         lot_vals['x_atado'] = line.x_atado_temp
-                    if line.x_formato_temp:
-                        lot_vals['x_formato'] = line.x_formato_temp
+                    if line.x_tipo_temp:
+                        lot_vals['x_tipo'] = line.x_tipo_temp
+                    if line.x_grupo_temp:
+                        lot_vals['x_grupo'] = [(6, 0, line.x_grupo_temp.ids)]
+                    if line.x_pedimento_temp:
+                        lot_vals['x_pedimento'] = line.x_pedimento_temp
+                    if line.x_contenedor_temp:
+                        lot_vals['x_contenedor'] = line.x_contenedor_temp
+                    if line.x_referencia_proveedor_temp:
+                        lot_vals['x_referencia_proveedor'] = line.x_referencia_proveedor_temp
                     
                     if lot_vals:
                         line.lot_id.write(lot_vals)
@@ -571,8 +611,16 @@ class StockMoveLine(models.Model):
                     lot_vals['x_ancho'] = line.x_ancho_temp
                 if line.x_bloque_temp:
                     lot_vals['x_bloque'] = line.x_bloque_temp
-                if line.x_formato_temp:
-                    lot_vals['x_formato'] = line.x_formato_temp
+                if line.x_tipo_temp:
+                    lot_vals['x_tipo'] = line.x_tipo_temp    
+                if line.x_grupo_temp:
+                    lot_vals['x_grupo'] = [(6, 0, line.x_grupo_temp.ids)]
+                if line.x_pedimento_temp:
+                    lot_vals['x_pedimento'] = line.x_pedimento_temp
+                if line.x_contenedor_temp:
+                    lot_vals['x_contenedor'] = line.x_contenedor_temp
+                if line.x_referencia_proveedor_temp:
+                    lot_vals['x_referencia_proveedor'] = line.x_referencia_proveedor_temp
                 
                 if lot_vals:
                     line.lot_id.write(lot_vals)

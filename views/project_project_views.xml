@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_project_project_form_inherit_marmol" model="ir.ui.view">
+        <field name="name">project.project.form.inherit.marmol</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="x_es_proyecto_marmol"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="action_proyectos_marmol" model="ir.actions.act_window">
+        <field name="name">Proyectos de Mármol</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('x_es_proyecto_marmol', '=', True)]</field>
+        <field name="context">{'default_x_es_proyecto_marmol': True}</field>
+    </record>
+
+    <menuitem id="menu_proyectos_marmol"
+              name="Proyectos de Mármol"
+              parent="stock.menu_stock_config_settings"
+              action="action_proyectos_marmol"
+              sequence="52"/>
+</odoo>

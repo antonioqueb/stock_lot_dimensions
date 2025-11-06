@@ -11,20 +11,23 @@
         - Visualizar atributos en reportes de inventario
         - Mostrar estados de reserva y detalles de placas
         - Gestionar reservas manuales (holds) independientes de órdenes de venta
-        - Expiración automática de reservas a los 10 días
+        - Expiración automática de reservas a los 5 días hábiles (lunes a viernes)
     """,
     'author': 'Alphaqueb Consulting',
     'website': 'https://alphaqueb.com',
-    'depends': ['stock', 'sale', 'web'],
+    'depends': ['stock', 'sale', 'web', 'project'],
     'data': [
         'security/ir.model.access.csv',
         'data/stock_lot_hold_cron.xml',
         'views/stock_lot_views.xml',
+        'views/stock_lot_group_views.xml',
         'views/stock_move_views.xml',
         'views/stock_quant_views.xml',
         'views/stock_lot_image_wizard_views.xml',
         'views/stock_lot_hold_views.xml',
         'views/stock_lot_hold_wizard_views.xml',
+        'views/res_partner_views.xml',
+        'views/project_project_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

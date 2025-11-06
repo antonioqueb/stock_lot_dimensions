@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Vista Form del Wizard de Hold -->
     <record id="view_stock_lot_hold_wizard_form" model="ir.ui.view">
         <field name="name">stock.lot.hold.wizard.form</field>
         <field name="model">stock.lot.hold.wizard</field>
@@ -15,7 +14,6 @@
                     </group>
                     
                     <group string="Dimensiones">
-                        <field name="x_formato" readonly="1"/>
                         <field name="x_grosor" readonly="1"/>
                         <field name="x_alto" readonly="1"/>
                         <field name="x_ancho" readonly="1"/>
@@ -25,10 +23,13 @@
                 </group>
                 
                 <group>
-                    <group string="Reserva">
-                        <field name="partner_id" 
-                               placeholder="Seleccione el cliente..."
-                               options="{'no_create': True}"/>
+                    <group string="Información de Reserva">
+                        <field name="user_id"/>
+                        <field name="partner_id" options="{'no_open': True}" context="{'default_customer_rank': 1}"/>
+                        <field name="project_id" invisible="project_name"/>
+                        <field name="project_name" placeholder="O ingrese nuevo proyecto..." invisible="project_id"/>
+                        <field name="arquitecto_id" invisible="arquitecto_name"/>
+                        <field name="arquitecto_name" placeholder="O ingrese nuevo arquitecto..." invisible="arquitecto_id"/>
                         <field name="fecha_expiracion" readonly="1"/>
                     </group>
                     
@@ -40,8 +41,8 @@
                 </group>
                 
                 <div class="alert alert-info" role="alert">
-                    <strong>Nota:</strong> La reserva expirará automáticamente en 10 días. 
-                    Puede renovarla desde la vista de reservas si es necesario.
+                    <strong>Campos obligatorios:</strong> Vendedor, Cliente, Proyecto y Arquitecto son requeridos para crear la reserva.
+                    La reserva expirará automáticamente en 10 días.
                 </div>
                 
                 <footer>
@@ -54,7 +55,6 @@
                             special="cancel"/>
                 </footer>
                 
-                <!-- Campos ocultos necesarios -->
                 <field name="quant_id" invisible="1"/>
             </form>
         </field>

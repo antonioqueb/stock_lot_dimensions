@@ -41,14 +41,22 @@
                             </group>
 
                             <group string="Características" name="characteristics_group">
-                                <!-- <field name="x_acabado" 
-                                       placeholder="Selecciona un acabado..."/> -->
-                                <field name="x_formato" 
-                                       placeholder="Selecciona un formato..."/>
+                                <field name="x_tipo" 
+                                       placeholder="Selecciona tipo..."/>
                                 <field name="x_bloque" 
                                        placeholder="Identificación del bloque"/>
                                 <field name="x_atado" 
                                     placeholder="Identificación del atado"/>
+                                <field name="x_grupo" 
+                                    widget="many2many_tags" 
+                                    options="{'color_field': 'color', 'no_create_edit': True}"
+                                    placeholder="Selecciona grupos..."/>
+                                <field name="x_pedimento" 
+                                    placeholder="Número de pedimento"/>
+                                <field name="x_contenedor" 
+                                    placeholder="Número de contenedor"/>
+                                <field name="x_referencia_proveedor" 
+                                    placeholder="Referencia del proveedor"/>
                             </group>
                         </group>
 
@@ -120,10 +128,13 @@
                 <field name="x_grosor" optional="hide" string="Grosor (cm)"/>
                 <field name="x_alto" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)"/>
-                <!-- <field name="x_acabado" optional="show" string="Acabado"/> -->
+                <field name="x_tipo" optional="show" string="Tipo"/>
                 <field name="x_bloque" optional="show" string="Bloque"/>
                 <field name="x_atado" optional="show" string="Atado"/>
-                <field name="x_formato" optional="show" string="Formato"/>
+                <field name="x_grupo" widget="many2many_tags" optional="show" string="Grupo"/>
+                <field name="x_pedimento" optional="show" string="Pedimento"/>
+                <field name="x_contenedor" optional="show" string="Contenedor"/>
+                <field name="x_referencia_proveedor" optional="show" string="Ref. Proveedor"/>
                 <field name="x_fotografia_principal" 
                        widget="image_preview" 
                        options="{'size': [60, 60]}" 

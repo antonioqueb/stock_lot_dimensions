@@ -13,8 +13,12 @@ class StockQuant(models.Model):
     x_alto = fields.Float(related='lot_id.x_alto', string='Alto', readonly=True)
     x_ancho = fields.Float(related='lot_id.x_ancho', string='Ancho', readonly=True)
     x_bloque = fields.Char(related='lot_id.x_bloque', string='Bloque', readonly=True)
+    x_tipo = fields.Selection(related='lot_id.x_tipo', string='Tipo', readonly=True)
     x_atado = fields.Char(related='lot_id.x_atado', string='Atado', readonly=True)
-    x_formato = fields.Selection(related='lot_id.x_formato', string='Formato', readonly=True)
+    x_grupo = fields.Many2many(related='lot_id.x_grupo', string='Grupo', readonly=True)
+    x_pedimento = fields.Char(related='lot_id.x_pedimento', string='Pedimento', readonly=True)
+    x_contenedor = fields.Char(related='lot_id.x_contenedor', string='Contenedor', readonly=True)
+    x_referencia_proveedor = fields.Char(related='lot_id.x_referencia_proveedor', string='Ref. Proveedor', readonly=True)
     x_fotografia_principal = fields.Binary(related='lot_id.x_fotografia_principal', readonly=True)
     x_cantidad_fotos = fields.Integer(related='lot_id.x_cantidad_fotos', readonly=True)
     x_detalles_placa = fields.Text(related='lot_id.x_detalles_placa', string='Detalles', readonly=True)
@@ -41,19 +45,19 @@ class StockQuant(models.Model):
         help='Indica si la placa tiene detalles especiales registrados'
     )
     
-    # CAMPOS PARA HOLD MANUAL
-    x_tiene_hold = fields.Boolean(
-        string='Tiene Hold',
-        compute='_compute_estado_hold',
-        store=True,
-        help='Indica si el lote tiene una reserva manual activa'
-    )
-    
+    # CAMPOS PARA HOLD MANUAL - RELACIÓN INVERSA
     x_hold_ids = fields.One2many(
         'stock.lot.hold',
         'quant_id',
         string='Reservas Manuales',
         help='Holds/Reservas manuales de este quant'
+    )
+    
+    x_tiene_hold = fields.Boolean(
+        string='Tiene Hold',
+        compute='_compute_estado_hold',
+        store=True,
+        help='Indica si el lote tiene una reserva manual activa'
     )
     
     x_hold_activo_id = fields.Many2one(
@@ -81,7 +85,7 @@ class StockQuant(models.Model):
     x_hold_dias_restantes = fields.Integer(
         string='Días Restantes',
         compute='_compute_estado_hold',
-        help='Días restantes del hold'
+        help='Días hábiles restantes del hold'
     )
     
     # Campo de estado visual combinado
@@ -155,12 +159,13 @@ class StockQuant(models.Model):
             
             # HOLD MANUAL (prioridad más alta)
             if quant.x_tiene_hold:
+                dias_texto = f'{quant.x_hold_dias_restantes} días hábiles' if quant.x_hold_dias_restantes != 1 else '1 día hábil'
                 estados.append({
                     'type': 'hold',
                     'icon': '🔒',
                     'label': f'HOLD para {quant.x_hold_para}',
-                    'detail': f'Expira en {quant.x_hold_dias_restantes} días',
-                    'class': 'text-warning' if quant.x_hold_dias_restantes <= 3 else 'text-info'
+                    'detail': f'Expira en {dias_texto}',
+                    'class': 'text-warning' if quant.x_hold_dias_restantes <= 2 else 'text-info'
                 })
             
             # RESERVA DEL SISTEMA (solo si no tiene hold manual)
@@ -238,9 +243,10 @@ class StockQuant(models.Model):
         
         # Verificar si ya tiene hold activo
         if self.x_tiene_hold:
+            dias_texto = f'{self.x_hold_dias_restantes} días hábiles' if self.x_hold_dias_restantes != 1 else '1 día hábil'
             raise models.UserError(
                 f'Este lote ya tiene una reserva activa para {self.x_hold_para} '
-                f'que expira en {self.x_hold_dias_restantes} días.'
+                f'que expira en {dias_texto}.'
             )
         
         return {
@@ -286,7 +292,155 @@ class StockQuant(models.Model):
                 'message': f'Reserva cancelada para el lote {self.lot_id.name}',
                 'type': 'success',
                 'sticky': False,
+            } 
+        }
+
+    @api.model
+    def get_current_user_info(self):
+        """Obtener información del usuario actual"""
+        return {
+            'id': self.env.user.id,
+            'name': self.env.user.name
+        }
+    
+    @api.model
+    def sync_cart_to_session(self, items):
+        """Sincronizar carrito desde frontend a BD"""
+        cart_model = self.env['shopping.cart']
+        cart_model.clear_cart()
+        
+        for item in items:
+            cart_model.add_to_cart(
+                quant_id=item['id'],
+                lot_id=item['lot_id'],
+                product_id=item['product_id'],
+                quantity=item['quantity'],
+                location_name=item['location_name']
+            )
+        
+        return {'success': True}
+    
+    @api.model
+    def create_holds_from_cart(self, partner_id=None, project_id=None, architect_id=None, 
+                                selected_lots=None, notes=None, currency_code='USD', product_prices=None):
+        """
+        Crear holds múltiples desde el carrito con información de precios
+        
+        Args:
+            partner_id: ID del cliente
+            project_id: ID del proyecto
+            architect_id: ID del arquitecto
+            selected_lots: Lista de IDs de quants a apartar
+            notes: Notas adicionales
+            currency_code: Código de la divisa (USD/MXN)
+            product_prices: Diccionario {product_id: precio}
+        """
+        if not partner_id or not selected_lots:
+            return {
+                'success': 0, 
+                'errors': 1, 
+                'holds': [], 
+                'failed': [{'error': 'Parámetros inválidos'}]
             }
+        
+        if not project_id:
+            return {
+                'success': 0,
+                'errors': 1,
+                'holds': [],
+                'failed': [{'error': 'Debe seleccionar un proyecto'}]
+            }
+        
+        if not architect_id:
+            return {
+                'success': 0,
+                'errors': 1,
+                'holds': [],
+                'failed': [{'error': 'Debe seleccionar un arquitecto'}]
+            }
+        
+        holds_created = []
+        errors = []
+        
+        from datetime import timedelta
+        fecha_inicio = fields.Datetime.now()
+        fecha_actual = fecha_inicio
+        dias_agregados = 0
+        
+        # Calcular fecha de expiración (5 días hábiles)
+        while dias_agregados < 5:
+            fecha_actual += timedelta(days=1)
+            if fecha_actual.weekday() < 5:
+                dias_agregados += 1
+        
+        fecha_expiracion = fecha_actual
+        
+        # Agregar información de precios a las notas
+        notes_with_prices = notes or ''
+        if product_prices:
+            notes_with_prices += f'\n\n=== PRECIOS ({currency_code}) ===\n'
+            for product_id_str, price in product_prices.items():
+                try:
+                    product = self.env['product.product'].browse(int(product_id_str))
+                    if product.exists():
+                        notes_with_prices += f'• {product.display_name}: {price:.2f} {currency_code}/m²\n'
+                except Exception as e:
+                    _logger.warning(f"Error agregando precio para producto {product_id_str}: {str(e)}")
+        
+        # Crear holds para cada lote
+        for quant_id in selected_lots:
+            quant = self.browse(quant_id)
+            
+            if not quant.exists() or not quant.lot_id:
+                errors.append({
+                    'quant_id': quant_id, 
+                    'error': 'Quant no válido o sin lote'
+                })
+                continue
+            
+            if quant.x_tiene_hold:
+                errors.append({
+                    'lot_name': quant.lot_id.name, 
+                    'error': f'Ya apartado para {quant.x_hold_para}'
+                })
+                continue
+            
+            try:
+                hold = self.env['stock.lot.hold'].create({
+                    'lot_id': quant.lot_id.id,
+                    'quant_id': quant.id,
+                    'partner_id': partner_id,
+                    'user_id': self.env.user.id,
+                    'project_id': project_id,
+                    'arquitecto_id': architect_id,
+                    'fecha_inicio': fecha_inicio,
+                    'fecha_expiracion': fecha_expiracion,
+                    'notas': notes_with_prices,
+                })
+                
+                holds_created.append({
+                    'lot_name': quant.lot_id.name,
+                    'hold_id': hold.id,
+                    'expira': hold.fecha_expiracion.strftime('%d/%m/%Y %H:%M')
+                })
+            except Exception as e:
+                errors.append({
+                    'lot_name': quant.lot_id.name, 
+                    'error': str(e)
+                })
+        
+        # Limpiar carrito después de crear holds exitosamente
+        if holds_created:
+            try:
+                self.env['shopping.cart'].clear_cart()
+            except Exception as e:
+                _logger.warning(f"Error al limpiar carrito: {str(e)}")
+        
+        return {
+            'success': len(holds_created),
+            'errors': len(errors),
+            'holds': holds_created,
+            'failed': errors
         }
 
     def _gather(self, product_id, location_id, lot_id=None, package_id=None, owner_id=None, strict=False, qty=None):

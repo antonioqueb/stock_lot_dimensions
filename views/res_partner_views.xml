@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_inherit_arquitecto" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.arquitecto</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <field name="category_id" position="after">
+                <field name="x_es_arquitecto"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="action_arquitectos" model="ir.actions.act_window">
+        <field name="name">Arquitectos</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('x_es_arquitecto', '=', True)]</field>
+        <field name="context">{'default_x_es_arquitecto': True, 'default_company_type': 'person'}</field>
+    </record>
+
+    <menuitem id="menu_arquitectos"
+              name="Arquitectos"
+              parent="stock.menu_stock_config_settings"
+              action="action_arquitectos"
+              sequence="51"/>
+</odoo>
