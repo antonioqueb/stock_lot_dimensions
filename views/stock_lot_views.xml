@@ -144,4 +144,102 @@
         </field>
     </record>
 
+   <!-- Vista Kanban independiente para galería de fotos -->
+    <record id="view_stock_lot_image_kanban" model="ir.ui.view">
+        <field name="name">stock.lot.image.kanban</field>
+        <field name="model">stock.lot.image</field>
+        <field name="arch" type="xml">
+            <kanban string="Fotografías" class="o_kanban_ungrouped">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="image"/>
+                <field name="sequence"/>
+                <field name="notas"/>
+                <field name="fecha_captura"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click" style="width: 280px; height: 380px; margin: 10px; display: inline-block; vertical-align: top;">
+                            <div class="o_kanban_image" style="width: 280px; height: 280px; background: #1a1a1a; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px 8px 0 0; position: relative;">
+                                <img t-att-src="kanban_image('stock.lot.image', 'image', record.id.raw_value)" 
+                                     t-att-alt="record.name.value"
+                                     style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"/>
+                            </div>
+                            <div class="oe_kanban_details" style="padding: 12px; background: #fff; border-radius: 0 0 8px 8px; height: 100px; overflow: hidden;">
+                                <div class="o_kanban_record_top" style="margin-bottom: 6px;">
+                                    <strong class="o_kanban_record_title" style="font-size: 13px; color: #2c3e50; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        <field name="name"/>
+                                    </strong>
+                                </div>
+                                <div class="o_kanban_record_body" style="margin-bottom: 6px; color: #7f8c8d; font-size: 12px; max-height: 36px; overflow: hidden; text-overflow: ellipsis;">
+                                    <field name="notas"/>
+                                </div>
+                                <div class="o_kanban_record_bottom">
+                                    <span class="text-muted" style="font-size: 11px;">
+                                        <i class="fa fa-clock-o"/> 
+                                        <field name="fecha_captura" widget="datetime"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Vista Form para ver foto en tamaño completo -->
+    <record id="view_stock_lot_image_form" model="ir.ui.view">
+        <field name="name">stock.lot.image.form</field>
+        <field name="model">stock.lot.image</field>
+        <field name="arch" type="xml">
+            <form string="Fotografía">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nombre de la fotografía"/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="lot_id" readonly="1"/>
+                            <field name="sequence"/>
+                            <field name="fecha_captura" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="notas" placeholder="Notas sobre esta fotografía..."/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Imagen Original">
+                            <div style="text-align: center; padding: 20px; background: #f8f9fa;">
+                                <field name="image" 
+                                       widget="image" 
+                                       options="{'size': [0, 0]}"
+                                       style="max-width: 100%; height: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px;"/>
+                            </div>
+                        </page>
+                        <page string="Vista Previa">
+                            <div style="text-align: center; padding: 20px;">
+                                <field name="image_small" 
+                                       widget="image" 
+                                       readonly="1"
+                                       style="max-width: 400px; height: auto;"/>
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción para abrir galería de fotos -->
+    <record id="action_stock_lot_image_gallery" model="ir.actions.act_window">
+        <field name="name">Galería de Fotografías</field>
+        <field name="res_model">stock.lot.image</field>
+        <field name="view_mode">kanban,form</field>
+        <field name="view_id" ref="view_stock_lot_image_kanban"/>
+    </record>
+
 </odoo>

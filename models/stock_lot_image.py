@@ -1,23 +1,22 @@
 # -*- coding: utf-8 -*-
+# models/stock_lot_image.py
 from odoo import models, fields, api
+from .utils.image_processor import ImageProcessor
+from .utils.metadata_fields import MetadataFields
+
 
 class StockLotImage(models.Model):
     _name = 'stock.lot.image'
     _description = 'Fotografías de Lotes'
-    _order = 'sequence, id'
-
-    name = fields.Char(
-        string='Nombre',
-        required=True,
-        default='Fotografía'
-    )
+    _order = ImageProcessor.get_default_order()
     
-    sequence = fields.Integer(
-        string='Secuencia',
-        default=10,
-        help='Orden de visualización de las fotografías'
-    )
+    # ==================== CAMPOS METADATA ====================
+    name = MetadataFields.get_name_field(default_name='Fotografía')
+    sequence = MetadataFields.get_sequence_field(default=10)
+    notas = MetadataFields.get_notes_field()
+    fecha_captura = MetadataFields.get_capture_date_field()
     
+    # ==================== CAMPOS DE RELACIÓN ====================
     lot_id = fields.Many2one(
         'stock.lot',
         string='Lote',
@@ -26,6 +25,7 @@ class StockLotImage(models.Model):
         index=True
     )
     
+    # ==================== CAMPOS DE IMAGEN ====================
     image = fields.Binary(
         string='Imagen',
         required=True,
@@ -38,22 +38,8 @@ class StockLotImage(models.Model):
         store=True
     )
     
-    fecha_captura = fields.Datetime(
-        string='Fecha de Captura',
-        default=fields.Datetime.now,
-        readonly=True
-    )
-    
-    notas = fields.Text(
-        string='Notas'
-    )
-
+    # ==================== MÉTODOS COMPUTADOS ====================
     @api.depends('image')
     def _compute_image_small(self):
         """Generar miniatura de la imagen"""
-        for record in self:
-            if record.image:
-                # Odoo maneja automáticamente el redimensionamiento
-                record.image_small = record.image
-            else:
-                record.image_small = False
+        ImageProcessor.compute_thumbnail(self)

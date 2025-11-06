@@ -1,0 +1,43 @@
+/* Galería de imágenes - Vista Kanban mejorada */
+.o_kanban_view .o_kanban_ungrouped {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 20px;
+    gap: 15px;
+}
+
+.o_kanban_view .oe_kanban_card {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    transition: all 0.3s ease;
+    background: #fff;
+    border-radius: 8px;
+}
+
+.o_kanban_view .oe_kanban_card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+}
+
+.o_kanban_view .o_kanban_image img {
+    transition: transform 0.3s ease;
+}
+
+.o_kanban_view .oe_kanban_card:hover .o_kanban_image img {
+    transform: scale(1.05);
+}
+
+/* Formulario de imagen */
+.o_form_view .o_field_image img {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    max-width: 100%;
+    height: auto;
+}
+
+/* Asegurar que el kanban no tenga grupos */
+.o_kanban_view.o_kanban_ungrouped > .o_kanban_record {
+    display: inline-block;
+    vertical-align: top;
+}

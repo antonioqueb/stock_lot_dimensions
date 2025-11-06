@@ -1,18 +1,25 @@
-# ./models/stock_lot_hold.py
 # -*- coding: utf-8 -*-
+# models/stock_lot_hold.py
 from odoo import models, fields, api
 from odoo.exceptions import UserError
-from datetime import timedelta
+from .utils.business_days import BusinessDaysCalculator
+from .utils.notification_builder import NotificationBuilder
 import logging
 
 _logger = logging.getLogger(__name__)
+
 
 class StockLotHold(models.Model):
     _name = 'stock.lot.hold'
     _description = 'Reservas Manuales de Lotes'
     _order = 'fecha_inicio desc'
     
-    name = fields.Char(string='Referencia', compute='_compute_name', store=True)
+    # ==================== CAMPOS BÁSICOS ====================
+    name = fields.Char(
+        string='Referencia',
+        compute='_compute_name',
+        store=True
+    )
     
     quant_id = fields.Many2one(
         'stock.quant',
@@ -30,6 +37,7 @@ class StockLotHold(models.Model):
         index=True
     )
     
+    # ==================== CAMPOS RELACIONADOS ====================
     producto_id = fields.Many2one(
         'product.product',
         string='Producto',
@@ -46,6 +54,7 @@ class StockLotHold(models.Model):
         readonly=True
     )
     
+    # ==================== CAMPOS DE RESERVA ====================
     partner_id = fields.Many2one(
         'res.partner',
         string='Cliente',
@@ -74,6 +83,7 @@ class StockLotHold(models.Model):
         readonly=True
     )
     
+    # ==================== CAMPOS DE FECHAS ====================
     fecha_inicio = fields.Datetime(
         string='Fecha Inicio',
         default=fields.Datetime.now,
@@ -87,11 +97,18 @@ class StockLotHold(models.Model):
         readonly=True
     )
     
-    estado = fields.Selection([
-        ('activo', 'Activo'),
-        ('expirado', 'Expirado'),
-        ('cancelado', 'Cancelado'),
-    ], string='Estado', default='activo', required=True, index=True)
+    # ==================== CAMPOS DE ESTADO ====================
+    estado = fields.Selection(
+        [
+            ('activo', 'Activo'),
+            ('expirado', 'Expirado'),
+            ('cancelado', 'Cancelado'),
+        ],
+        string='Estado',
+        default='activo',
+        required=True,
+        index=True
+    )
     
     notas = fields.Text(string='Notas')
     
@@ -99,79 +116,79 @@ class StockLotHold(models.Model):
         string='Días Hábiles Restantes',
         compute='_compute_dias_restantes'
     )
-
+    
+    # ==================== MÉTODOS COMPUTADOS ====================
     @api.depends('lot_id', 'partner_id')
     def _compute_name(self):
+        """Genera referencia del hold"""
         for record in self:
             if record.lot_id and record.partner_id:
                 record.name = f"{record.lot_id.name} - {record.partner_id.name}"
             else:
                 record.name = "Hold"
-
+    
     @api.depends('fecha_expiracion', 'estado')
     def _compute_dias_restantes(self):
+        """Calcula días hábiles restantes hasta expiración"""
         ahora = fields.Datetime.now()
+        
         for record in self:
-            if record.estado != 'activo':
-                record.dias_restantes = 0
-            elif record.fecha_expiracion <= ahora:
+            if record.estado != 'activo' or record.fecha_expiracion <= ahora:
                 record.dias_restantes = 0
             else:
-                record.dias_restantes = record._calcular_dias_habiles_entre(ahora, record.fecha_expiracion)
-
-    def _calcular_dias_habiles_entre(self, fecha_inicio, fecha_fin):
-        dias = 0
-        fecha_actual = fecha_inicio
-        while fecha_actual.date() < fecha_fin.date():
-            if fecha_actual.weekday() < 5:
-                dias += 1
-            fecha_actual += timedelta(days=1)
-        return dias
-
-    def _calcular_dias_habiles(self, fecha_inicio, dias_habiles):
-        fecha_actual = fecha_inicio
-        dias_agregados = 0
-        while dias_agregados < dias_habiles:
-            fecha_actual += timedelta(days=1)
-            if fecha_actual.weekday() < 5:
-                dias_agregados += 1
-        return fecha_actual
-
+                record.dias_restantes = BusinessDaysCalculator.count_business_days(
+                    ahora, 
+                    record.fecha_expiracion
+                )
+    
+    # ==================== MÉTODOS DE CREACIÓN ====================
     @api.model
     def create(self, vals):
+        """
+        Override para calcular fecha de expiración automáticamente
+        si no se proporciona (5 días hábiles por defecto)
+        """
         if 'fecha_expiracion' not in vals and vals.get('fecha_inicio'):
             fecha_inicio = fields.Datetime.to_datetime(vals['fecha_inicio'])
-            vals['fecha_expiracion'] = self._calcular_dias_habiles(fecha_inicio, 5)
+            vals['fecha_expiracion'] = BusinessDaysCalculator.add_business_days(
+                fecha_inicio, 
+                5
+            )
+        
         return super().create(vals)
-
+    
+    # ==================== ACCIONES ====================
     def action_renovar_hold(self):
+        """Renueva la reserva por 5 días hábiles más"""
         self.ensure_one()
+        
         if self.estado != 'activo':
             raise UserError('Solo se pueden renovar reservas activas.')
         
-        nueva_expiracion = self._calcular_dias_habiles(fields.Datetime.now(), 5)
+        nueva_expiracion = BusinessDaysCalculator.get_expiration_date(days=5)
         self.write({'fecha_expiracion': nueva_expiracion})
         
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': '¡Renovado!',
-                'message': f'Reserva extendida hasta {nueva_expiracion.strftime("%d/%m/%Y %H:%M")}',
-                'type': 'success',
-            }
-        }
-
+        mensaje = f'Reserva extendida hasta {nueva_expiracion.strftime("%d/%m/%Y %H:%M")}'
+        return NotificationBuilder.build_success('¡Renovado!', mensaje)
+    
     def action_cancelar_hold(self):
+        """Cancela la reserva activa"""
         self.ensure_one()
+        
         if self.estado != 'activo':
             raise UserError('Esta reserva ya no está activa.')
         
         self.write({'estado': 'cancelado'})
-
+    
+    # ==================== CRON ====================
     @api.model
     def _cron_expire_holds(self):
+        """
+        Cron job para expirar automáticamente reservas vencidas
+        Se ejecuta cada hora
+        """
         ahora = fields.Datetime.now()
+        
         holds_expirados = self.search([
             ('estado', '=', 'activo'),
             ('fecha_expiracion', '<=', ahora)
@@ -179,4 +196,4 @@ class StockLotHold(models.Model):
         
         if holds_expirados:
             holds_expirados.write({'estado': 'expirado'})
-            _logger.info(f"Se expiraron {len(holds_expirados)} reservas de lotes")
+            _logger.info("Expiradas %d reservas de lotes", len(holds_expirados))
