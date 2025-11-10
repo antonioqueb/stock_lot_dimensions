@@ -142,20 +142,27 @@ class StockLotHold(models.Model):
                 )
     
     # ==================== MÉTODOS DE CREACIÓN ====================
-    @api.model
-    def create(self, vals):
+    @api.model_create_multi
+    def create(self, vals_list):
         """
         Override para calcular fecha de expiración automáticamente
         si no se proporciona (5 días hábiles por defecto)
-        """
-        if 'fecha_expiracion' not in vals and vals.get('fecha_inicio'):
-            fecha_inicio = fields.Datetime.to_datetime(vals['fecha_inicio'])
-            vals['fecha_expiracion'] = BusinessDaysCalculator.add_business_days(
-                fecha_inicio, 
-                5
-            )
         
-        return super().create(vals)
+        IMPORTANTE: En Odoo 19, el método create siempre recibe una lista de diccionarios (vals_list)
+        incluso cuando se crea un solo registro.
+        """
+        # Iterar sobre cada diccionario en la lista
+        for vals in vals_list:
+            # Ahora vals SÍ es un diccionario
+            if 'fecha_expiracion' not in vals and vals.get('fecha_inicio'):
+                fecha_inicio = fields.Datetime.to_datetime(vals['fecha_inicio'])
+                vals['fecha_expiracion'] = BusinessDaysCalculator.add_business_days(
+                    fecha_inicio, 
+                    5
+                )
+        
+        # Llamar al super con vals_list completo
+        return super(StockLotHold, self).create(vals_list)
     
     # ==================== ACCIONES ====================
     def action_renovar_hold(self):

@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Atributos Adicionales para Lotes',
+<<<<<<< HEAD
     'version': '19.0.2.0.0',
+=======
+    'version': '19.0.1.0.0',
+>>>>>>> 871f308 (Up)
     'category': 'Inventory/Inventory',
     'summary': 'Captura dimensiones, fotografías y gestión de reservas manuales (hold) en lotes',
     'description': """
