@@ -5,6 +5,7 @@
         <field name="model">stock.lot.hold</field>
         <field name="arch" type="xml">
             <list string="Reservas de Lotes">
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
                 <field name="lot_id"/>
                 <field name="producto_id"/>
                 <field name="partner_id"/>
@@ -46,6 +47,7 @@
                 <sheet>
                     <group>
                         <group string="Información del Lote">
+                            <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}" readonly="1"/>
                             <field name="lot_id"/>
                             <field name="producto_id"/>
                             <field name="ubicacion_id"/>

@@ -2,8 +2,10 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_stock_lot_image_user,access_stock_lot_image_user,model_stock_lot_image,stock.group_stock_user,1,1,1,1
 access_stock_lot_image_manager,access_stock_lot_image_manager,model_stock_lot_image,stock.group_stock_manager,1,1,1,1
 access_stock_lot_image_wizard_user,access_stock_lot_image_wizard_user,model_stock_lot_image_wizard,stock.group_stock_user,1,1,1,1
-access_stock_lot_hold_user,access_stock_lot_hold_user,model_stock_lot_hold,stock.group_stock_user,1,1,1,0
-access_stock_lot_hold_manager,access_stock_lot_hold_manager,model_stock_lot_hold,stock.group_stock_manager,1,1,1,1
+access_stock_lot_hold_user,stock.lot.hold.user,model_stock_lot_hold,stock.group_stock_user,1,1,1,0
+access_stock_lot_hold_manager,stock.lot.hold.manager,model_stock_lot_hold,stock.group_stock_manager,1,1,1,1
+access_stock_lot_hold_multi_company,stock.lot.hold.multi.company,model_stock_lot_hold,base.group_multi_company,1,0,0,0
 access_stock_lot_hold_wizard_user,access_stock_lot_hold_wizard_user,model_stock_lot_hold_wizard,stock.group_stock_user,1,1,1,1
 access_stock_lot_group_user,access_stock_lot_group_user,model_stock_lot_group,stock.group_stock_user,1,1,1,0
 access_stock_lot_group_manager,access_stock_lot_group_manager,model_stock_lot_group,stock.group_stock_manager,1,1,1,1
+access_stock_lot_hold_multi_company,stock.lot.hold.multi.company,model_stock_lot_hold,base.group_multi_company,1,0,0,0

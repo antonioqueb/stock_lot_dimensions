@@ -176,7 +176,7 @@ class StockMoveLine(models.Model):
     # ==================== VALIDACIONES DE HOLDS ====================
     @api.constrains('lot_id', 'picking_id', 'state')
     def _check_lot_hold(self):
-        """Validación de holds al asignar/confirmar lotes"""
+        """Validación de holds al asignar/confirmar lotes con soporte multi-compañía"""
         # Bypass si ya se validó
         if self._context.get('skip_hold_validation'):
             return
@@ -196,12 +196,16 @@ class StockMoveLine(models.Model):
             if not partner:
                 continue
             
-            # Validar hold
+            # Obtener compañía del picking
+            company_id = line.picking_id.company_id.id if line.picking_id.company_id else self.env.company.id
+            
+            # Validar hold considerando compañía
             try:
                 validator.validate_lot_assignment(
                     line.lot_id.id,
                     line.location_id.id,
-                    partner.id
+                    partner.id,
+                    company_id
                 )
             except ValidationError:
                 raise
@@ -209,7 +213,7 @@ class StockMoveLine(models.Model):
     # ==================== ONCHANGE - FILTRADO DE LOTES ====================
     @api.onchange('product_id', 'location_id', 'picking_id')
     def _onchange_product_location_filter_lots(self):
-        """Filtrar lotes disponibles según holds del cliente"""
+        """Filtrar lotes disponibles según holds del cliente y compañía"""
         if not self.product_id or not self.picking_id:
             return {}
         
@@ -223,11 +227,15 @@ class StockMoveLine(models.Model):
         if not partner or not self.location_id:
             return {'domain': {'lot_id': [('id', '=', False)]}}
         
-        # Obtener lotes disponibles
+        # Obtener compañía del picking
+        company_id = self.picking_id.company_id.id if self.picking_id.company_id else self.env.company.id
+        
+        # Obtener lotes disponibles considerando compañía
         available_lots = validator.get_available_lots(
             self.product_id.id,
             self.location_id.id,
-            partner.id
+            partner.id,
+            company_id
         )
         
         if available_lots:
@@ -288,7 +296,7 @@ class StockMoveLine(models.Model):
     
     # ==================== WRITE ====================
     def write(self, vals):
-        """Guardar dimensiones en el lote y validar holds"""
+        """Guardar dimensiones en el lote y validar holds con soporte multi-compañía"""
         # Validar hold si se está cambiando el lote
         if 'lot_id' in vals and vals['lot_id']:
             self._validate_lot_hold_on_write(vals['lot_id'])
@@ -305,7 +313,7 @@ class StockMoveLine(models.Model):
         return result
     
     def _validate_lot_hold_on_write(self, new_lot_id):
-        """Valida hold al cambiar lote en write"""
+        """Valida hold al cambiar lote en write con soporte multi-compañía"""
         validator = HoldValidator(self.env)
         
         for line in self:
@@ -317,11 +325,15 @@ class StockMoveLine(models.Model):
             if not partner:
                 continue
             
+            # Obtener compañía del picking
+            company_id = line.picking_id.company_id.id if line.picking_id.company_id else self.env.company.id
+            
             try:
                 validator.validate_lot_assignment(
                     new_lot_id,
                     line.location_id.id,
-                    partner.id
+                    partner.id,
+                    company_id
                 )
             except ValidationError:
                 raise
@@ -439,7 +451,7 @@ class StockLot(models.Model):
     
     @api.model
     def name_search(self, name='', args=None, operator='ilike', limit=100):
-        """Filtrado adicional de lotes en búsqueda considerando holds"""
+        """Filtrado adicional de lotes en búsqueda considerando holds y multi-compañía"""
         move_line_id = self.env.context.get('move_line_id')
         
         if move_line_id:
@@ -451,11 +463,19 @@ class StockLot(models.Model):
                 partner = validator.get_customer_from_picking(move_line)
                 
                 if partner:
-                    # Obtener lotes disponibles
+                    # Obtener compañía del picking
+                    company_id = (
+                        move_line.picking_id.company_id.id 
+                        if move_line.picking_id.company_id 
+                        else self.env.company.id
+                    )
+                    
+                    # Obtener lotes disponibles considerando compañía
                     available_lots = validator.get_available_lots(
                         move_line.product_id.id,
                         move_line.location_id.id,
-                        partner.id
+                        partner.id,
+                        company_id
                     )
                     
                     # Actualizar args

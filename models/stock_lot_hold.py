@@ -37,6 +37,15 @@ class StockLotHold(models.Model):
         index=True
     )
     
+    company_id = fields.Many2one(
+        'res.company',
+        string='Compañía',
+        required=True,
+        default=lambda self: self.env.company,
+        index=True,
+        readonly=True
+    )
+    
     # ==================== CAMPOS RELACIONADOS ====================
     producto_id = fields.Many2one(
         'product.product',
@@ -117,13 +126,21 @@ class StockLotHold(models.Model):
         compute='_compute_dias_restantes'
     )
     
+    # ==================== CONSTRAINTS ====================
+    _sql_constraints = [
+        ('unique_active_hold_per_company', 
+         'UNIQUE(quant_id, company_id, estado)',
+         'Solo puede haber una reserva activa por lote y compañía.')
+    ]
+    
     # ==================== MÉTODOS COMPUTADOS ====================
-    @api.depends('lot_id', 'partner_id')
+    @api.depends('lot_id', 'partner_id', 'company_id')
     def _compute_name(self):
         """Genera referencia del hold"""
         for record in self:
             if record.lot_id and record.partner_id:
-                record.name = f"{record.lot_id.name} - {record.partner_id.name}"
+                company_suffix = f" ({record.company_id.name})" if record.company_id else ""
+                record.name = f"{record.lot_id.name} - {record.partner_id.name}{company_suffix}"
             else:
                 record.name = "Hold"
     
@@ -145,23 +162,40 @@ class StockLotHold(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         """
-        Override para calcular fecha de expiración automáticamente
-        si no se proporciona (5 días hábiles por defecto)
-        
-        IMPORTANTE: En Odoo 19, el método create siempre recibe una lista de diccionarios (vals_list)
-        incluso cuando se crea un solo registro.
+        Override para:
+        1. Calcular fecha de expiración automáticamente si no se proporciona
+        2. Asignar compañía por defecto si no viene en vals
+        3. Validar que no exista otro hold activo para el mismo quant en la misma compañía
         """
-        # Iterar sobre cada diccionario en la lista
         for vals in vals_list:
-            # Ahora vals SÍ es un diccionario
+            # Asegurar que tenga company_id
+            if 'company_id' not in vals:
+                vals['company_id'] = self.env.company.id
+            
+            # Calcular fecha de expiración si no se proporciona
             if 'fecha_expiracion' not in vals and vals.get('fecha_inicio'):
                 fecha_inicio = fields.Datetime.to_datetime(vals['fecha_inicio'])
                 vals['fecha_expiracion'] = BusinessDaysCalculator.add_business_days(
                     fecha_inicio, 
                     5
                 )
+            
+            # Validar hold duplicado para la misma compañía
+            if vals.get('quant_id') and vals.get('company_id'):
+                hold_existente = self.search([
+                    ('quant_id', '=', vals['quant_id']),
+                    ('company_id', '=', vals['company_id']),
+                    ('estado', '=', 'activo')
+                ], limit=1)
+                
+                if hold_existente:
+                    quant = self.env['stock.quant'].browse(vals['quant_id'])
+                    company = self.env['res.company'].browse(vals['company_id'])
+                    raise UserError(
+                        f'Ya existe una reserva activa para el lote {quant.lot_id.name} '
+                        f'en la compañía {company.name}. Cliente: {hold_existente.partner_id.name}'
+                    )
         
-        # Llamar al super con vals_list completo
         return super(StockLotHold, self).create(vals_list)
     
     # ==================== ACCIONES ====================
@@ -192,15 +226,21 @@ class StockLotHold(models.Model):
     def _cron_expire_holds(self):
         """
         Cron job para expirar automáticamente reservas vencidas
-        Se ejecuta cada hora
+        Se ejecuta cada hora para TODAS las compañías
         """
         ahora = fields.Datetime.now()
         
+        # Buscar holds expirados de la compañía actual
         holds_expirados = self.search([
             ('estado', '=', 'activo'),
-            ('fecha_expiracion', '<=', ahora)
+            ('fecha_expiracion', '<=', ahora),
+            ('company_id', '=', self.env.company.id)
         ])
         
         if holds_expirados:
             holds_expirados.write({'estado': 'expirado'})
-            _logger.info("Expiradas %d reservas de lotes", len(holds_expirados))
+            _logger.info(
+                "Expiradas %d reservas de lotes en compañía %s", 
+                len(holds_expirados),
+                self.env.company.name
+            )

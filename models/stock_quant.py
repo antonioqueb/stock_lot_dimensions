@@ -112,11 +112,17 @@ class StockQuant(models.Model):
                 quant.x_detalles_placa.strip()
             )
     
-    @api.depends('x_hold_ids.estado', 'x_hold_ids.fecha_expiracion')
+    @api.depends('x_hold_ids.estado', 'x_hold_ids.fecha_expiracion', 'x_hold_ids.company_id', 'company_id')
     def _compute_estado_hold(self):
-        """Computar el estado del hold manual"""
+        """Computar el estado del hold manual de la compañía actual"""
         for quant in self:
-            hold_activo = quant.x_hold_ids.filtered(lambda h: h.estado == 'activo')
+            # Obtener compañía del quant
+            company_id = quant.company_id.id if quant.company_id else self.env.company.id
+            
+            # Buscar hold activo de la misma compañía
+            hold_activo = quant.x_hold_ids.filtered(
+                lambda h: h.estado == 'activo' and h.company_id.id == company_id
+            )
             
             if hold_activo:
                 # Tomar el más reciente si hay múltiples
@@ -348,6 +354,7 @@ class StockQuant(models.Model):
         Solo incluye quants:
         - Sin hold, o
         - Con hold para el cliente permitido en contexto
+        - Considerando la compañía del contexto
         """
         # Llamar al método original
         quants = super(StockQuant, self)._gather(
@@ -360,7 +367,7 @@ class StockQuant(models.Model):
     
     def _filter_quants_by_hold(self, quants):
         """
-        Filtra quants según holds del cliente permitido
+        Filtra quants según holds del cliente permitido Y compañía
         
         Args:
             quants: recordset de stock.quant
@@ -369,6 +376,7 @@ class StockQuant(models.Model):
             recordset: Quants filtrados
         """
         cliente_permitido_id = self._context.get('allowed_partner_id')
+        company_id = self._context.get('company_id') or self.env.company.id
         
         # Sin cliente en contexto → retornar todos
         if not cliente_permitido_id:
@@ -377,18 +385,19 @@ class StockQuant(models.Model):
         quants_validos = self.env['stock.quant']
         
         for quant in quants:
-            if self._is_quant_available_for_customer(quant, cliente_permitido_id):
+            if self._is_quant_available_for_customer(quant, cliente_permitido_id, company_id):
                 quants_validos |= quant
         
         return quants_validos
     
-    def _is_quant_available_for_customer(self, quant, customer_id):
+    def _is_quant_available_for_customer(self, quant, customer_id, company_id):
         """
-        Verifica si un quant está disponible para un cliente
+        Verifica si un quant está disponible para un cliente considerando compañía
         
         Args:
             quant: stock.quant record
             customer_id: int - ID del cliente
+            company_id: int - ID de la compañía
             
         Returns:
             bool: True si está disponible
@@ -397,8 +406,13 @@ class StockQuant(models.Model):
         if not quant.x_tiene_hold:
             return True
         
-        # Con hold → verificar que sea para este cliente
+        # Con hold → verificar cliente Y compañía
         if quant.x_hold_activo_id:
+            # Verificar que el hold sea de la misma compañía
+            if quant.x_hold_activo_id.company_id.id != company_id:
+                return True  # Hold de otra compañía no aplica, el lote está disponible
+            
+            # Hold de la misma compañía → verificar cliente
             hold_partner_id = quant.x_hold_activo_id.partner_id.id
             return hold_partner_id == customer_id
         

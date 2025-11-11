@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- Cron Job para expirar reservas automáticamente -->
+    <!-- El cron debe respetar compañías -->
     <record id="ir_cron_expire_lot_holds" model="ir.cron">
         <field name="name">Expirar Reservas de Lotes</field>
         <field name="model_id" ref="model_stock_lot_hold"/>
         <field name="state">code</field>
-        <field name="code">model._cron_expire_holds()</field>
+        <field name="code">
+companies = env['res.company'].search([])
+for company in companies:
+    model.with_company(company)._cron_expire_holds()
+        </field>
         <field name="interval_number">1</field>
         <field name="interval_type">hours</field>
         <field name="active">True</field>

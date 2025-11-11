@@ -16,6 +16,7 @@ class StockPicking(models.Model):
         """
         Override para filtrar quants con hold al reservar
         Añade el contexto de cliente permitido para filtrado FIFO/LIFO
+        Considera multi-compañía
         """
         for picking in self:
             if self._should_filter_by_hold(picking):
@@ -41,6 +42,7 @@ class StockPicking(models.Model):
         """
         Validar holds antes de validar el picking
         Verifica que los lotes asignados no tengan holds de otros clientes
+        Considera multi-compañía
         """
         self._validate_holds_before_transfer()
         
@@ -71,14 +73,23 @@ class StockPicking(models.Model):
             picking: stock.picking record
             
         Returns:
-            dict: Contexto actualizado
+            dict: Contexto actualizado con allowed_partner_id y company_id
         """
         company_id = picking.company_id.id if picking.company_id else self.env.company.id
         
-        return {
+        context = {
             'allowed_partner_id': picking.partner_id.id,
             'company_id': company_id
         }
+        
+        _logger.debug(
+            "Contexto de holds para picking %s: Cliente=%s, Compañía=%s",
+            picking.name,
+            picking.partner_id.name,
+            company_id
+        )
+        
+        return context
     
     def _clear_auto_assigned_lots_from_sales(self):
         """Limpia lotes automáticos solo de pickings que vienen de sale orders"""
@@ -98,9 +109,10 @@ class StockPicking(models.Model):
     def _validate_holds_before_transfer(self):
         """
         Valida que todos los lotes asignados no tengan holds de otros clientes
+        Considera multi-compañía: solo valida holds de la misma compañía
         
         Raises:
-            UserError: Si algún lote está reservado para otro cliente
+            UserError: Si algún lote está reservado para otro cliente en la misma compañía
         """
         validator = HoldValidator(self.env)
         
@@ -111,11 +123,18 @@ class StockPicking(models.Model):
             
             company_id = picking.company_id.id if picking.company_id else self.env.company.id
             
+            _logger.debug(
+                "Validando holds para picking %s en compañía %s",
+                picking.name,
+                company_id
+            )
+            
             self._validate_picking_move_lines(picking, validator, company_id)
     
     def _validate_picking_move_lines(self, picking, validator, company_id):
         """
         Valida las move lines de un picking específico
+        Solo considera holds de la misma compañía
         
         Args:
             picking: stock.picking record
@@ -123,13 +142,13 @@ class StockPicking(models.Model):
             company_id: int - ID de la empresa
             
         Raises:
-            UserError: Si algún lote tiene hold de otro cliente
+            UserError: Si algún lote tiene hold de otro cliente en la misma compañía
         """
         for move_line in picking.move_line_ids:
             if not move_line.lot_id:
                 continue
             
-            # Buscar quant con hold activo
+            # Buscar quant con hold activo en la misma compañía
             quant = self._find_quant_with_hold(
                 move_line.lot_id.id,
                 move_line.location_id.id,
@@ -137,11 +156,13 @@ class StockPicking(models.Model):
             )
             
             if quant and quant.x_hold_activo_id:
-                self._check_hold_customer_match(picking, move_line, quant)
+                # Verificar que el hold sea de la misma compañía
+                if quant.x_hold_activo_id.company_id.id == company_id:
+                    self._check_hold_customer_match(picking, move_line, quant, company_id)
     
     def _find_quant_with_hold(self, lot_id, location_id, company_id):
         """
-        Busca quant con hold activo
+        Busca quant con hold activo en la compañía especificada
         
         Args:
             lot_id: int - ID del lote
@@ -151,31 +172,58 @@ class StockPicking(models.Model):
         Returns:
             stock.quant: Quant con hold o None
         """
-        return self.env['stock.quant'].search([
+        quant = self.env['stock.quant'].search([
             ('lot_id', '=', lot_id),
             ('location_id', '=', location_id),
             ('company_id', '=', company_id),
             ('x_tiene_hold', '=', True),
         ], limit=1)
+        
+        if quant:
+            _logger.debug(
+                "Encontrado quant con hold: Lote=%s, Cliente=%s, Compañía=%s",
+                quant.lot_id.name,
+                quant.x_hold_para,
+                quant.x_hold_activo_id.company_id.name if quant.x_hold_activo_id else 'N/A'
+            )
+        
+        return quant
     
-    def _check_hold_customer_match(self, picking, move_line, quant):
+    def _check_hold_customer_match(self, picking, move_line, quant, company_id):
         """
-        Verifica que el hold sea para el cliente correcto
+        Verifica que el hold sea para el cliente correcto en la compañía correcta
         
         Args:
             picking: stock.picking record
             move_line: stock.move.line record
             quant: stock.quant record con hold
+            company_id: int - ID de la empresa
             
         Raises:
-            UserError: Si el hold es para otro cliente
+            UserError: Si el hold es para otro cliente en la misma compañía
         """
+        # Verificar que el partner coincida
         if picking.partner_id != quant.x_hold_activo_id.partner_id:
-            raise UserError(
+            company_name = self.env['res.company'].browse(company_id).name
+            
+            error_msg = (
                 f"🔒 NO PUEDE VALIDAR ESTA ENTREGA\n\n"
                 f"El lote '{move_line.lot_id.name}' está RESERVADO para:\n"
                 f"👤 {quant.x_hold_para}\n"
                 f"📅 Hasta: {quant.x_hold_expira.strftime('%d/%m/%Y %H:%M')}\n"
-                f"⏱️ Días restantes: {quant.x_hold_dias_restantes}\n\n"
+                f"⏱️ Días restantes: {quant.x_hold_dias_restantes}\n"
+                f"🏢 Compañía: {company_name}\n\n"
                 f"❌ Esta entrega es para '{picking.partner_id.name}'"
             )
+            
+            _logger.warning(
+                "Intento de validar picking %s con lote reservado: "
+                "Lote=%s, Hold para=%s, Picking para=%s, Compañía=%s",
+                picking.name,
+                move_line.lot_id.name,
+                quant.x_hold_para,
+                picking.partner_id.name,
+                company_name
+            )
+            
+            raise UserError(error_msg)

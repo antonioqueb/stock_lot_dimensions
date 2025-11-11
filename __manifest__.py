@@ -21,6 +21,7 @@
     'website': 'https://alphaqueb.com',
     'depends': ['stock', 'sale', 'web', 'project'],
     'data': [
+        'security/stock_lot_hold_security.xml',
         'security/ir.model.access.csv',
         'data/stock_lot_hold_cron.xml',
         'views/stock_lot_views.xml',
