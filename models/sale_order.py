@@ -19,31 +19,26 @@ class SaleOrder(models.Model):
         """
         _logger.info("Confirmando órdenes: %s", self.mapped('name'))
         
-        # Confirmar con contexto de cliente
-        res = None
-        for order in self:
-            context = self._build_confirmation_context(order)
-            res = super(SaleOrder, order.with_context(context)).action_confirm()
+        # 🔑 CRÍTICO: Ejecutar super() en el recordset completo PRIMERO
+        # Construir contexto agregado con todos los clientes
+        all_partner_ids = self.mapped('partner_id.id')
+        context = dict(self.env.context)
         
-        # Limpiar lotes automáticos
+        if all_partner_ids:
+            # Si hay un solo cliente, usar allowed_partner_id
+            if len(all_partner_ids) == 1:
+                context['allowed_partner_id'] = all_partner_ids[0]
+            # Si hay múltiples clientes, usar lista (para filtrado más complejo)
+            else:
+                context['allowed_partner_ids'] = all_partner_ids
+        
+        # Ejecutar confirmación con contexto
+        res = super(SaleOrder, self.with_context(**context)).action_confirm()
+        
+        # Limpiar lotes automáticos DESPUÉS de confirmar
         self._clear_auto_assigned_lots()
         
         return res
-    
-    def _build_confirmation_context(self, order):
-        """
-        Construye contexto con cliente permitido para filtrado de holds
-        Args:
-            order: sale.order record
-        Returns:
-            dict: Contexto actualizado
-        """
-        context = dict(self.env.context)
-        if order.partner_id:
-            context['allowed_partner_id'] = order.partner_id.id
-        else:
-            _logger.warning("Orden %s sin cliente - sin filtro de holds", order.name)
-        return context
     
     def _clear_auto_assigned_lots(self):
         """Limpia lotes automáticos usando utilidad centralizada"""
