@@ -190,11 +190,6 @@ class StockLotHoldOrderLine(models.Model):
     _description = 'Línea de Orden de Reserva'
     _order = 'sequence, id'
     
-    sequence = fields.Integer(
-        string='Secuencia', 
-        default=10,
-        help='Orden de las líneas en la orden de reserva'
-    )
     
     order_id = fields.Many2one(
         'stock.lot.hold.order',

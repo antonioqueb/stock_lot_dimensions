@@ -150,7 +150,6 @@
                         <page string="Placas Reservadas" name="lines">
                             <field name="hold_line_ids" readonly="state in ['done', 'cancel']">
                                 <tree editable="bottom" decoration-muted="hold_id != False">
-                                    <field name="sequence" widget="handle"/>
                                     <field name="quant_id" column_invisible="1"/>
                                     
                                     <field name="lot_id" 
