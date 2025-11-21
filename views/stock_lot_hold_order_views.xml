@@ -295,7 +295,6 @@
                 <filter string="Finalizadas" name="done" domain="[('state', '=', 'done')]"/>
                 
                 <separator/>
-                <filter string="Por Expirar (3 días)" name="expiring_soon" domain="[('state', '=', 'confirmed'), ('dias_restantes', '&lt;=', 3)]"/>
                 <filter string="Mis Reservas" name="my_orders" domain="[('user_id', '=', uid)]"/>
                 
                 <separator/>
