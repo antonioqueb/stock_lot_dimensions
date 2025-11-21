@@ -74,7 +74,7 @@
                                 </table>
                             </div>
 
-                            <!-- Columna Estado (MODIFICADA PARA URGENCIA) -->
+                            <!-- Columna Estado (CON CUADRO ROJO DE URGENCIA) -->
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Estado</strong>
@@ -183,10 +183,10 @@
                             <thead>
                                 <tr style="border-bottom: 2px solid #000; color: #000;">
                                     <th class="text-center" style="width: 3%;">#</th>
-                                    <th style="width: 14%;">Lote</th>
-                                    <th style="width: 9%;">Bloque</th>
-                                    <th style="width: 9%;">Pedimento</th>
-                                    <th style="width: 8%;">Atado</th>
+                                    <th style="width: 10%;">Lote</th>      <!-- REDUCIDO DE 14% -->
+                                    <th style="width: 8%;">Bloque</th>      <!-- AJUSTADO -->
+                                    <th style="width: 16%;">Pedimento</th>  <!-- AMPLIADO DE 9% -->
+                                    <th style="width: 7%;">Atado</th>       <!-- AJUSTADO -->
                                     <th class="text-center" style="width: 5%;">Grosor</th>
                                     <th class="text-center" style="width: 5%;">Alto</th>
                                     <th class="text-center" style="width: 5%;">Ancho</th>
@@ -203,11 +203,11 @@
                                 <t t-set="sorted_lines" t-value="o.hold_line_ids.sorted(key=lambda l: l.product_id.display_name)"/>
                                 
                                 <t t-foreach="sorted_lines" t-as="line">
-                                    <!-- Encabezado de Producto -->
+                                    <!-- Encabezado de Producto (FONDO NEGRO Y LETRA BLANCA) -->
                                     <t t-if="current_product != line.product_id.id">
                                         <t t-set="current_product" t-value="line.product_id.id"/>
-                                        <tr style="background-color: #343a40; color: white;">
-                                            <td colspan="11" style="padding: 4px 8px; font-weight: bold; font-size: 10px; text-transform: uppercase;">
+                                        <tr style="background-color: #000000; color: #FFFFFF;">
+                                            <td colspan="11" style="padding: 4px 8px; font-weight: bold; font-size: 10px; text-transform: uppercase; color: #FFFFFF;">
                                                 <span t-field="line.product_id.display_name"/>
                                             </td>
                                         </tr>
