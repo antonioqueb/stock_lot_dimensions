@@ -36,7 +36,6 @@
         <field name="arch" type="xml">
             <form string="Orden de Reserva">
                 <header>
-                    <!-- Botón de Imprimir -->
                     <button name="%(action_report_stock_lot_hold_order)d" 
                             string="Imprimir" 
                             type="action" 
@@ -44,7 +43,6 @@
                             icon="fa-print"
                             invisible="state == 'draft'"/>
                     
-                    <!-- Botón Confirmar -->
                     <button name="action_confirm" 
                             string="Confirmar Reserva" 
                             type="object" 
@@ -52,7 +50,6 @@
                             invisible="state != 'draft'"
                             confirm="¿Confirmar esta reserva? Se crearán los holds individuales para cada placa."/>
                     
-                    <!-- Botón Renovar -->
                     <button name="action_renew" 
                             string="Renovar 5 Días" 
                             type="object" 
@@ -60,45 +57,33 @@
                             invisible="state != 'confirmed'"
                             confirm="¿Renovar esta reserva por 5 días hábiles adicionales?"/>
                     
-                    <!-- Botón Finalizar -->
                     <button name="action_done" 
                             string="Finalizar" 
                             type="object"
                             invisible="state != 'confirmed'"
                             confirm="¿Finalizar esta reserva? Las placas quedarán liberadas."/>
                     
-                    <!-- Botón Cancelar -->
                     <button name="action_cancel" 
                             string="Cancelar" 
                             type="object"
                             invisible="state in ('done', 'cancel')"
                             confirm="¿Cancelar esta reserva? Se cancelarán todos los holds asociados."/>
                     
-                    <!-- Barra de estado -->
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,done"/>
                 </header>
                 
                 <sheet>
-                    <!-- Título con nombre de la orden -->
                     <div class="oe_title">
                         <h1>
                             <field name="name" readonly="1" class="oe_inline"/>
                         </h1>
-                        <div class="o_row" invisible="state == 'draft'">
-                            <span class="badge badge-pill" 
-                                  t-attf-class="badge-{{state == 'confirmed' and 'success' or state == 'done' and 'info' or 'secondary'}}">
-                                <field name="state" readonly="1"/>
-                            </span>
-                        </div>
                     </div>
                     
-                    <!-- Ribbon de advertencia si está por expirar -->
                     <div class="ribbon ribbon-top-right" 
                          invisible="state != 'confirmed' or dias_restantes &gt; 3">
                         <span class="bg-danger">¡Por Expirar!</span>
                     </div>
                     
-                    <!-- Información General -->
                     <group>
                         <group string="Información del Cliente">
                             <field name="company_id" 
@@ -133,7 +118,6 @@
                         </group>
                     </group>
                     
-                    <!-- Resumen en tarjetas -->
                     <group string="Resumen de la Reserva" col="2">
                         <group>
                             <div class="o_field_widget o_stat_info">
@@ -153,13 +137,10 @@
                         </group>
                     </group>
                     
-                    <!-- Notebook con pestañas -->
                     <notebook>
-                        <!-- Pestaña de Placas Reservadas -->
                         <page string="Placas Reservadas" name="lines">
                             <field name="hold_line_ids">
                                 <tree editable="bottom" decoration-muted="hold_id != False">
-                                    <field name="sequence" widget="handle"/>
                                     <field name="quant_id" invisible="1"/>
                                     
                                     <field name="lot_id" 
@@ -214,7 +195,6 @@
                                 </tree>
                             </field>
                             
-                            <!-- Mensaje de ayuda cuando no hay líneas -->
                             <div class="alert alert-info text-center" 
                                  role="alert" 
                                  invisible="hold_line_ids">
@@ -225,36 +205,17 @@
                             </div>
                         </page>
                         
-                        <!-- Pestaña de Notas -->
                         <page string="Notas" name="notes">
                             <field name="notas" 
-                                   placeholder="Ingrese notas adicionales sobre esta reserva...&#10;&#10;Ejemplos:&#10;- Cotización asociada&#10;- Instrucciones especiales de manejo&#10;- Observaciones del cliente&#10;- Etc."/>
+                                   placeholder="Ingrese notas adicionales sobre esta reserva..."/>
                         </page>
                         
-                        <!-- Pestaña de Información Adicional -->
                         <page string="Información Adicional" name="additional_info">
                             <group>
                                 <group string="Fechas">
-                                    <label for="fecha_orden"/>
-                                    <div>
-                                        <field name="fecha_orden" 
-                                               widget="datetime" 
-                                               readonly="1" 
-                                               class="oe_inline"/>
-                                    </div>
-                                    
-                                    <label for="fecha_expiracion"/>
-                                    <div>
-                                        <field name="fecha_expiracion" 
-                                               widget="datetime" 
-                                               readonly="1" 
-                                               class="oe_inline"/>
-                                        <span invisible="state != 'confirmed'" 
-                                              class="ms-2">
-                                            (<field name="dias_restantes" 
-                                                   class="oe_inline"/> días hábiles restantes)
-                                        </span>
-                                    </div>
+                                    <field name="fecha_orden" widget="datetime" readonly="1"/>
+                                    <field name="fecha_expiracion" widget="datetime" readonly="1"/>
+                                    <field name="dias_restantes" invisible="state != 'confirmed'"/>
                                 </group>
                                 
                                 <group string="Totales">
@@ -262,22 +223,12 @@
                                     <field name="total_m2" readonly="1"/>
                                 </group>
                             </group>
-                            
-                            <!-- Información de auditoría -->
-                            <group string="Información de Auditoría" groups="base.group_no_one">
-                                <field name="create_uid" readonly="1"/>
-                                <field name="create_date" readonly="1"/>
-                                <field name="write_uid" readonly="1"/>
-                                <field name="write_date" readonly="1"/>
-                            </group>
                         </page>
                     </notebook>
                 </sheet>
                 
-                <!-- Chatter -->
                 <div class="oe_chatter">
-                    <field name="message_follower_ids" 
-                           groups="base.group_user"/>
+                    <field name="message_follower_ids" groups="base.group_user"/>
                     <field name="activity_ids"/>
                     <field name="message_ids"/>
                 </div>
@@ -294,8 +245,6 @@
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="user_id"/>
-                <field name="fecha_orden"/>
-                <field name="fecha_expiracion"/>
                 <field name="total_placas"/>
                 <field name="total_m2"/>
                 <field name="state"/>
@@ -306,44 +255,24 @@
                         <div class="oe_kanban_card oe_kanban_global_click">
                             <div class="o_kanban_record_top">
                                 <div class="o_kanban_record_headings">
-                                    <strong class="o_kanban_record_title">
-                                        <field name="name"/>
-                                    </strong>
-                                    <div class="o_kanban_record_subtitle text-muted">
-                                        <field name="partner_id"/>
-                                    </div>
+                                    <strong><field name="name"/></strong>
+                                    <div class="text-muted"><field name="partner_id"/></div>
                                 </div>
                                 <span class="float-end badge rounded-pill"
-                                      t-attf-class="badge-{{record.state.raw_value === 'draft' ? 'secondary' : record.state.raw_value === 'confirmed' ? 'success' : record.state.raw_value === 'done' ? 'info' : 'danger'}}">
+                                      t-attf-class="badge-{{record.state.raw_value === 'confirmed' ? 'success' : 'secondary'}}">
                                     <field name="state"/>
                                 </span>
                             </div>
                             
                             <div class="o_kanban_record_body">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <span class="fa fa-cubes"/> 
-                                        <field name="total_placas"/> placas
-                                    </div>
-                                    <div class="col-6">
-                                        <span class="fa fa-arrows-alt"/> 
-                                        <field name="total_m2"/> m²
-                                    </div>
-                                </div>
+                                <field name="total_placas"/> placas | <field name="total_m2"/> m²
                             </div>
                             
                             <div class="o_kanban_record_bottom">
-                                <div class="oe_kanban_bottom_left">
-                                    <field name="user_id" widget="many2one_avatar_user"/>
-                                </div>
-                                <div class="oe_kanban_bottom_right">
-                                    <span t-if="record.state.raw_value === 'confirmed'" 
-                                          class="badge"
-                                          t-attf-class="badge-{{record.dias_restantes.raw_value &lt;= 3 ? 'danger' : record.dias_restantes.raw_value &lt;= 5 ? 'warning' : 'info'}}">
-                                        <i class="fa fa-clock-o"/> 
-                                        <field name="dias_restantes"/> días
-                                    </span>
-                                </div>
+                                <field name="user_id" widget="many2one_avatar_user"/>
+                                <span t-if="record.state.raw_value === 'confirmed'">
+                                    <field name="dias_restantes"/> días
+                                </span>
                             </div>
                         </div>
                     </t>
@@ -352,116 +281,33 @@
         </field>
     </record>
 
-    <!-- Vista de búsqueda con filtros -->
+    <!-- Vista Search -->
     <record id="view_stock_lot_hold_order_search" model="ir.ui.view">
         <field name="name">stock.lot.hold.order.search</field>
         <field name="model">stock.lot.hold.order</field>
         <field name="arch" type="xml">
-            <search string="Buscar Órdenes de Reserva">
-                <!-- Campos de búsqueda -->
-                <field name="name" string="Número"/>
-                <field name="partner_id" string="Cliente"/>
-                <field name="user_id" string="Vendedor"/>
-                <field name="project_id" string="Proyecto"/>
-                <field name="arquitecto_id" string="Arquitecto"/>
-                
-                <!-- Filtros predefinidos -->
-                <filter string="Borradores" 
-                        name="draft" 
-                        domain="[('state', '=', 'draft')]"/>
-                
-                <filter string="Confirmadas" 
-                        name="confirmed" 
-                        domain="[('state', '=', 'confirmed')]"/>
-                
-                <filter string="Finalizadas" 
-                        name="done" 
-                        domain="[('state', '=', 'done')]"/>
-                
-                <separator/>
-                
-                <filter string="Por Expirar (3 días)" 
-                        name="expiring_soon" 
-                        domain="[('state', '=', 'confirmed'), ('dias_restantes', '&lt;=', 3)]"/>
-                
-                <filter string="Mis Reservas" 
-                        name="my_orders" 
-                        domain="[('user_id', '=', uid)]"/>
-                
-                <separator/>
-                
-                <filter string="Este Mes" 
-                        name="this_month"
-                        domain="[('fecha_orden', '&gt;=', (context_today() - relativedelta(day=1)).strftime('%Y-%m-%d')),
-                                ('fecha_orden', '&lt;=', (context_today() + relativedelta(months=1, day=1, days=-1)).strftime('%Y-%m-%d'))]"/>
-                
-                <filter string="Esta Semana" 
-                        name="this_week"
-                        domain="[('fecha_orden', '&gt;=', (context_today() - relativedelta(weeks=1)).strftime('%Y-%m-%d'))]"/>
-                
-                <separator/>
-                
-                <filter string="Fecha de Orden" 
-                        name="fecha_orden" 
-                        date="fecha_orden"/>
-                
-                <!-- Agrupaciones -->
-                <group expand="0" string="Agrupar por">
-                    <filter string="Estado" 
-                            name="group_state" 
-                            context="{'group_by': 'state'}"/>
-                    <filter string="Cliente" 
-                            name="group_partner" 
-                            context="{'group_by': 'partner_id'}"/>
-                    <filter string="Vendedor" 
-                            name="group_user" 
-                            context="{'group_by': 'user_id'}"/>
-                    <filter string="Proyecto" 
-                            name="group_project" 
-                            context="{'group_by': 'project_id'}"/>
-                    <filter string="Fecha de Orden" 
-                            name="group_fecha_orden" 
-                            context="{'group_by': 'fecha_orden'}"/>
-                    <filter string="Compañía" 
-                            name="group_company" 
-                            context="{'group_by': 'company_id'}"
-                            groups="base.group_multi_company"/>
-                </group>
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <filter string="Confirmadas" name="confirmed" domain="[('state', '=', 'confirmed')]"/>
+                <filter string="Borradores" name="draft" domain="[('state', '=', 'draft')]"/>
             </search>
         </field>
     </record>
 
-    <!-- Acción de ventana -->
+    <!-- Acción -->
     <record id="action_stock_lot_hold_order" model="ir.actions.act_window">
         <field name="name">Órdenes de Reserva</field>
         <field name="res_model">stock.lot.hold.order</field>
         <field name="view_mode">kanban,list,form</field>
-        <field name="search_view_id" ref="view_stock_lot_hold_order_search"/>
-        <field name="context">{
-            'search_default_confirmed': 1,
-            'search_default_this_month': 1
-        }</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Crear una nueva orden de reserva
-            </p>
-            <p>
-                Las órdenes de reserva le permiten apartar múltiples placas de mármol
-                para un cliente específico durante un período de tiempo determinado.
-            </p>
-        </field>
+        <field name="context">{'search_default_confirmed': 1}</field>
     </record>
 
-    <!-- Menú Principal -->
+    <!-- Menú -->
     <menuitem id="menu_stock_lot_hold_order"
               name="Órdenes de Reserva"
               parent="stock.menu_stock_warehouse_mgmt"
               action="action_stock_lot_hold_order"
               sequence="99"/>
-
-    <!-- Renombrar menú anterior de holds individuales -->
-    <record id="stock_lot_hold.menu_stock_lot_hold" model="ir.ui.menu">
-        <field name="name">Holds Individuales (Técnico)</field>
-        <field name="sequence">101</field>
-    </record>
 </odoo>
