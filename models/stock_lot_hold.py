@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # models/stock_lot_hold.py
 from odoo import models, fields, api
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from .utils.business_days import BusinessDaysCalculator
 from .utils.notification_builder import NotificationBuilder
 import logging
@@ -126,13 +126,27 @@ class StockLotHold(models.Model):
         compute='_compute_dias_restantes'
     )
     
-    # ==================== CONSTRAINTS ====================
-    _sql_constraints = [
-        ('unique_active_hold_per_company', 
-         'UNIQUE(quant_id, company_id, estado)',
-         'Solo puede haber una reserva activa por lote y compañía.')
-    ]
+    # ==================== CONSTRAINTS (CORREGIDO PARA ODOO 19) ====================
+    # _sql_constraints eliminado porque genera error en Odoo 19 al cargar el registro.
+    # Se reemplaza por una restricción de Python.
     
+    @api.constrains('quant_id', 'company_id', 'estado')
+    def _check_unique_active_hold(self):
+        """
+        Valida que solo exista una reserva activa por lote y compañía.
+        Reemplaza al antiguo _sql_constraints.
+        """
+        for record in self:
+            if record.estado == 'activo':
+                domain = [
+                    ('quant_id', '=', record.quant_id.id),
+                    ('company_id', '=', record.company_id.id),
+                    ('estado', '=', 'activo'),
+                    ('id', '!=', record.id)  # Excluir el registro actual
+                ]
+                if self.search_count(domain) > 0:
+                    raise ValidationError('Solo puede haber una reserva activa por lote y compañía.')
+
     # ==================== MÉTODOS COMPUTADOS ====================
     @api.depends('lot_id', 'partner_id', 'company_id')
     def _compute_name(self):
@@ -181,6 +195,8 @@ class StockLotHold(models.Model):
                 )
             
             # Validar hold duplicado para la misma compañía
+            # Nota: Aunque tenemos el @api.constrains, mantenemos esta validación en create
+            # para dar un mensaje de error más amigable antes de intentar guardar.
             if vals.get('quant_id') and vals.get('company_id'):
                 hold_existente = self.search([
                     ('quant_id', '=', vals['quant_id']),
