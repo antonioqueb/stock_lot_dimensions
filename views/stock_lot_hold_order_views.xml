@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- ============================================ -->
-    <!-- VISTA TREE SEPARADA PARA LÍNEAS (SOLUCIÓN) -->
+    <!-- VISTA LIST SEPARADA PARA LÍNEAS (SOLUCIÓN) -->
     <!-- ============================================ -->
     <record id="view_stock_lot_hold_order_line_tree" model="ir.ui.view">
         <field name="name">stock.lot.hold.order.line.tree</field>
         <field name="model">stock.lot.hold.order.line</field>
         <field name="arch" type="xml">
-            <tree editable="bottom" decoration-muted="hold_id != False">
+            <list editable="bottom" decoration-muted="hold_id != False">
                 <field name="lot_id" 
                        required="1" 
                        domain="[('product_id', '!=', False)]"
@@ -21,11 +21,11 @@
                 <field name="x_bloque" string="Bloque" optional="show" readonly="1"/>
                 <field name="x_tipo" string="Tipo" optional="show" readonly="1" widget="badge"/>
                 <field name="hold_id" string="Hold Creado" readonly="1" optional="show" widget="badge"/>
-            </tree>
+            </list>
         </field>
     </record>
 
-    <!-- Vista Tree Principal -->
+    <!-- Vista List Principal -->
     <record id="view_stock_lot_hold_order_tree" model="ir.ui.view">
         <field name="name">stock.lot.hold.order.tree</field>
         <field name="model">stock.lot.hold.order</field>
