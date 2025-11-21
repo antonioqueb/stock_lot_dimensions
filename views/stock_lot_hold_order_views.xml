@@ -148,61 +148,27 @@
                     
                     <notebook>
                         <page string="Placas Reservadas" name="lines">
-                            <field name="hold_line_ids" readonly="state in ['done', 'cancel']">
-                                <tree editable="bottom" decoration-muted="hold_id != False">
-                                    <field name="quant_id" column_invisible="1"/>
-                                    
-                                    <field name="lot_id" 
-                                           required="1" 
-                                           domain="[('product_id', '!=', False)]"
-                                           options="{'no_create': True}"/>
-                                    
-                                    <field name="product_id" 
-                                           readonly="1" 
-                                           force_save="1"/>
-                                    
-                                    <field name="cantidad_m2" 
-                                           string="m²" 
-                                           sum="Total m²" 
-                                           readonly="1" 
-                                           force_save="1"/>
-                                    
-                                    <field name="x_grosor" 
-                                           string="Grosor" 
-                                           optional="show" 
-                                           readonly="1"/>
-                                    
-                                    <field name="x_alto" 
-                                           string="Alto" 
-                                           optional="show" 
-                                           readonly="1"/>
-                                    
-                                    <field name="x_ancho" 
-                                           string="Ancho" 
-                                           optional="show" 
-                                           readonly="1"/>
-                                    
-                                    <field name="x_bloque" 
-                                           string="Bloque" 
-                                           optional="show" 
-                                           readonly="1"/>
-                                    
-                                    <field name="x_tipo" 
-                                           string="Tipo" 
-                                           optional="show" 
-                                           readonly="1" 
-                                           widget="badge" 
-                                           decoration-info="x_tipo == 'placa'" 
-                                           decoration-secondary="x_tipo == 'formato'"/>
-                                    
-                                    <field name="hold_id" 
-                                           string="Hold Creado" 
-                                           readonly="1" 
-                                           optional="show" 
-                                           widget="badge" 
-                                           decoration-success="hold_id != False"/>
-                                </tree>
-                            </field>
+                            <!-- Dentro del Form View -->
+                        <field name="hold_line_ids" readonly="state in ['done', 'cancel']">
+                            <tree editable="bottom" decoration-muted="hold_id != False">
+                                <!-- SIN FIELD SEQUENCE -->
+                                <field name="quant_id" column_invisible="1"/>
+                                
+                                <field name="lot_id" 
+                                    required="1" 
+                                    domain="[('product_id', '!=', False)]"
+                                    options="{'no_create': True}"/>
+                                
+                                <field name="product_id" readonly="1" force_save="1"/>
+                                <field name="cantidad_m2" string="m²" sum="Total m²" readonly="1" force_save="1"/>
+                                <field name="x_grosor" string="Grosor" optional="show" readonly="1"/>
+                                <field name="x_alto" string="Alto" optional="show" readonly="1"/>
+                                <field name="x_ancho" string="Ancho" optional="show" readonly="1"/>
+                                <field name="x_bloque" string="Bloque" optional="show" readonly="1"/>
+                                <field name="x_tipo" string="Tipo" optional="show" readonly="1" widget="badge"/>
+                                <field name="hold_id" string="Hold Creado" readonly="1" optional="show" widget="badge"/>
+                            </tree>
+                        </field>
                             
                             <div class="alert alert-info text-center" 
                                  role="alert" 

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# models/stock_lot_hold_order.py
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from .utils.business_days import BusinessDaysCalculator
@@ -80,9 +79,7 @@ class StockLotHoldOrder(models.Model):
         string='Líneas de Reserva'
     )
     
-    notas = fields.Text(
-        string='Notas'
-    )
+    notas = fields.Text(string='Notas')
     
     total_placas = fields.Integer(
         string='Total Placas',
@@ -112,36 +109,28 @@ class StockLotHoldOrder(models.Model):
     def _compute_dias_restantes(self):
         ahora = fields.Datetime.now()
         for order in self:
-            if order.state not in ['confirmed'] or not order.fecha_expiracion or order.fecha_expiracion <= ahora:
+            if order.state != 'confirmed' or not order.fecha_expiracion or order.fecha_expiracion <= ahora:
                 order.dias_restantes = 0
             else:
-                order.dias_restantes = BusinessDaysCalculator.count_business_days(
-                    ahora, 
-                    order.fecha_expiracion
-                )
+                order.dias_restantes = BusinessDaysCalculator.count_business_days(ahora, order.fecha_expiracion)
     
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get('name', '/') == '/':
                 vals['name'] = self.env['ir.sequence'].next_by_code('stock.lot.hold.order') or '/'
-            
             if 'fecha_expiracion' not in vals and vals.get('fecha_orden'):
                 fecha_orden = fields.Datetime.to_datetime(vals['fecha_orden'])
                 vals['fecha_expiracion'] = BusinessDaysCalculator.add_business_days(fecha_orden, 5)
-        
         return super().create(vals_list)
     
     def action_confirm(self):
-        """Confirmar y crear holds individuales"""
         for order in self:
             if not order.hold_line_ids:
                 raise UserError('Debe agregar al menos una placa a la reserva.')
-            
             for line in order.hold_line_ids:
                 if line.hold_id:
                     continue
-                    
                 hold = self.env['stock.lot.hold'].create({
                     'lot_id': line.lot_id.id,
                     'quant_id': line.quant_id.id,
@@ -155,137 +144,62 @@ class StockLotHoldOrder(models.Model):
                     'company_id': order.company_id.id,
                 })
                 line.hold_id = hold.id
-            
             order.state = 'confirmed'
     
     def action_cancel(self):
-        """Cancelar orden y holds asociados"""
         for order in self:
-            order.hold_line_ids.mapped('hold_id').filtered(
-                lambda h: h.estado == 'activo'
-            ).action_cancelar_hold()
+            order.hold_line_ids.mapped('hold_id').filtered(lambda h: h.estado == 'activo').action_cancelar_hold()
             order.state = 'cancel'
     
     def action_done(self):
-        """Finalizar orden"""
         self.state = 'done'
     
     def action_renew(self):
-        """Renovar reserva por 5 días más"""
         for order in self:
             if order.state != 'confirmed':
                 raise UserError('Solo puede renovar órdenes confirmadas.')
-            
-            # Renovar holds hijos
-            order.hold_line_ids.mapped('hold_id').filtered(
-                lambda h: h.estado == 'activo'
-            ).action_renovar_hold()
-            
-            # Renovar orden padre
+            order.hold_line_ids.mapped('hold_id').filtered(lambda h: h.estado == 'activo').action_renovar_hold()
             order.fecha_expiracion = BusinessDaysCalculator.get_expiration_date(days=5)
 
+# --- AQUI COMIENZA EL MODELO HIJO (Sin identación extra) ---
 
 class StockLotHoldOrderLine(models.Model):
     _name = 'stock.lot.hold.order.line'
     _description = 'Línea de Orden de Reserva'
-    _order = 'sequence, id'
+    _order = 'id'
     
+    order_id = fields.Many2one('stock.lot.hold.order', string='Orden', required=True, ondelete='cascade')
     
-    order_id = fields.Many2one(
-        'stock.lot.hold.order',
-        string='Orden',
-        required=True,
-        ondelete='cascade'
-    )
+    quant_id = fields.Many2one('stock.quant', string='Quant', required=True)
     
-    quant_id = fields.Many2one(
-        'stock.quant',
-        string='Quant',
-        required=True
-    )
+    lot_id = fields.Many2one('stock.lot', string='Lote', required=True)
     
-    lot_id = fields.Many2one(
-        'stock.lot',
-        string='Lote',
-        required=True
-    )
+    product_id = fields.Many2one('product.product', string='Producto', related='lot_id.product_id', store=True, readonly=True)
     
-    product_id = fields.Many2one(
-        'product.product',
-        string='Producto',
-        related='lot_id.product_id',
-        store=True,
-        readonly=True
-    )
+    cantidad_m2 = fields.Float(string='Cantidad (m²)', related='quant_id.quantity', store=True, readonly=True)
     
-    cantidad_m2 = fields.Float(
-        string='Cantidad (m²)',
-        related='quant_id.quantity',
-        store=True,
-        readonly=True
-    )
+    x_grosor = fields.Float(related='lot_id.x_grosor', string='Grosor (cm)', readonly=True)
+    x_alto = fields.Float(related='lot_id.x_alto', string='Alto (m)', readonly=True)
+    x_ancho = fields.Float(related='lot_id.x_ancho', string='Ancho (m)', readonly=True)
+    x_bloque = fields.Char(related='lot_id.x_bloque', string='Bloque', readonly=True)
+    x_tipo = fields.Selection(related='lot_id.x_tipo', string='Tipo', readonly=True)
     
-    x_grosor = fields.Float(
-        related='lot_id.x_grosor', 
-        string='Grosor (cm)',
-        readonly=True
-    )
-    
-    x_alto = fields.Float(
-        related='lot_id.x_alto', 
-        string='Alto (m)',
-        readonly=True
-    )
-    
-    x_ancho = fields.Float(
-        related='lot_id.x_ancho', 
-        string='Ancho (m)',
-        readonly=True
-    )
-    
-    x_bloque = fields.Char(
-        related='lot_id.x_bloque', 
-        string='Bloque',
-        readonly=True
-    )
-    
-    x_tipo = fields.Selection(
-        related='lot_id.x_tipo', 
-        string='Tipo',
-        readonly=True
-    )
-    
-    hold_id = fields.Many2one(
-        'stock.lot.hold',
-        string='Hold Creado',
-        readonly=True
-    )
+    hold_id = fields.Many2one('stock.lot.hold', string='Hold Creado', readonly=True)
     
     @api.onchange('lot_id')
     def _onchange_lot_id(self):
-        """Cargar quant_id cuando se selecciona un lote"""
         if self.lot_id:
-            # Buscar quant disponible para este lote en la compañía de la orden
             domain = [
                 ('lot_id', '=', self.lot_id.id),
                 ('quantity', '>', 0),
                 ('location_id.usage', '=', 'internal')
             ]
-            
-            # Intentar filtrar por compañía si existe el contexto o el padre
             if self.order_id and self.order_id.company_id:
                 domain.append(('company_id', '=', self.order_id.company_id.id))
-            elif self.env.context.get('default_company_id'):
-                 domain.append(('company_id', '=', self.env.context.get('default_company_id')))
-
+            
             quant = self.env['stock.quant'].search(domain, limit=1)
             
             if quant:
                 self.quant_id = quant.id
             else:
-                return {
-                    'warning': {
-                        'title': 'Advertencia',
-                        'message': f'No se encontró stock disponible para el lote {self.lot_id.name}'
-                    }
-                }
+                return {'warning': {'title': 'Advertencia', 'message': f'No se encontró stock disponible para el lote {self.lot_id.name}'}}

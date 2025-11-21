@@ -1,15 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_stock_lot_image_user,access_stock_lot_image_user,model_stock_lot_image,stock.group_stock_user,1,1,1,1
-access_stock_lot_image_manager,access_stock_lot_image_manager,model_stock_lot_image,stock.group_stock_manager,1,1,1,1
-access_stock_lot_image_wizard_user,access_stock_lot_image_wizard_user,model_stock_lot_image_wizard,stock.group_stock_user,1,1,1,1
-access_stock_lot_hold_user,stock.lot.hold.user,model_stock_lot_hold,stock.group_stock_user,1,1,1,0
-access_stock_lot_hold_manager,stock.lot.hold.manager,model_stock_lot_hold,stock.group_stock_manager,1,1,1,1
-access_stock_lot_hold_multi_company,stock.lot.hold.multi.company,model_stock_lot_hold,base.group_multi_company,1,0,0,0
-access_stock_lot_hold_wizard_user,access_stock_lot_hold_wizard_user,model_stock_lot_hold_wizard,stock.group_stock_user,1,1,1,1
-access_stock_lot_group_user,access_stock_lot_group_user,model_stock_lot_group,stock.group_stock_user,1,1,1,0
-access_stock_lot_group_manager,access_stock_lot_group_manager,model_stock_lot_group,stock.group_stock_manager,1,1,1,1
-access_stock_lot_hold_multi_company,stock.lot.hold.multi.company,model_stock_lot_hold,base.group_multi_company,1,0,0,0
-access_stock_lot_hold_order_user,stock.lot.hold.order.user,model_stock_lot_hold_order,stock.group_stock_user,1,1,1,0
-access_stock_lot_hold_order_manager,stock.lot.hold.order.manager,model_stock_lot_hold_order,stock.group_stock_manager,1,1,1,1
-access_stock_lot_hold_order_line_user,stock.lot.hold.order.line.user,model_stock_lot_hold_order_line,stock.group_stock_user,1,1,1,0
-access_stock_lot_hold_order_line_manager,stock.lot.hold.order.line.manager,model_stock_lot_hold_order_line,stock.group_stock_manager,1,1,1,1
+access_stock_lot_image_user,stock.lot.image user,model_stock_lot_image,stock.group_stock_user,1,1,1,1
+access_stock_lot_hold_user,stock.lot.hold user,model_stock_lot_hold,stock.group_stock_user,1,1,1,1
+access_stock_lot_group_user,stock.lot.group user,model_stock_lot_group,stock.group_stock_user,1,1,1,1
+access_stock_lot_hold_wizard_user,stock.lot.hold.wizard user,model_stock_lot_hold_wizard,stock.group_stock_user,1,1,1,1
+access_stock_lot_hold_order_user,stock.lot.hold.order user,model_stock_lot_hold_order,stock.group_stock_user,1,1,1,1
+access_stock_lot_hold_order_line_user,stock.lot.hold.order.line user,model_stock_lot_hold_order_line,stock.group_stock_user,1,1,1,1
