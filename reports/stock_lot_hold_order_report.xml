@@ -280,18 +280,6 @@
                                 <div class="col-1"></div>
                             </div>
 
-                            <!-- Observaciones -->
-                            <t t-if="o.notas">
-                                <div class="row mt-3">
-                                    <div class="col-12">
-                                        <strong style="font-size: 9px; text-transform: uppercase;">Observaciones:</strong>
-                                        <div style="border: 1px solid #ccc; padding: 5px; font-size: 9px; min-height: 30px; background-color: #fdfdfd;">
-                                            <span t-field="o.notas"/>
-                                        </div>
-                                    </div>
-                                </div>
-                            </t>
-
                             <!-- Términos y Condiciones -->
                             <div class="row mt-3">
                                 <div class="col-12">
