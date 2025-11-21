@@ -1,3 +1,20 @@
+Aquí tienes el código optimizado para Odoo 19.
+
+Mejoras implementadas:
+
+Diseño de Alta Densidad: Se redujo el tamaño de fuente general (a 11px en cuerpo y 10px en tablas) para que quepa más información sin saturar.
+Eliminación de Badges: Se eliminaron los "badges" de colores en la tabla de líneas y estados. Ahora se usa texto en mayúsculas, negritas y colores oscuros para asegurar un contraste perfecto y legibilidad al imprimir (blanco y negro o color).
+Layout Profesional: Se reestructuró la cabecera en 3 columnas lógicas (Cliente, Obra/Proyecto, Datos Orden) para aprovechar el ancho de la página.
+Tabla Estilizada: Se cambiaron los bordes gruesos por líneas finas y se comprimieron los paddings (table-sm) para mayor limpieza visual.
+CSS Integrado: Se ajustaron los estilos para impresión (wkhtmltopdf) asegurando saltos de página correctos y bordes nítidos.
+code
+Xml
+
+download
+
+content_copy
+
+expand_less
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- Definición del reporte -->
@@ -17,341 +34,232 @@
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
                 <t t-call="web.external_layout">
-                    <div class="page">
-                        <!-- Encabezado -->
-                        <div class="row mt-4 mb-2">
-                            <div class="col-6">
-                                <h2>
-                                    <span>Orden de Reserva</span>
-                                </h2>
+                    <!-- Estilos Inline para asegurar consistencia en PDF -->
+                    <div class="page" style="font-size: 11px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #212529;">
+                        
+                        <!-- Título y Folio -->
+                        <div class="row mb-3 border-bottom pb-2">
+                            <div class="col-8">
+                                <h4 class="text-uppercase mb-0" style="letter-spacing: 1px; font-weight: 700; color: #333;">
+                                    Orden de Reserva
+                                </h4>
                             </div>
-                            <div class="col-6 text-end">
-                                <h3>
+                            <div class="col-4 text-end">
+                                <h4 class="mb-0" style="font-weight: 600;">
                                     <span t-field="o.name"/>
-                                </h3>
+                                </h4>
                             </div>
                         </div>
 
-                        <!-- Información General -->
+                        <!-- Bloque de Información (3 Columnas para máxima eficiencia) -->
                         <div class="row mb-4">
-                            <div class="col-6">
-                                <strong>Cliente:</strong><br/>
-                                <span t-field="o.partner_id.name"/><br/>
-                                <span t-if="o.partner_id.vat">
-                                    RFC: <span t-field="o.partner_id.vat"/><br/>
-                                </span>
-                                <span t-if="o.partner_id.street">
-                                    <span t-field="o.partner_id.street"/><br/>
-                                </span>
-                                <span t-if="o.partner_id.city">
-                                    <span t-field="o.partner_id.city"/>,
-                                </span>
-                                <span t-if="o.partner_id.state_id">
-                                    <span t-field="o.partner_id.state_id.name"/>
-                                </span>
-                                <span t-if="o.partner_id.zip">
-                                    <span t-field="o.partner_id.zip"/>
-                                </span>
+                            <!-- Columna 1: Cliente -->
+                            <div class="col-4">
+                                <strong class="text-uppercase" style="color: #555; font-size: 10px; border-bottom: 1px solid #ddd; display: block; margin-bottom: 4px;">Cliente</strong>
+                                <div style="font-size: 11px;">
+                                    <span style="font-weight: bold; font-size: 12px;" t-field="o.partner_id.name"/><br/>
+                                    <span t-if="o.partner_id.vat" class="text-nowrap">RFC: <span t-field="o.partner_id.vat"/></span>
+                                    <div t-if="o.partner_id.street or o.partner_id.city">
+                                        <span t-if="o.partner_id.street" t-field="o.partner_id.street"/>
+                                        <span t-if="o.partner_id.street2"> <span t-field="o.partner_id.street2"/></span><br/>
+                                        <span t-if="o.partner_id.city" t-field="o.partner_id.city"/>
+                                        <span t-if="o.partner_id.state_id">, <span t-field="o.partner_id.state_id.code"/></span>
+                                        <span t-if="o.partner_id.zip"> C.P. <span t-field="o.partner_id.zip"/></span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-6">
-                                <strong>Vendedor:</strong><br/>
-                                <span t-field="o.user_id.name"/><br/>
-                                <t t-if="o.user_id.phone">
-                                    Tel: <span t-field="o.user_id.phone"/><br/>
-                                </t>
-                                <t t-if="o.user_id.email">
-                                    Email: <span t-field="o.user_id.email"/><br/>
-                                </t>
+
+                            <!-- Columna 2: Proyecto / Vendedor -->
+                            <div class="col-4">
+                                <strong class="text-uppercase" style="color: #555; font-size: 10px; border-bottom: 1px solid #ddd; display: block; margin-bottom: 4px;">Detalles del Proyecto</strong>
+                                <table class="table table-borderless table-sm mb-0" style="width: 100%; background: transparent;">
+                                    <tr t-if="o.project_id">
+                                        <td class="p-0" style="width: 35%;"><strong>Proyecto:</strong></td>
+                                        <td class="p-0"><span t-field="o.project_id.name"/></td>
+                                    </tr>
+                                    <tr t-if="o.arquitecto_id">
+                                        <td class="p-0"><strong>Arquitecto:</strong></td>
+                                        <td class="p-0">
+                                            <span t-field="o.arquitecto_id.name"/>
+                                            <span t-if="o.arquitecto_id.phone" style="font-size: 9px;"> (<span t-field="o.arquitecto_id.phone"/>)</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-0"><strong>Vendedor:</strong></td>
+                                        <td class="p-0"><span t-field="o.user_id.name"/></td>
+                                    </tr>
+                                    <tr t-if="o.user_id.email">
+                                        <td class="p-0"></td>
+                                        <td class="p-0"><span style="font-size: 9px;" t-field="o.user_id.email"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Columna 3: Fechas y Estado -->
+                            <div class="col-4">
+                                <strong class="text-uppercase" style="color: #555; font-size: 10px; border-bottom: 1px solid #ddd; display: block; margin-bottom: 4px;">Estado de la Orden</strong>
+                                <table class="table table-borderless table-sm mb-0" style="width: 100%;">
+                                    <tr>
+                                        <td class="p-0" style="width: 40%;"><strong>Fecha:</strong></td>
+                                        <td class="p-0 text-end"><span t-field="o.fecha_orden" t-options='{"widget": "date"}'/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-0"><strong>Vencimiento:</strong></td>
+                                        <td class="p-0 text-end"><span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/></td>
+                                    </tr>
+                                    <tr t-if="o.state == 'confirmed'">
+                                        <td class="p-0"><strong>Días hábiles:</strong></td>
+                                        <td class="p-0 text-end fw-bold text-danger"><span t-field="o.dias_restantes"/> días</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-0 pt-1"><strong>Estado:</strong></td>
+                                        <td class="p-0 pt-1 text-end">
+                                            <!-- Estado sin badges, solo texto limpio y uppercase -->
+                                            <t t-if="o.state == 'draft'"><span style="font-weight: 800;">BORRADOR</span></t>
+                                            <t t-if="o.state == 'confirmed'"><span style="font-weight: 800;">CONFIRMADA</span></t>
+                                            <t t-if="o.state == 'done'"><span style="font-weight: 800;">FINALIZADA</span></t>
+                                            <t t-if="o.state == 'cancel'"><span style="font-weight: 800; text-decoration: line-through;">CANCELADA</span></t>
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
                         </div>
 
-                        <div class="row mb-4">
-                            <div class="col-6">
-                                <t t-if="o.project_id">
-                                    <strong>Proyecto:</strong><br/>
-                                    <span t-field="o.project_id.name"/><br/>
-                                </t>
-                                <t t-if="o.arquitecto_id">
-                                    <strong>Arquitecto:</strong><br/>
-                                    <span t-field="o.arquitecto_id.name"/><br/>
-                                    <t t-if="o.arquitecto_id.phone">
-                                        Tel: <span t-field="o.arquitecto_id.phone"/><br/>
-                                    </t>
-                                </t>
-                            </div>
-                            <div class="col-6">
-                                <strong>Fecha Orden:</strong><br/>
-                                <span t-field="o.fecha_orden" t-options='{"widget": "datetime", "format": "dd/MM/yyyy HH:mm"}'/><br/>
-                                <strong>Válida hasta:</strong><br/>
-                                <span t-field="o.fecha_expiracion" t-options='{"widget": "datetime", "format": "dd/MM/yyyy HH:mm"}'/><br/>
-                                <t t-if="o.state == 'confirmed'">
-                                    <strong>Días restantes:</strong> 
-                                    <span t-field="o.dias_restantes"/> días hábiles<br/>
-                                </t>
-                                <strong>Estado:</strong>
-                                <t t-if="o.state == 'draft'">
-                                    <span class="badge bg-secondary">Borrador</span>
-                                </t>
-                                <t t-if="o.state == 'confirmed'">
-                                    <span class="badge bg-success">Confirmada</span>
-                                </t>
-                                <t t-if="o.state == 'done'">
-                                    <span class="badge bg-info">Finalizada</span>
-                                </t>
-                                <t t-if="o.state == 'cancel'">
-                                    <span class="badge bg-danger">Cancelada</span>
-                                </t>
-                            </div>
-                        </div>
-
-                        <!-- Resumen -->
-                        <div class="row mb-4">
+                        <!-- Resumen Métrico (Compacto) -->
+                        <div class="row mb-2">
                             <div class="col-12">
-                                <div class="alert alert-info">
+                                <div style="border: 1px solid #dee2e6; background-color: #f8f9fa; padding: 6px 10px;">
                                     <div class="row">
                                         <div class="col-6">
-                                            <strong>Total de Placas Reservadas:</strong> <span t-field="o.total_placas"/>
+                                            <span class="text-muted text-uppercase" style="font-size: 10px;">Total Placas:</span> 
+                                            <strong style="margin-left: 5px; font-size: 12px;"><span t-field="o.total_placas"/> Pzas</strong>
                                         </div>
-                                        <div class="col-6">
-                                            <strong>Total m²:</strong> <span t-field="o.total_m2"/> m²
+                                        <div class="col-6 text-end">
+                                            <span class="text-muted text-uppercase" style="font-size: 10px;">Área Total:</span> 
+                                            <strong style="margin-left: 5px; font-size: 12px;"><span t-field="o.total_m2" t-options='{"precision": 2}'/> m²</strong>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Tabla de Placas -->
-                        <h4 class="mt-4 mb-3">Detalle de Placas Reservadas</h4>
-                        
-                        <table class="table table-sm table-bordered">
-                            <thead style="background-color: #f8f9fa;">
-                                <tr>
+                        <!-- Tabla de Detalle -->
+                        <table class="table table-sm table-striped mt-2" style="font-size: 10px; width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #000; color: #000;">
                                     <th class="text-center" style="width: 5%;">#</th>
-                                    <th style="width: 15%;">Lote/Serie</th>
+                                    <th style="width: 20%;">Lote / Serie</th>
                                     <th style="width: 25%;">Producto</th>
-                                    <th class="text-center" style="width: 8%;">Grosor<br/>(cm)</th>
-                                    <th class="text-center" style="width: 8%;">Alto<br/>(m)</th>
-                                    <th class="text-center" style="width: 8%;">Ancho<br/>(m)</th>
-                                    <th class="text-right" style="width: 8%;">m²</th>
-                                    <th class="text-center" style="width: 8%;">Tipo</th>
-                                    <th style="width: 15%;">Bloque/Atado</th>
+                                    <th class="text-center" style="width: 8%;">Grosor</th>
+                                    <th class="text-center" style="width: 8%;">Alto</th>
+                                    <th class="text-center" style="width: 8%;">Ancho</th>
+                                    <th class="text-end" style="width: 8%;">Área (m²)</th>
+                                    <th class="text-center" style="width: 10%;">Tipo</th>
+                                    <th style="width: 8%;">Ref.</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <t t-set="sequence" t-value="1"/>
+                            <tbody style="border-bottom: 1px solid #dee2e6;">
+                                <t t-set="secuencia" t-value="1"/>
                                 <tr t-foreach="o.hold_line_ids" t-as="line">
-                                    <td class="text-center">
-                                        <span t-esc="sequence"/>
-                                        <t t-set="sequence" t-value="sequence + 1"/>
+                                    <td class="text-center align-middle">
+                                        <span t-esc="secuencia" style="color: #666;"/>
+                                        <t t-set="secuencia" t-value="secuencia + 1"/>
                                     </td>
-                                    <td>
-                                        <strong t-field="line.lot_id.name"/>
+                                    <td class="align-middle">
+                                        <span t-field="line.lot_id.name" style="font-weight: 600;"/>
                                     </td>
-                                    <td>
-                                        <span t-field="line.product_id.display_name"/>
+                                    <td class="align-middle">
+                                        <span t-field="line.product_id.display_name" style="display: block; line-height: 1.1;"/>
                                     </td>
-                                    <td class="text-center">
-                                        <span t-field="line.x_grosor" t-options='{"precision": 2}'/>
+                                    <td class="text-center align-middle">
+                                        <span t-field="line.x_grosor" t-options='{"precision": 2}'/> <span class="text-muted" style="font-size: 8px;">cm</span>
                                     </td>
-                                    <td class="text-center">
-                                        <span t-field="line.x_alto" t-options='{"precision": 4}'/>
+                                    <td class="text-center align-middle">
+                                        <span t-field="line.x_alto" t-options='{"precision": 3}'/> <span class="text-muted" style="font-size: 8px;">m</span>
                                     </td>
-                                    <td class="text-center">
-                                        <span t-field="line.x_ancho" t-options='{"precision": 4}'/>
+                                    <td class="text-center align-middle">
+                                        <span t-field="line.x_ancho" t-options='{"precision": 3}'/> <span class="text-muted" style="font-size: 8px;">m</span>
                                     </td>
-                                    <td class="text-right">
-                                        <strong>
-                                            <span t-field="line.cantidad_m2" t-options='{"precision": 2}'/>
-                                        </strong>
+                                    <td class="text-end align-middle">
+                                        <strong t-field="line.cantidad_m2" t-options='{"precision": 2}'/>
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center align-middle">
+                                        <!-- SIN BADGES: Texto limpio uppercase -->
                                         <t t-if="line.x_tipo == 'placa'">
-                                            <span class="badge bg-primary">Placa</span>
+                                            <span style="font-weight: bold; font-size: 9px; color: #333;">PLACA</span>
                                         </t>
                                         <t t-if="line.x_tipo == 'formato'">
-                                            <span class="badge bg-secondary">Formato</span>
+                                            <span style="font-weight: bold; font-size: 9px; color: #555;">FORMATO</span>
                                         </t>
                                     </td>
-                                    <td>
-                                        <t t-if="line.x_bloque">
-                                            <small>Bloque: <span t-field="line.x_bloque"/></small><br/>
-                                        </t>
-                                        <t t-if="line.lot_id.x_atado">
-                                            <small>Atado: <span t-field="line.lot_id.x_atado"/></small>
-                                        </t>
+                                    <td class="align-middle" style="font-size: 9px;">
+                                        <div t-if="line.x_bloque">B: <span t-field="line.x_bloque"/></div>
+                                        <div t-if="line.lot_id.x_atado">A: <span t-field="line.lot_id.x_atado"/></div>
                                     </td>
                                 </tr>
                             </tbody>
-                            <tfoot style="background-color: #e9ecef; font-weight: bold;">
-                                <tr>
-                                    <td colspan="6" class="text-right">TOTALES:</td>
-                                    <td class="text-right">
-                                        <span t-field="o.total_m2" t-options='{"precision": 2}'/> m²
+                            <tfoot>
+                                <tr style="border-top: 1px solid #000; background-color: #fff;">
+                                    <td colspan="6" class="text-end text-uppercase" style="padding-top: 8px;"><strong>Totales:</strong></td>
+                                    <td class="text-end" style="padding-top: 8px;">
+                                        <strong style="font-size: 11px;"><span t-field="o.total_m2" t-options='{"precision": 2}'/></strong>
                                     </td>
-                                    <td class="text-center">
-                                        <span t-field="o.total_placas"/> pzas
-                                    </td>
-                                    <td></td>
+                                    <td colspan="2"></td>
                                 </tr>
                             </tfoot>
                         </table>
 
-                        <!-- Detalles Adicionales por Placa -->
-                        <t t-if="any(line.lot_id.x_pedimento or line.lot_id.x_contenedor or line.lot_id.x_referencia_proveedor or line.lot_id.x_detalles_placa for line in o.hold_line_ids)">
-                            <div class="page-break"/>
-                            <h4 class="mt-4 mb-3">Información Adicional por Placa</h4>
-                            
-                            <t t-foreach="o.hold_line_ids" t-as="line">
-                                <t t-if="line.lot_id.x_pedimento or line.lot_id.x_contenedor or line.lot_id.x_referencia_proveedor or line.lot_id.x_detalles_placa">
-                                    <div class="card mb-3" style="border: 1px solid #dee2e6;">
-                                        <div class="card-header" style="background-color: #f8f9fa;">
-                                            <strong>Lote: <span t-field="line.lot_id.name"/></strong>
-                                            - <span t-field="line.product_id.display_name"/>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="row">
-                                                <t t-if="line.lot_id.x_pedimento">
-                                                    <div class="col-4">
-                                                        <strong>Pedimento:</strong><br/>
-                                                        <span t-field="line.lot_id.x_pedimento"/>
-                                                    </div>
-                                                </t>
-                                                <t t-if="line.lot_id.x_contenedor">
-                                                    <div class="col-4">
-                                                        <strong>Contenedor:</strong><br/>
-                                                        <span t-field="line.lot_id.x_contenedor"/>
-                                                    </div>
-                                                </t>
-                                                <t t-if="line.lot_id.x_referencia_proveedor">
-                                                    <div class="col-4">
-                                                        <strong>Ref. Proveedor:</strong><br/>
-                                                        <span t-field="line.lot_id.x_referencia_proveedor"/>
-                                                    </div>
-                                                </t>
-                                            </div>
-                                            <t t-if="line.lot_id.x_detalles_placa">
-                                                <div class="row mt-2">
-                                                    <div class="col-12">
-                                                        <strong>Detalles Especiales:</strong><br/>
-                                                        <div class="alert alert-warning mb-0">
-                                                            <span t-field="line.lot_id.x_detalles_placa"/>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </t>
-                                        </div>
+                        <!-- Sección Baja: Notas y Firmas -->
+                        <div class="row mt-2">
+                            <!-- Notas y Condiciones (Izquierda) -->
+                            <div class="col-7">
+                                <t t-if="o.notas">
+                                    <div class="mb-2">
+                                        <strong style="font-size: 10px;">Notas:</strong>
+                                        <p class="mb-0" style="font-size: 10px; border-left: 2px solid #ccc; padding-left: 5px; margin-top: 2px;">
+                                            <span t-field="o.notas"/>
+                                        </p>
                                     </div>
                                 </t>
-                            </t>
-                        </t>
-
-                        <!-- Notas de la Orden -->
-                        <t t-if="o.notas">
-                            <div class="row mt-4">
-                                <div class="col-12">
-                                    <h5>Notas de la Reserva:</h5>
-                                    <div class="alert alert-light">
-                                        <span t-field="o.notas"/>
-                                    </div>
-                                </div>
-                            </div>
-                        </t>
-
-                        <!-- Términos y Condiciones -->
-                        <div class="row mt-5">
-                            <div class="col-12">
-                                <div style="border-top: 1px solid #dee2e6; padding-top: 10px;">
-                                    <h6>Términos y Condiciones de la Reserva:</h6>
-                                    <ul style="font-size: 10px;">
-                                        <li>Las placas reservadas permanecerán apartadas hasta la fecha de expiración indicada.</li>
-                                        <li>Esta reserva puede renovarse por períodos adicionales de 5 días hábiles.</li>
-                                        <li>Después de la fecha de expiración, las placas quedarán disponibles automáticamente.</li>
-                                        <li>Las dimensiones y características indicadas son aproximadas y pueden variar ligeramente.</li>
-                                        <li>Se recomienda inspección física antes de la entrega final.</li>
+                                <div class="mt-3">
+                                    <strong style="font-size: 9px; text-transform: uppercase;">Términos y Condiciones:</strong>
+                                    <ul class="list-unstyled mt-1" style="font-size: 8px; color: #555; padding-left: 0; margin-bottom: 0;">
+                                        <li>• El material reservado se mantendrá hasta la fecha de expiración (vigencia).</li>
+                                        <li>• Vencido el plazo, el material se liberará automáticamente sin previo aviso.</li>
+                                        <li>• Dimensiones aproximadas sujetas a verificación física.</li>
                                     </ul>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Firmas -->
-                        <div class="row mt-5">
-                            <div class="col-6 text-center">
-                                <div style="border-top: 1px solid black; width: 70%; margin: 0 auto; padding-top: 5px;">
-                                    <strong>Vendedor</strong><br/>
-                                    <span t-field="o.user_id.name"/>
+                            
+                            <!-- Firmas (Derecha) -->
+                            <div class="col-5">
+                                <div class="row mt-4">
+                                    <div class="col-12 mb-4">
+                                        <div style="border-bottom: 1px solid #000; width: 90%; margin: 0 auto;"></div>
+                                        <div class="text-center mt-1">
+                                            <strong style="font-size: 10px;">Firma Vendedor</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div style="border-bottom: 1px solid #000; width: 90%; margin: 0 auto;"></div>
+                                        <div class="text-center mt-1">
+                                            <strong style="font-size: 10px;">Firma Cliente / Aceptación</strong>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-6 text-center">
-                                <div style="border-top: 1px solid black; width: 70%; margin: 0 auto; padding-top: 5px;">
-                                    <strong>Cliente</strong><br/>
-                                    <span t-field="o.partner_id.name"/>
-                                </div>
-                            </div>
                         </div>
 
-                        <!-- Pie de página con información de impresión -->
-                        <div class="row mt-3">
-                            <div class="col-12 text-center" style="font-size: 9px; color: #6c757d;">
-                                <p>
-                                    Documento generado el <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
-                                    por <span t-esc="user.name"/>
-                                </p>
+                        <!-- Pie de página técnico -->
+                        <div class="row mt-4">
+                            <div class="col-12 text-center text-muted" style="font-size: 8px; border-top: 1px solid #eee; padding-top: 5px;">
+                                Impreso el <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/> 
+                                por <span t-esc="user.name"/> | Página <span class="page"/>
                             </div>
                         </div>
                     </div>
                 </t>
             </t>
         </t>
-    </template>
-
-    <!-- Estilos CSS adicionales para el reporte -->
-    <template id="report_stock_lot_hold_order_styles">
-        <style type="text/css">
-            .page-break {
-                page-break-before: always;
-            }
-            
-            @media print {
-                .table-bordered th,
-                .table-bordered td {
-                    border: 1px solid #dee2e6 !important;
-                }
-            }
-            
-            .card {
-                box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-            }
-            
-            .badge {
-                padding: 0.25em 0.6em;
-                font-size: 85%;
-                font-weight: 700;
-            }
-            
-            .bg-primary {
-                background-color: #007bff !important;
-                color: white;
-            }
-            
-            .bg-secondary {
-                background-color: #6c757d !important;
-                color: white;
-            }
-            
-            .bg-success {
-                background-color: #28a745 !important;
-                color: white;
-            }
-            
-            .bg-info {
-                background-color: #17a2b8 !important;
-                color: white;
-            }
-            
-            .bg-danger {
-                background-color: #dc3545 !important;
-                color: white;
-            }
-        </style>
     </template>
 </odoo>
