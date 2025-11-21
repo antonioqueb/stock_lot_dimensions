@@ -1,6 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Vista Tree -->
+    <!-- ============================================ -->
+    <!-- VISTA TREE SEPARADA PARA LÍNEAS (SOLUCIÓN) -->
+    <!-- ============================================ -->
+    <record id="view_stock_lot_hold_order_line_tree" model="ir.ui.view">
+        <field name="name">stock.lot.hold.order.line.tree</field>
+        <field name="model">stock.lot.hold.order.line</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom" decoration-muted="hold_id != False">
+                <field name="lot_id" 
+                       required="1" 
+                       domain="[('product_id', '!=', False)]"
+                       options="{'no_create': True}"/>
+                
+                <field name="product_id" readonly="1" force_save="1"/>
+                <field name="cantidad_m2" string="m²" sum="Total m²" readonly="1" force_save="1"/>
+                <field name="x_grosor" string="Grosor" optional="show" readonly="1"/>
+                <field name="x_alto" string="Alto" optional="show" readonly="1"/>
+                <field name="x_ancho" string="Ancho" optional="show" readonly="1"/>
+                <field name="x_bloque" string="Bloque" optional="show" readonly="1"/>
+                <field name="x_tipo" string="Tipo" optional="show" readonly="1" widget="badge"/>
+                <field name="hold_id" string="Hold Creado" readonly="1" optional="show" widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista Tree Principal -->
     <record id="view_stock_lot_hold_order_tree" model="ir.ui.view">
         <field name="name">stock.lot.hold.order.tree</field>
         <field name="model">stock.lot.hold.order</field>
@@ -29,7 +54,7 @@
         </field>
     </record>
 
-    <!-- Vista Form -->
+    <!-- Vista Form SIMPLIFICADA -->
     <record id="view_stock_lot_hold_order_form" model="ir.ui.view">
         <field name="name">stock.lot.hold.order.form</field>
         <field name="model">stock.lot.hold.order</field>
@@ -77,12 +102,6 @@
                         <h1>
                             <field name="name" readonly="1" class="oe_inline"/>
                         </h1>
-                        <div class="o_row" invisible="state == 'draft'">
-                            <span class="badge badge-pill" 
-                                  t-attf-class="badge-{{state == 'confirmed' and 'success' or state == 'done' and 'info' or 'secondary'}}">
-                                <field name="state" readonly="1"/>
-                            </span>
-                        </div>
                     </div>
                     
                     <div class="ribbon ribbon-top-right" 
@@ -148,23 +167,10 @@
                     
                     <notebook>
                         <page string="Placas Reservadas" name="lines">
-                            <field name="hold_line_ids" readonly="state in ['done', 'cancel']">
-                                <tree editable="bottom" decoration-muted="hold_id != False">
-                                    <field name="lot_id" 
-                                           required="1" 
-                                           domain="[('product_id', '!=', False)]"
-                                           options="{'no_create': True}"/>
-                                    
-                                    <field name="product_id" readonly="1" force_save="1"/>
-                                    <field name="cantidad_m2" string="m²" sum="Total m²" readonly="1" force_save="1"/>
-                                    <field name="x_grosor" string="Grosor" optional="show" readonly="1"/>
-                                    <field name="x_alto" string="Alto" optional="show" readonly="1"/>
-                                    <field name="x_ancho" string="Ancho" optional="show" readonly="1"/>
-                                    <field name="x_bloque" string="Bloque" optional="show" readonly="1"/>
-                                    <field name="x_tipo" string="Tipo" optional="show" readonly="1" widget="badge"/>
-                                    <field name="hold_id" string="Hold Creado" readonly="1" optional="show" widget="badge"/>
-                                </tree>
-                            </field>
+                            <!-- REFERENCIA A VISTA EXTERNA -->
+                            <field name="hold_line_ids" 
+                                   readonly="state in ['done', 'cancel']"
+                                   context="{'tree_view_ref': 'stock_lot_dimensions.view_stock_lot_hold_order_line_tree'}"/>
                             
                             <div class="alert alert-info text-center" 
                                  role="alert" 
@@ -185,39 +191,14 @@
                         <page string="Información Adicional" name="additional_info">
                             <group>
                                 <group string="Fechas">
-                                    <label for="fecha_orden"/>
-                                    <div>
-                                        <field name="fecha_orden" 
-                                               widget="datetime" 
-                                               readonly="1" 
-                                               class="oe_inline"/>
-                                    </div>
-                                    
-                                    <label for="fecha_expiracion"/>
-                                    <div>
-                                        <field name="fecha_expiracion" 
-                                               widget="datetime" 
-                                               readonly="1" 
-                                               class="oe_inline"/>
-                                        <span invisible="state != 'confirmed'" 
-                                              class="ms-2">
-                                            (<field name="dias_restantes" 
-                                                   class="oe_inline"/> días hábiles restantes)
-                                        </span>
-                                    </div>
+                                    <field name="fecha_orden" widget="datetime" readonly="1"/>
+                                    <field name="fecha_expiracion" widget="datetime" readonly="1"/>
                                 </group>
                                 
                                 <group string="Totales">
                                     <field name="total_placas" readonly="1"/>
                                     <field name="total_m2" readonly="1"/>
                                 </group>
-                            </group>
-                            
-                            <group string="Información de Auditoría" groups="base.group_no_one">
-                                <field name="create_uid" readonly="1"/>
-                                <field name="create_date" readonly="1"/>
-                                <field name="write_uid" readonly="1"/>
-                                <field name="write_date" readonly="1"/>
                             </group>
                         </page>
                     </notebook>
@@ -241,8 +222,6 @@
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="user_id"/>
-                <field name="fecha_orden"/>
-                <field name="fecha_expiracion"/>
                 <field name="total_placas"/>
                 <field name="total_m2"/>
                 <field name="state"/>
