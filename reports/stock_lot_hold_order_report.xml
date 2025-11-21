@@ -1,20 +1,3 @@
-Aquí tienes el código optimizado para Odoo 19.
-
-Mejoras implementadas:
-
-Diseño de Alta Densidad: Se redujo el tamaño de fuente general (a 11px en cuerpo y 10px en tablas) para que quepa más información sin saturar.
-Eliminación de Badges: Se eliminaron los "badges" de colores en la tabla de líneas y estados. Ahora se usa texto en mayúsculas, negritas y colores oscuros para asegurar un contraste perfecto y legibilidad al imprimir (blanco y negro o color).
-Layout Profesional: Se reestructuró la cabecera en 3 columnas lógicas (Cliente, Obra/Proyecto, Datos Orden) para aprovechar el ancho de la página.
-Tabla Estilizada: Se cambiaron los bordes gruesos por líneas finas y se comprimieron los paddings (table-sm) para mayor limpieza visual.
-CSS Integrado: Se ajustaron los estilos para impresión (wkhtmltopdf) asegurando saltos de página correctos y bordes nítidos.
-code
-Xml
-
-download
-
-content_copy
-
-expand_less
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- Definición del reporte -->
@@ -34,13 +17,13 @@ expand_less
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
                 <t t-call="web.external_layout">
-                    <!-- Estilos Inline para asegurar consistencia en PDF -->
-                    <div class="page" style="font-size: 11px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #212529;">
+                    <!-- Configuración global de fuente: Pequeña, sans-serif, color oscuro para máximo contraste -->
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000;">
                         
-                        <!-- Título y Folio -->
-                        <div class="row mb-3 border-bottom pb-2">
+                        <!-- Cabecera del Documento -->
+                        <div class="row border-bottom pb-2 mb-3" style="border-color: #000 !important;">
                             <div class="col-8">
-                                <h4 class="text-uppercase mb-0" style="letter-spacing: 1px; font-weight: 700; color: #333;">
+                                <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
                                     Orden de Reserva
                                 </h4>
                             </div>
@@ -51,211 +34,175 @@ expand_less
                             </div>
                         </div>
 
-                        <!-- Bloque de Información (3 Columnas para máxima eficiencia) -->
-                        <div class="row mb-4">
+                        <!-- Bloque de Información (3 Columnas) -->
+                        <div class="row mb-2">
                             <!-- Columna 1: Cliente -->
                             <div class="col-4">
-                                <strong class="text-uppercase" style="color: #555; font-size: 10px; border-bottom: 1px solid #ddd; display: block; margin-bottom: 4px;">Cliente</strong>
-                                <div style="font-size: 11px;">
+                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
+                                </div>
+                                <div style="line-height: 1.3;">
                                     <span style="font-weight: bold; font-size: 12px;" t-field="o.partner_id.name"/><br/>
-                                    <span t-if="o.partner_id.vat" class="text-nowrap">RFC: <span t-field="o.partner_id.vat"/></span>
-                                    <div t-if="o.partner_id.street or o.partner_id.city">
+                                    <span t-if="o.partner_id.vat">RFC: <span t-field="o.partner_id.vat"/></span><br/>
+                                    <div t-if="o.partner_id.street or o.partner_id.city" class="text-muted" style="color: #333 !important; font-size: 10px;">
                                         <span t-if="o.partner_id.street" t-field="o.partner_id.street"/>
-                                        <span t-if="o.partner_id.street2"> <span t-field="o.partner_id.street2"/></span><br/>
-                                        <span t-if="o.partner_id.city" t-field="o.partner_id.city"/>
-                                        <span t-if="o.partner_id.state_id">, <span t-field="o.partner_id.state_id.code"/></span>
+                                        <span t-if="o.partner_id.city">, <span t-field="o.partner_id.city"/></span>
                                         <span t-if="o.partner_id.zip"> C.P. <span t-field="o.partner_id.zip"/></span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Columna 2: Proyecto / Vendedor -->
+                            <!-- Columna 2: Datos Obra/Venta -->
                             <div class="col-4">
-                                <strong class="text-uppercase" style="color: #555; font-size: 10px; border-bottom: 1px solid #ddd; display: block; margin-bottom: 4px;">Detalles del Proyecto</strong>
-                                <table class="table table-borderless table-sm mb-0" style="width: 100%; background: transparent;">
+                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Referencia</strong>
+                                </div>
+                                <table class="table table-borderless table-sm mb-0 p-0" style="width: 100%;">
                                     <tr t-if="o.project_id">
-                                        <td class="p-0" style="width: 35%;"><strong>Proyecto:</strong></td>
+                                        <td class="p-0" style="width: 30%;"><strong>Proyecto:</strong></td>
                                         <td class="p-0"><span t-field="o.project_id.name"/></td>
                                     </tr>
                                     <tr t-if="o.arquitecto_id">
                                         <td class="p-0"><strong>Arquitecto:</strong></td>
-                                        <td class="p-0">
-                                            <span t-field="o.arquitecto_id.name"/>
-                                            <span t-if="o.arquitecto_id.phone" style="font-size: 9px;"> (<span t-field="o.arquitecto_id.phone"/>)</span>
-                                        </td>
+                                        <td class="p-0"><span t-field="o.arquitecto_id.name"/></td>
                                     </tr>
                                     <tr>
                                         <td class="p-0"><strong>Vendedor:</strong></td>
                                         <td class="p-0"><span t-field="o.user_id.name"/></td>
                                     </tr>
-                                    <tr t-if="o.user_id.email">
-                                        <td class="p-0"></td>
-                                        <td class="p-0"><span style="font-size: 9px;" t-field="o.user_id.email"/></td>
-                                    </tr>
                                 </table>
                             </div>
 
-                            <!-- Columna 3: Fechas y Estado -->
+                            <!-- Columna 3: Fechas y Estatus -->
                             <div class="col-4">
-                                <strong class="text-uppercase" style="color: #555; font-size: 10px; border-bottom: 1px solid #ddd; display: block; margin-bottom: 4px;">Estado de la Orden</strong>
-                                <table class="table table-borderless table-sm mb-0" style="width: 100%;">
+                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Estado</strong>
+                                </div>
+                                <table class="table table-borderless table-sm mb-0 p-0" style="width: 100%;">
                                     <tr>
-                                        <td class="p-0" style="width: 40%;"><strong>Fecha:</strong></td>
+                                        <td class="p-0"><strong>Fecha:</strong></td>
                                         <td class="p-0 text-end"><span t-field="o.fecha_orden" t-options='{"widget": "date"}'/></td>
                                     </tr>
                                     <tr>
-                                        <td class="p-0"><strong>Vencimiento:</strong></td>
+                                        <td class="p-0"><strong>Vence:</strong></td>
                                         <td class="p-0 text-end"><span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/></td>
-                                    </tr>
-                                    <tr t-if="o.state == 'confirmed'">
-                                        <td class="p-0"><strong>Días hábiles:</strong></td>
-                                        <td class="p-0 text-end fw-bold text-danger"><span t-field="o.dias_restantes"/> días</td>
                                     </tr>
                                     <tr>
                                         <td class="p-0 pt-1"><strong>Estado:</strong></td>
                                         <td class="p-0 pt-1 text-end">
-                                            <!-- Estado sin badges, solo texto limpio y uppercase -->
-                                            <t t-if="o.state == 'draft'"><span style="font-weight: 800;">BORRADOR</span></t>
-                                            <t t-if="o.state == 'confirmed'"><span style="font-weight: 800;">CONFIRMADA</span></t>
-                                            <t t-if="o.state == 'done'"><span style="font-weight: 800;">FINALIZADA</span></t>
-                                            <t t-if="o.state == 'cancel'"><span style="font-weight: 800; text-decoration: line-through;">CANCELADA</span></t>
+                                            <span style="font-weight: 900; text-transform: uppercase;">
+                                                <t t-if="o.state == 'draft'">Borrador</t>
+                                                <t t-if="o.state == 'confirmed'">Confirmada</t>
+                                                <t t-if="o.state == 'done'">Finalizada</t>
+                                                <t t-if="o.state == 'cancel'">Cancelada</t>
+                                            </span>
                                         </td>
                                     </tr>
                                 </table>
                             </div>
                         </div>
 
-                        <!-- Resumen Métrico (Compacto) -->
-                        <div class="row mb-2">
+                        <!-- Resumen Ejecutivo -->
+                        <div class="row mt-2 mb-3">
                             <div class="col-12">
-                                <div style="border: 1px solid #dee2e6; background-color: #f8f9fa; padding: 6px 10px;">
+                                <div style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 5px 0;">
                                     <div class="row">
                                         <div class="col-6">
-                                            <span class="text-muted text-uppercase" style="font-size: 10px;">Total Placas:</span> 
-                                            <strong style="margin-left: 5px; font-size: 12px;"><span t-field="o.total_placas"/> Pzas</strong>
+                                            <strong>RESUMEN:</strong> <span t-field="o.total_placas"/> piezas reservadas.
                                         </div>
                                         <div class="col-6 text-end">
-                                            <span class="text-muted text-uppercase" style="font-size: 10px;">Área Total:</span> 
-                                            <strong style="margin-left: 5px; font-size: 12px;"><span t-field="o.total_m2" t-options='{"precision": 2}'/> m²</strong>
+                                            <strong>TOTAL M²:</strong> <span style="font-size: 13px;" t-field="o.total_m2" t-options='{"precision": 2}'/>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Tabla de Detalle -->
-                        <table class="table table-sm table-striped mt-2" style="font-size: 10px; width: 100%; border-collapse: collapse;">
+                        <!-- Tabla Detallada -->
+                        <!-- Texto condensado (font-size 10px) y padding reducido para máxima información -->
+                        <table class="table table-sm table-striped" style="width: 100%; font-size: 10px; border-collapse: collapse;">
                             <thead>
                                 <tr style="border-bottom: 2px solid #000; color: #000;">
                                     <th class="text-center" style="width: 5%;">#</th>
-                                    <th style="width: 20%;">Lote / Serie</th>
-                                    <th style="width: 25%;">Producto</th>
+                                    <th style="width: 25%;">Lote / Serie</th>
+                                    <th style="width: 40%;">Producto</th>
                                     <th class="text-center" style="width: 8%;">Grosor</th>
                                     <th class="text-center" style="width: 8%;">Alto</th>
                                     <th class="text-center" style="width: 8%;">Ancho</th>
-                                    <th class="text-end" style="width: 8%;">Área (m²)</th>
-                                    <th class="text-center" style="width: 10%;">Tipo</th>
-                                    <th style="width: 8%;">Ref.</th>
+                                    <th class="text-end" style="width: 6%;">m²</th>
                                 </tr>
                             </thead>
-                            <tbody style="border-bottom: 1px solid #dee2e6;">
-                                <t t-set="secuencia" t-value="1"/>
+                            <tbody style="border-bottom: 1px solid #000;">
+                                <t t-set="seq" t-value="1"/>
                                 <tr t-foreach="o.hold_line_ids" t-as="line">
                                     <td class="text-center align-middle">
-                                        <span t-esc="secuencia" style="color: #666;"/>
-                                        <t t-set="secuencia" t-value="secuencia + 1"/>
+                                        <span t-esc="seq"/>
+                                        <t t-set="seq" t-value="seq + 1"/>
                                     </td>
                                     <td class="align-middle">
-                                        <span t-field="line.lot_id.name" style="font-weight: 600;"/>
+                                        <strong t-field="line.lot_id.name"/>
                                     </td>
                                     <td class="align-middle">
-                                        <span t-field="line.product_id.display_name" style="display: block; line-height: 1.1;"/>
+                                        <span t-field="line.product_id.display_name"/>
                                     </td>
                                     <td class="text-center align-middle">
-                                        <span t-field="line.x_grosor" t-options='{"precision": 2}'/> <span class="text-muted" style="font-size: 8px;">cm</span>
+                                        <span t-field="line.x_grosor" t-options='{"precision": 2}'/>
                                     </td>
                                     <td class="text-center align-middle">
-                                        <span t-field="line.x_alto" t-options='{"precision": 3}'/> <span class="text-muted" style="font-size: 8px;">m</span>
+                                        <span t-field="line.x_alto" t-options='{"precision": 3}'/>
                                     </td>
                                     <td class="text-center align-middle">
-                                        <span t-field="line.x_ancho" t-options='{"precision": 3}'/> <span class="text-muted" style="font-size: 8px;">m</span>
+                                        <span t-field="line.x_ancho" t-options='{"precision": 3}'/>
                                     </td>
                                     <td class="text-end align-middle">
                                         <strong t-field="line.cantidad_m2" t-options='{"precision": 2}'/>
                                     </td>
-                                    <td class="text-center align-middle">
-                                        <!-- SIN BADGES: Texto limpio uppercase -->
-                                        <t t-if="line.x_tipo == 'placa'">
-                                            <span style="font-weight: bold; font-size: 9px; color: #333;">PLACA</span>
-                                        </t>
-                                        <t t-if="line.x_tipo == 'formato'">
-                                            <span style="font-weight: bold; font-size: 9px; color: #555;">FORMATO</span>
-                                        </t>
-                                    </td>
-                                    <td class="align-middle" style="font-size: 9px;">
-                                        <div t-if="line.x_bloque">B: <span t-field="line.x_bloque"/></div>
-                                        <div t-if="line.lot_id.x_atado">A: <span t-field="line.lot_id.x_atado"/></div>
-                                    </td>
                                 </tr>
                             </tbody>
+                            <!-- Footer de Totales -->
                             <tfoot>
-                                <tr style="border-top: 1px solid #000; background-color: #fff;">
-                                    <td colspan="6" class="text-end text-uppercase" style="padding-top: 8px;"><strong>Totales:</strong></td>
-                                    <td class="text-end" style="padding-top: 8px;">
+                                <tr style="border-top: 2px solid #000;">
+                                    <td colspan="6" class="text-end" style="padding-top: 5px;">
+                                        <span style="text-transform: uppercase; font-weight: bold;">Total General:</span>
+                                    </td>
+                                    <td class="text-end" style="padding-top: 5px;">
                                         <strong style="font-size: 11px;"><span t-field="o.total_m2" t-options='{"precision": 2}'/></strong>
                                     </td>
-                                    <td colspan="2"></td>
                                 </tr>
                             </tfoot>
                         </table>
 
-                        <!-- Sección Baja: Notas y Firmas -->
-                        <div class="row mt-2">
-                            <!-- Notas y Condiciones (Izquierda) -->
+                        <!-- Sección Inferior: Notas y Firmas -->
+                        <div class="row" style="margin-top: 30px;">
+                            <!-- Notas y Condiciones -->
                             <div class="col-7">
                                 <t t-if="o.notas">
                                     <div class="mb-2">
-                                        <strong style="font-size: 10px;">Notas:</strong>
-                                        <p class="mb-0" style="font-size: 10px; border-left: 2px solid #ccc; padding-left: 5px; margin-top: 2px;">
+                                        <strong>Observaciones:</strong>
+                                        <p style="font-size: 10px; margin-top: 2px; text-align: justify;">
                                             <span t-field="o.notas"/>
                                         </p>
                                     </div>
                                 </t>
-                                <div class="mt-3">
-                                    <strong style="font-size: 9px; text-transform: uppercase;">Términos y Condiciones:</strong>
-                                    <ul class="list-unstyled mt-1" style="font-size: 8px; color: #555; padding-left: 0; margin-bottom: 0;">
-                                        <li>• El material reservado se mantendrá hasta la fecha de expiración (vigencia).</li>
-                                        <li>• Vencido el plazo, el material se liberará automáticamente sin previo aviso.</li>
-                                        <li>• Dimensiones aproximadas sujetas a verificación física.</li>
-                                    </ul>
+                                <div style="font-size: 8px; color: #444; margin-top: 10px;">
+                                    <strong>CONDICIONES:</strong> Material reservado sujeto a disponibilidad tras fecha de vencimiento. Dimensiones nominales aproximadas.
                                 </div>
                             </div>
                             
-                            <!-- Firmas (Derecha) -->
+                            <!-- Firmas -->
                             <div class="col-5">
-                                <div class="row mt-4">
-                                    <div class="col-12 mb-4">
-                                        <div style="border-bottom: 1px solid #000; width: 90%; margin: 0 auto;"></div>
-                                        <div class="text-center mt-1">
-                                            <strong style="font-size: 10px;">Firma Vendedor</strong>
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div style="border-bottom: 1px solid #000; width: 90%; margin: 0 auto;"></div>
-                                        <div class="text-center mt-1">
-                                            <strong style="font-size: 10px;">Firma Cliente / Aceptación</strong>
-                                        </div>
+                                <div class="row">
+                                    <div class="col-12 text-center">
+                                        <div style="border-bottom: 1px solid #000; margin: 25px 20px 5px 20px;"></div>
+                                        <strong style="font-size: 10px;">Autorización / Firma Cliente</strong>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Pie de página técnico -->
-                        <div class="row mt-4">
-                            <div class="col-12 text-center text-muted" style="font-size: 8px; border-top: 1px solid #eee; padding-top: 5px;">
-                                Impreso el <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/> 
-                                por <span t-esc="user.name"/> | Página <span class="page"/>
-                            </div>
+                        <!-- Pie de página técnico discreto -->
+                        <div class="text-center text-muted mt-4" style="font-size: 8px; border-top: 1px solid #eee;">
+                            Página <span class="page"/> / <span class="topage"/> | Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
                         </div>
                     </div>
                 </t>
