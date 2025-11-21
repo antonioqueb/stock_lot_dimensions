@@ -114,7 +114,7 @@ class StockLotHoldOrder(models.Model):
     
     @api.depends('fecha_expiracion', 'state')
     def _compute_dias_restantes(self):
-        from ..models.utils.business_days import BusinessDaysCalculator
+        from .utils.business_days import BusinessDaysCalculator
         ahora = fields.Datetime.now()
         
         for order in self:
@@ -133,7 +133,7 @@ class StockLotHoldOrder(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('stock.lot.hold.order') or '/'
             
             if 'fecha_expiracion' not in vals and vals.get('fecha_orden'):
-                from ..models.utils.business_days import BusinessDaysCalculator
+                from .utils.business_days import BusinessDaysCalculator
                 fecha_orden = fields.Datetime.to_datetime(vals['fecha_orden'])
                 vals['fecha_expiracion'] = BusinessDaysCalculator.add_business_days(fecha_orden, 5)
         
@@ -186,7 +186,7 @@ class StockLotHoldOrder(models.Model):
                 lambda h: h.estado == 'activo'
             ).action_renovar_hold()
             
-            from ..models.utils.business_days import BusinessDaysCalculator
+            from .utils.business_days import BusinessDaysCalculator
             order.fecha_expiracion = BusinessDaysCalculator.get_expiration_date(days=5)
 
 
@@ -195,7 +195,10 @@ class StockLotHoldOrderLine(models.Model):
     _description = 'Línea de Orden de Reserva'
     _order = 'sequence, id'
     
-    sequence = fields.Integer(string='Secuencia', default=10)
+    sequence = fields.Integer(
+        string='Secuencia', 
+        default=10
+    )
     
     order_id = fields.Many2one(
         'stock.lot.hold.order',
@@ -220,23 +223,70 @@ class StockLotHoldOrderLine(models.Model):
         'product.product',
         string='Producto',
         related='lot_id.product_id',
-        store=True
+        store=True,
+        readonly=True
     )
     
     cantidad_m2 = fields.Float(
         string='Cantidad (m²)',
         related='quant_id.quantity',
-        store=True
+        store=True,
+        readonly=True
     )
     
-    x_grosor = fields.Float(related='lot_id.x_grosor', string='Grosor (cm)')
-    x_alto = fields.Float(related='lot_id.x_alto', string='Alto (m)')
-    x_ancho = fields.Float(related='lot_id.x_ancho', string='Ancho (m)')
-    x_bloque = fields.Char(related='lot_id.x_bloque', string='Bloque')
-    x_tipo = fields.Selection(related='lot_id.x_tipo', string='Tipo')
+    x_grosor = fields.Float(
+        related='lot_id.x_grosor', 
+        string='Grosor (cm)',
+        readonly=True
+    )
+    
+    x_alto = fields.Float(
+        related='lot_id.x_alto', 
+        string='Alto (m)',
+        readonly=True
+    )
+    
+    x_ancho = fields.Float(
+        related='lot_id.x_ancho', 
+        string='Ancho (m)',
+        readonly=True
+    )
+    
+    x_bloque = fields.Char(
+        related='lot_id.x_bloque', 
+        string='Bloque',
+        readonly=True
+    )
+    
+    x_tipo = fields.Selection(
+        related='lot_id.x_tipo', 
+        string='Tipo',
+        readonly=True
+    )
     
     hold_id = fields.Many2one(
         'stock.lot.hold',
         string='Hold Creado',
         readonly=True
     )
+    
+    @api.onchange('lot_id')
+    def _onchange_lot_id(self):
+        """Cargar quant_id cuando se selecciona un lote"""
+        if self.lot_id:
+            # Buscar quant disponible para este lote
+            quant = self.env['stock.quant'].search([
+                ('lot_id', '=', self.lot_id.id),
+                ('quantity', '>', 0),
+                ('location_id.usage', '=', 'internal')
+            ], limit=1)
+            
+            if quant:
+                self.quant_id = quant.id
+            else:
+                return {
+                    'warning': {
+                        'title': 'Advertencia',
+                        'message': f'No se encontró stock disponible para el lote {self.lot_id.name}'
+                    }
+                }
