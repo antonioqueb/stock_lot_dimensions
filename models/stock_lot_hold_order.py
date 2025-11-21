@@ -81,6 +81,15 @@ class StockLotHoldOrder(models.Model):
     
     notas = fields.Text(string='Notas')
     
+    # NUEVO: Campo de moneda
+    currency_id = fields.Many2one(
+        'res.currency',
+        string='Moneda',
+        required=True,
+        default=lambda self: self.env.company.currency_id,
+        tracking=True
+    )
+    
     total_placas = fields.Integer(
         string='Total Placas',
         compute='_compute_totals',
@@ -94,16 +103,25 @@ class StockLotHoldOrder(models.Model):
         digits=(10, 2)
     )
     
+    # NUEVO: Total con precio
+    total_con_precio = fields.Monetary(
+        string='Total General',
+        compute='_compute_totals',
+        store=True,
+        currency_field='currency_id'
+    )
+    
     dias_restantes = fields.Integer(
         string='Días Restantes',
         compute='_compute_dias_restantes'
     )
     
-    @api.depends('hold_line_ids.cantidad_m2')
+    @api.depends('hold_line_ids.cantidad_m2', 'hold_line_ids.precio_total')
     def _compute_totals(self):
         for order in self:
             order.total_placas = len(order.hold_line_ids)
             order.total_m2 = sum(order.hold_line_ids.mapped('cantidad_m2'))
+            order.total_con_precio = sum(order.hold_line_ids.mapped('precio_total'))
     
     @api.depends('fecha_expiracion', 'state')
     def _compute_dias_restantes(self):
@@ -131,6 +149,15 @@ class StockLotHoldOrder(models.Model):
             for line in order.hold_line_ids:
                 if line.hold_id:
                     continue
+                
+                # Preparar notas con información de precios
+                notas_hold = f'Orden: {order.name}\n'
+                if line.precio_unitario and line.currency_id:
+                    notas_hold += f'Precio: {line.precio_unitario:.2f} {line.currency_id.name}/m²\n'
+                    notas_hold += f'Total: {line.precio_total:.2f} {line.currency_id.name}\n'
+                if order.notas:
+                    notas_hold += f'\n{order.notas}'
+                
                 hold = self.env['stock.lot.hold'].create({
                     'lot_id': line.lot_id.id,
                     'quant_id': line.quant_id.id,
@@ -140,7 +167,7 @@ class StockLotHoldOrder(models.Model):
                     'arquitecto_id': order.arquitecto_id.id if order.arquitecto_id else False,
                     'fecha_inicio': order.fecha_orden,
                     'fecha_expiracion': order.fecha_expiracion,
-                    'notas': f'Orden: {order.name}\n{order.notas or ""}',
+                    'notas': notas_hold,
                     'company_id': order.company_id.id,
                 })
                 line.hold_id = hold.id
@@ -168,23 +195,103 @@ class StockLotHoldOrderLine(models.Model):
     _description = 'Línea de Orden de Reserva'
     _order = 'id'
     
-    order_id = fields.Many2one('stock.lot.hold.order', string='Orden', required=True, ondelete='cascade')
+    order_id = fields.Many2one(
+        'stock.lot.hold.order', 
+        string='Orden', 
+        required=True, 
+        ondelete='cascade'
+    )
     
-    quant_id = fields.Many2one('stock.quant', string='Quant', required=True)
+    quant_id = fields.Many2one(
+        'stock.quant', 
+        string='Quant', 
+        required=True
+    )
     
-    lot_id = fields.Many2one('stock.lot', string='Lote', required=True)
+    lot_id = fields.Many2one(
+        'stock.lot', 
+        string='Lote', 
+        required=True
+    )
     
-    product_id = fields.Many2one('product.product', string='Producto', related='lot_id.product_id', store=True, readonly=True)
+    product_id = fields.Many2one(
+        'product.product', 
+        string='Producto', 
+        related='lot_id.product_id', 
+        store=True, 
+        readonly=True
+    )
     
-    cantidad_m2 = fields.Float(string='Cantidad (m²)', related='quant_id.quantity', store=True, readonly=True)
+    cantidad_m2 = fields.Float(
+        string='Cantidad (m²)', 
+        related='quant_id.quantity', 
+        store=True, 
+        readonly=True
+    )
     
-    x_grosor = fields.Float(related='lot_id.x_grosor', string='Grosor (cm)', readonly=True)
-    x_alto = fields.Float(related='lot_id.x_alto', string='Alto (m)', readonly=True)
-    x_ancho = fields.Float(related='lot_id.x_ancho', string='Ancho (m)', readonly=True)
-    x_bloque = fields.Char(related='lot_id.x_bloque', string='Bloque', readonly=True)
-    x_tipo = fields.Selection(related='lot_id.x_tipo', string='Tipo', readonly=True)
+    # NUEVOS CAMPOS DE PRECIO
+    currency_id = fields.Many2one(
+        'res.currency',
+        string='Moneda',
+        related='order_id.currency_id',
+        store=True,
+        readonly=True
+    )
     
-    hold_id = fields.Many2one('stock.lot.hold', string='Hold Creado', readonly=True)
+    precio_unitario = fields.Monetary(
+        string='Precio/m²',
+        currency_field='currency_id',
+        digits='Product Price',
+        help='Precio por m² en la moneda especificada'
+    )
+    
+    precio_total = fields.Monetary(
+        string='Total',
+        compute='_compute_precio_total',
+        store=True,
+        currency_field='currency_id'
+    )
+    
+    # Campos relacionados del lote
+    x_grosor = fields.Float(
+        related='lot_id.x_grosor', 
+        string='Grosor (cm)', 
+        readonly=True
+    )
+    x_alto = fields.Float(
+        related='lot_id.x_alto', 
+        string='Alto (m)', 
+        readonly=True
+    )
+    x_ancho = fields.Float(
+        related='lot_id.x_ancho', 
+        string='Ancho (m)', 
+        readonly=True
+    )
+    x_bloque = fields.Char(
+        related='lot_id.x_bloque', 
+        string='Bloque', 
+        readonly=True
+    )
+    x_tipo = fields.Selection(
+        related='lot_id.x_tipo', 
+        string='Tipo', 
+        readonly=True
+    )
+    
+    hold_id = fields.Many2one(
+        'stock.lot.hold', 
+        string='Hold Creado', 
+        readonly=True
+    )
+    
+    @api.depends('cantidad_m2', 'precio_unitario')
+    def _compute_precio_total(self):
+        for line in self:
+            if line.cantidad_m2 and line.precio_unitario:
+                line.precio_total = line.cantidad_m2 * line.precio_unitario
+            else:
+                line.precio_total = 0.0
     
     @api.onchange('lot_id')
     def _onchange_lot_id(self):
@@ -202,4 +309,9 @@ class StockLotHoldOrderLine(models.Model):
             if quant:
                 self.quant_id = quant.id
             else:
-                return {'warning': {'title': 'Advertencia', 'message': f'No se encontró stock disponible para el lote {self.lot_id.name}'}}
+                return {
+                    'warning': {
+                        'title': 'Advertencia', 
+                        'message': f'No se encontró stock disponible para el lote {self.lot_id.name}'
+                    }
+                }

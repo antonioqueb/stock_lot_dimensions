@@ -12,6 +12,12 @@
                        options="{'no_create': True}"/>
                 <field name="product_id" readonly="1"/>
                 <field name="cantidad_m2" string="m²" sum="Total m²" readonly="1"/>
+                
+                <!-- CAMPOS DE PRECIO -->
+                <field name="currency_id" column_invisible="1"/>
+                <field name="precio_unitario" string="Precio/m²" optional="show"/>
+                <field name="precio_total" string="Total" sum="Total General" optional="show" readonly="1"/>
+                
                 <field name="x_grosor" string="Grosor" optional="show" readonly="1"/>
                 <field name="x_alto" string="Alto" optional="show" readonly="1"/>
                 <field name="x_ancho" string="Ancho" optional="show" readonly="1"/>
@@ -31,8 +37,10 @@
                 <field name="fecha_orden" widget="datetime"/>
                 <field name="partner_id"/>
                 <field name="user_id"/>
+                <field name="currency_id" optional="show"/>
                 <field name="total_placas"/>
                 <field name="total_m2"/>
+                <field name="total_con_precio" optional="show" widget="monetary"/>
                 <field name="fecha_expiracion" widget="datetime"/>
                 <field name="state" widget="badge"/>
             </list>
@@ -83,8 +91,10 @@
                             <field name="user_id" readonly="state in ['done', 'cancel']"/>
                             <field name="fecha_orden" readonly="1"/>
                             <field name="fecha_expiracion" readonly="1"/>
+                            <field name="currency_id" readonly="state in ['done', 'cancel']"/>
                             <field name="total_placas" readonly="1"/>
                             <field name="total_m2" readonly="1"/>
+                            <field name="total_con_precio" readonly="1" widget="monetary"/>
                         </group>
                     </group>
                     
