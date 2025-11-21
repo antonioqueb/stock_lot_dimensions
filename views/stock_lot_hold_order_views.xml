@@ -43,7 +43,11 @@
                 <field name="total_m2"/>
                 <field name="total_con_precio" optional="show" widget="monetary"/>
                 <field name="fecha_expiracion" widget="datetime"/>
+                <field name="dias_restantes" optional="show"
+                       decoration-danger="dias_restantes &lt;= 2"
+                       decoration-warning="dias_restantes &lt;= 5 and dias_restantes &gt; 2"/>
                 <field name="state" widget="badge"/>
+                <field name="sale_order_id" optional="hide"/>
             </list>
         </field>
     </record>
@@ -60,39 +64,76 @@
                             type="object" 
                             class="btn-primary"
                             invisible="state != 'draft'"/>
+                    
+                    <!-- NUEVO BOTÓN: Convertir a Orden de Venta -->
+                    <button name="action_convert_to_sale_order" 
+                            string="Convertir a Orden de Venta" 
+                            type="object" 
+                            class="btn-success"
+                            invisible="state != 'confirmed' or sale_order_id"
+                            confirm="¿Está seguro de convertir esta reserva en una orden de venta? Se liberarán los apartados automáticamente."/>
+                    
                     <button name="action_renew" 
                             string="Renovar 5 Días" 
                             type="object" 
                             class="btn-warning"
-                            invisible="state != 'confirmed'"/>
+                            invisible="state != 'confirmed' or sale_order_id"/>
+                    
                     <button name="action_done" 
                             string="Finalizar" 
                             type="object"
-                            invisible="state != 'confirmed'"/>
+                            invisible="state != 'confirmed' or sale_order_id"/>
+                    
                     <button name="action_cancel" 
                             string="Cancelar" 
                             type="object"
                             invisible="state in ('done', 'cancel')"/>
+                    
                     <field name="state" widget="statusbar"/>
                 </header>
                 
                 <sheet>
+                    <!-- BOTÓN INTELIGENTE: Ver Orden de Venta -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="%(sale.act_res_partner_2_sale_order)d" 
+                                type="action" 
+                                class="oe_stat_button" 
+                                icon="fa-shopping-cart"
+                                invisible="not sale_order_id"
+                                context="{'search_default_order_id': sale_order_id}">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Ver</span>
+                                <span class="o_stat_text">Orden</span>
+                            </div>
+                        </button>
+                    </div>
+                    
                     <h1>
                         <field name="name" readonly="1"/>
                     </h1>
                     
+                    <!-- ALERTA: Orden generada -->
+                    <div class="alert alert-success" invisible="not sale_order_id">
+                        <i class="fa fa-check-circle me-2"></i>
+                        <strong>Orden de Venta Generada:</strong>
+                        <field name="sale_order_id" readonly="1"/>
+                    </div>
+                    
                     <group>
                         <group string="Cliente">
-                            <field name="partner_id" readonly="state in ['done', 'cancel']"/>
-                            <field name="project_id" readonly="state in ['done', 'cancel']"/>
-                            <field name="arquitecto_id" readonly="state in ['done', 'cancel']"/>
+                            <field name="partner_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
+                            <field name="project_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
+                            <field name="arquitecto_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
                         </group>
                         
                         <group string="Información">
-                            <field name="user_id" readonly="state in ['done', 'cancel']"/>
+                            <field name="user_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
                             <field name="fecha_orden" readonly="1"/>
                             <field name="fecha_expiracion" readonly="1"/>
-                            <field name="currency_id" readonly="state in ['done', 'cancel']"/>
+                            <field name="dias_restantes" readonly="1" 
+                                   decoration-danger="dias_restantes &lt;= 2"
+                                   decoration-warning="dias_restantes &lt;= 5 and dias_restantes &gt; 2"/>
+                            <field name="currency_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
                             <field name="total_placas" readonly="1"/>
                             <field name="total_m2" readonly="1"/>
                             <field name="total_con_precio" readonly="1" widget="monetary"/>
@@ -102,15 +143,20 @@
                     <notebook>
                         <page string="Placas Reservadas">
                             <field name="hold_line_ids" 
-                                   readonly="state in ['done', 'cancel']"
+                                   readonly="state in ['done', 'cancel'] or sale_order_id"
                                    context="{'tree_view_ref': 'stock_lot_dimensions.view_stock_lot_hold_order_line_tree'}"/>
                         </page>
                         
                         <page string="Notas">
-                            <field name="notas" readonly="state in ['done', 'cancel']"/>
+                            <field name="notas" readonly="state in ['done', 'cancel'] or sale_order_id"/>
                         </page>
                     </notebook>
                 </sheet>
+                
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
             </form>
         </field>
     </record>

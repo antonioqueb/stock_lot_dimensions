@@ -82,12 +82,19 @@ class StockLotHoldOrder(models.Model):
     
     notas = fields.Text(string='Notas')
     
-    # NUEVO: Campo de moneda
     currency_id = fields.Many2one(
         'res.currency',
         string='Moneda',
         required=True,
         default=lambda self: self.env.company.currency_id,
+        tracking=True
+    )
+    
+    # NUEVO: Orden de venta generada
+    sale_order_id = fields.Many2one(
+        'sale.order',
+        string='Orden de Venta Generada',
+        readonly=True,
         tracking=True
     )
     
@@ -104,7 +111,6 @@ class StockLotHoldOrder(models.Model):
         digits=(10, 2)
     )
     
-    # NUEVO: Total con precio
     total_con_precio = fields.Monetary(
         string='Total General',
         compute='_compute_totals',
@@ -151,7 +157,6 @@ class StockLotHoldOrder(models.Model):
                 if line.hold_id:
                     continue
                 
-                # Preparar notas con información de precios
                 notas_hold = f'Orden: {order.name}\n'
                 if line.precio_unitario and line.currency_id:
                     notas_hold += f'Precio: {line.precio_unitario:.2f} {line.currency_id.name}/m²\n'
@@ -188,8 +193,120 @@ class StockLotHoldOrder(models.Model):
                 raise UserError('Solo puede renovar órdenes confirmadas.')
             order.hold_line_ids.mapped('hold_id').filtered(lambda h: h.estado == 'activo').action_renovar_hold()
             order.fecha_expiracion = BusinessDaysCalculator.get_expiration_date(days=5)
+    
+    def action_convert_to_sale_order(self):
+        """Convierte la orden de reserva en orden de venta"""
+        self.ensure_one()
+        
+        if self.state != 'confirmed':
+            raise UserError('Solo puede convertir órdenes de reserva confirmadas.')
+        
+        if self.sale_order_id:
+            raise UserError('Esta orden de reserva ya generó una orden de venta.')
+        
+        if not self.hold_line_ids:
+            raise UserError('No hay líneas de reserva para convertir.')
+        
+        inactive_holds = self.hold_line_ids.filtered(lambda l: l.hold_id and l.hold_id.estado != 'activo')
+        if inactive_holds:
+            raise UserError('Hay reservas que ya no están activas. Renueve las reservas antes de convertir.')
+        
+        # Agrupar productos
+        product_groups = {}
+        for line in self.hold_line_ids:
+            pid = line.product_id.id
+            if pid not in product_groups:
+                product_groups[pid] = {
+                    'product_id': pid,
+                    'quantity': 0,
+                    'selected_lots': [],
+                    'price_unit': line.precio_unitario or 0.0,
+                }
+            product_groups[pid]['quantity'] += line.cantidad_m2
+            product_groups[pid]['selected_lots'].append(line.quant_id.id)
+        
+        products = list(product_groups.values())
+        
+        # Preparar notas
+        notes = f'=== CONVERTIDO DESDE ORDEN DE RESERVA ===\n'
+        notes += f'Orden de Reserva: {self.name}\n'
+        notes += f'Fecha de Reserva: {self.fecha_orden.strftime("%d/%m/%Y %H:%M")}\n'
+        if self.project_id:
+            notes += f'\n=== INFORMACIÓN DEL PROYECTO ===\n'
+            notes += f'Proyecto: {self.project_id.name}\n'
+        if self.arquitecto_id:
+            notes += f'Arquitecto: {self.arquitecto_id.name}\n'
+        if self.notas:
+            notes += f'\n{self.notas}'
+        
+        # Obtener lista de precios
+        pricelist = self.env['product.pricelist'].search([
+            ('name', '=', self.currency_id.name)
+        ], limit=1)
+        
+        if not pricelist:
+            raise UserError(f'No se encontró lista de precios para {self.currency_id.name}')
+        
+        try:
+            result = self.env['sale.order'].with_context(
+                from_hold_order=True,
+                hold_order_id=self.id
+            ).create_from_shopping_cart(
+                partner_id=self.partner_id.id,
+                products=products,
+                services=[],
+                notes=notes,
+                pricelist_id=pricelist.id,
+                apply_tax=True,
+                project_id=self.project_id.id if self.project_id else None,
+                architect_id=self.arquitecto_id.id if self.arquitecto_id else None
+            )
+            
+            if result.get('needs_authorization'):
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': '⚠️ Autorización Requerida',
+                        'message': result['message'],
+                        'type': 'warning',
+                        'sticky': True,
+                    }
+                }
+            
+            if result.get('success'):
+                sale_order = self.env['sale.order'].browse(result['order_id'])
+                
+                self.write({
+                    'sale_order_id': sale_order.id,
+                    'state': 'done'
+                })
+                
+                # Cancelar holds
+                for line in self.hold_line_ids:
+                    if line.hold_id and line.hold_id.estado == 'activo':
+                        line.hold_id.action_cancelar_hold()
+                
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': '✅ Orden de Venta Creada',
+                        'message': f'Orden {sale_order.name} creada exitosamente',
+                        'type': 'success',
+                        'sticky': False,
+                        'next': {
+                            'type': 'ir.actions.act_window',
+                            'res_model': 'sale.order',
+                            'res_id': sale_order.id,
+                            'views': [[False, 'form']],
+                            'target': 'current',
+                        }
+                    }
+                }
+        except Exception as e:
+            raise UserError(f'Error al crear orden de venta: {str(e)}')
 
-# --- AQUI COMIENZA EL MODELO HIJO (Sin identación extra) ---
 
 class StockLotHoldOrderLine(models.Model):
     _name = 'stock.lot.hold.order.line'
@@ -230,7 +347,6 @@ class StockLotHoldOrderLine(models.Model):
         readonly=True
     )
     
-    # NUEVOS CAMPOS DE PRECIO
     currency_id = fields.Many2one(
         'res.currency',
         string='Moneda',
@@ -242,8 +358,7 @@ class StockLotHoldOrderLine(models.Model):
     precio_unitario = fields.Monetary(
         string='Precio/m²',
         currency_field='currency_id',
-        digits='Product Price',
-        help='Precio por m² en la moneda especificada'
+        digits='Product Price'
     )
     
     precio_total = fields.Monetary(
@@ -253,7 +368,6 @@ class StockLotHoldOrderLine(models.Model):
         currency_field='currency_id'
     )
     
-    # Campos relacionados del lote
     x_grosor = fields.Float(
         related='lot_id.x_grosor', 
         string='Grosor (cm)', 
