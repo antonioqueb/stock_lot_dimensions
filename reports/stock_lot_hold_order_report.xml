@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- reports/stock_lot_hold_order_report.xml -->
 <odoo>
     <!-- Definición del reporte -->
     <record id="action_report_stock_lot_hold_order" model="ir.actions.report">
@@ -106,22 +107,30 @@
                             </div>
                         </div>
 
-                        <!-- 3. RESUMEN POR PRODUCTO -->
+                        <!-- 3. RESUMEN POR PRODUCTO (PYTHON) -->
                         <div class="row mt-2 mb-3">
                             <div class="col-12">
                                 <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
                                     <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen por Producto:</strong>
                                     
-                                    <!-- Agrupar líneas por producto -->
-                                    <t t-set="products_dict" t-value="{}"/>
+                                    <!-- ✅ CALCULAR RESUMEN EN PYTHON -->
+                                    <t t-set="product_summary" t-value="{}"/>
                                     <t t-foreach="o.hold_line_ids" t-as="line">
-                                        <t t-set="product_key" t-value="line.product_id.id"/>
-                                        <t t-if="product_key not in products_dict">
-                                            <t t-set="products_dict" t-value="products_dict.update({product_key: {'name': line.product_id.display_name, 'placas': 0, 'm2': 0.0, 'total': 0.0, 'currency': line.currency_id}}) or products_dict"/>
+                                        <t t-set="pid" t-value="line.product_id.id"/>
+                                        <t t-if="pid not in product_summary">
+                                            <t t-set="dummy" t-value="product_summary.update({pid: {
+                                                'name': line.product_id.display_name,
+                                                'placas': 0,
+                                                'm2': 0.0,
+                                                'total': 0.0,
+                                                'currency': line.currency_id
+                                            }})"/>
                                         </t>
-                                        <t t-set="products_dict[product_key]['placas']" t-value="products_dict[product_key]['placas'] + 1"/>
-                                        <t t-set="products_dict[product_key]['m2']" t-value="products_dict[product_key]['m2'] + line.cantidad_m2"/>
-                                        <t t-set="products_dict[product_key]['total']" t-value="products_dict[product_key]['total'] + line.precio_total"/>
+                                        <t t-set="dummy" t-value="product_summary[pid].update({
+                                            'placas': product_summary[pid]['placas'] + 1,
+                                            'm2': product_summary[pid]['m2'] + line.cantidad_m2,
+                                            'total': product_summary[pid]['total'] + line.precio_total
+                                        })"/>
                                     </t>
                                     
                                     <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
@@ -134,14 +143,16 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <t t-foreach="products_dict.items()" t-as="item">
+                                            <t t-foreach="product_summary.items()" t-as="item">
+                                                <t t-set="pid" t-value="item[0]"/>
+                                                <t t-set="data" t-value="item[1]"/>
                                                 <tr>
-                                                    <td><span t-esc="item[1]['name']"/></td>
-                                                    <td class="text-center"><span t-esc="item[1]['placas']"/></td>
-                                                    <td class="text-end"><span t-esc="'%.2f' % item[1]['m2']"/></td>
+                                                    <td><span t-esc="data['name']"/></td>
+                                                    <td class="text-center"><span t-esc="data['placas']"/></td>
+                                                    <td class="text-end"><span t-esc="'%.2f' % data['m2']"/></td>
                                                     <td class="text-end">
-                                                        <span t-esc="'%.2f' % item[1]['total']"/> 
-                                                        <span t-esc="item[1]['currency'].symbol"/>
+                                                        <span t-esc="'%.2f' % data['total']"/> 
+                                                        <span t-esc="data['currency'].symbol"/>
                                                     </td>
                                                 </tr>
                                             </t>
