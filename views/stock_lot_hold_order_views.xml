@@ -159,8 +159,11 @@
                         <page string="Placas Reservadas" name="lines">
                             <field name="hold_line_ids">
                                 <tree editable="bottom" decoration-muted="hold_id != False">
-                                    <field name="sequence" widget="handle"/>
+                                    <control>
+                                        <create string="Agregar Placa"/>
+                                    </control>
                                     
+                                    <field name="sequence" widget="handle"/>
                                     <field name="quant_id" column_invisible="1"/>
                                     
                                     <field name="lot_id" 
@@ -221,7 +224,7 @@
                                  invisible="hold_line_ids">
                                 <p class="mb-0">
                                     <i class="fa fa-info-circle"/> 
-                                    Agregue las placas que desea reservar haciendo clic en "Agregar una línea"
+                                    Agregue las placas que desea reservar haciendo clic en "Agregar Placa"
                                 </p>
                             </div>
                         </page>
