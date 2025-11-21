@@ -248,11 +248,11 @@
                             <div class="o_kanban_record_body">
                                 <div class="row">
                                     <div class="col-6">
-                                        <span class="fa fa-cubes"/> 
+                                        <span class="fa fa-cubes" title="Placas"/> 
                                         <field name="total_placas"/> placas
                                     </div>
                                     <div class="col-6">
-                                        <span class="fa fa-arrows-alt"/> 
+                                        <span class="fa fa-arrows-alt" title="Metros cuadrados"/> 
                                         <field name="total_m2"/> m²
                                     </div>
                                 </div>
@@ -266,7 +266,7 @@
                                     <span t-if="record.state.raw_value === 'confirmed'" 
                                           class="badge"
                                           t-attf-class="badge-{{record.dias_restantes.raw_value &lt;= 3 ? 'danger' : record.dias_restantes.raw_value &lt;= 5 ? 'warning' : 'info'}}">
-                                        <i class="fa fa-clock-o"/> 
+                                        <i class="fa fa-clock-o" title="Días restantes"/> 
                                         <field name="dias_restantes"/> días
                                     </span>
                                 </div>
@@ -278,7 +278,7 @@
         </field>
     </record>
 
-    <!-- Vista de búsqueda -->
+    <!-- Vista de búsqueda SIN FILTRO dias_restantes -->
     <record id="view_stock_lot_hold_order_search" model="ir.ui.view">
         <field name="name">stock.lot.hold.order.search</field>
         <field name="model">stock.lot.hold.order</field>
