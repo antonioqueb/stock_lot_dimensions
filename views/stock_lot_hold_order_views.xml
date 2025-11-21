@@ -91,20 +91,23 @@
                                    options="{'no_create': True}"
                                    readonly="1"/>
                             <field name="partner_id" 
+                                   readonly="state in ('done', 'cancel')"
                                    options="{'no_create_edit': True}"
                                    context="{'default_customer_rank': 1, 'show_address': 1}"/>
                             <field name="project_id" 
+                                   readonly="state in ('done', 'cancel')"
                                    options="{'no_create_edit': True}"
                                    context="{'default_x_es_proyecto_marmol': True}"/>
                             <field name="arquitecto_id" 
+                                   readonly="state in ('done', 'cancel')"
                                    options="{'no_create_edit': True}"
                                    context="{'default_x_es_arquitecto': True}"/>
                         </group>
                         
                         <group string="Información de la Reserva">
                             <field name="user_id" 
-                                   widget="many2one_avatar_user"
-                                   readonly="1"/>
+                                   readonly="state in ('done', 'cancel')"
+                                   widget="many2one_avatar_user"/>
                             <field name="fecha_orden" 
                                    widget="datetime"
                                    readonly="1"/>
@@ -140,8 +143,12 @@
                     <notebook>
                         <page string="Placas Reservadas" name="lines">
                             <field name="hold_line_ids">
-                                <tree editable="bottom" decoration-muted="hold_id != False">
-                                    <field name="quant_id" invisible="1"/>
+                                <tree editable="bottom" 
+                                      decoration-muted="hold_id != False"
+                                      delete="state in ('draft',)"
+                                      create="state in ('draft',)">
+                                    
+                                    <field name="quant_id" column_invisible="1"/>
                                     
                                     <field name="lot_id" 
                                            required="1" 
@@ -200,14 +207,15 @@
                                  invisible="hold_line_ids">
                                 <p class="mb-0">
                                     <i class="fa fa-info-circle"/> 
-                                    Agregue las placas que desea reservar haciendo clic en "Agregar una línea"
+                                    Agregue las placas que desea reservar
                                 </p>
                             </div>
                         </page>
                         
                         <page string="Notas" name="notes">
                             <field name="notas" 
-                                   placeholder="Ingrese notas adicionales sobre esta reserva..."/>
+                                   readonly="state in ('done', 'cancel')"
+                                   placeholder="Ingrese notas adicionales..."/>
                         </page>
                         
                         <page string="Información Adicional" name="additional_info">
@@ -254,26 +262,13 @@
                     <t t-name="card">
                         <div class="oe_kanban_card oe_kanban_global_click">
                             <div class="o_kanban_record_top">
-                                <div class="o_kanban_record_headings">
-                                    <strong><field name="name"/></strong>
-                                    <div class="text-muted"><field name="partner_id"/></div>
-                                </div>
-                                <span class="float-end badge rounded-pill"
-                                      t-attf-class="badge-{{record.state.raw_value === 'confirmed' ? 'success' : 'secondary'}}">
+                                <strong><field name="name"/></strong>
+                                <span class="badge" t-attf-class="badge-{{record.state.raw_value === 'confirmed' ? 'success' : 'secondary'}}">
                                     <field name="state"/>
                                 </span>
                             </div>
-                            
-                            <div class="o_kanban_record_body">
-                                <field name="total_placas"/> placas | <field name="total_m2"/> m²
-                            </div>
-                            
-                            <div class="o_kanban_record_bottom">
-                                <field name="user_id" widget="many2one_avatar_user"/>
-                                <span t-if="record.state.raw_value === 'confirmed'">
-                                    <field name="dias_restantes"/> días
-                                </span>
-                            </div>
+                            <div><field name="partner_id"/></div>
+                            <div><field name="total_placas"/> placas | <field name="total_m2"/> m²</div>
                         </div>
                     </t>
                 </templates>
@@ -289,9 +284,7 @@
             <search>
                 <field name="name"/>
                 <field name="partner_id"/>
-                <field name="user_id"/>
                 <filter string="Confirmadas" name="confirmed" domain="[('state', '=', 'confirmed')]"/>
-                <filter string="Borradores" name="draft" domain="[('state', '=', 'draft')]"/>
             </search>
         </field>
     </record>
