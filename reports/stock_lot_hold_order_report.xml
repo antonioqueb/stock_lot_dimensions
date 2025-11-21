@@ -19,7 +19,7 @@
             <t t-foreach="docs" t-as="o">
                 <t t-call="web.external_layout">
                     <!-- Contenedor Principal con Tipografía Profesional y Compacta -->
-                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000;">
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                         
                         <!-- 1. ENCABEZADO -->
                         <div class="row border-bottom pb-2 mb-3" style="border-color: #000 !important;">
@@ -74,19 +74,15 @@
                                 </table>
                             </div>
 
-                            <!-- Columna Estado -->
+                            <!-- Columna Estado (MODIFICADA PARA URGENCIA) -->
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Estado</strong>
                                 </div>
-                                <table class="table table-borderless table-sm mb-0 p-0" style="width: 100%;">
+                                <table class="table table-borderless table-sm mb-1 p-0" style="width: 100%;">
                                     <tr>
-                                        <td class="p-0"><strong>Fecha:</strong></td>
+                                        <td class="p-0"><strong>Fecha Emisión:</strong></td>
                                         <td class="p-0 text-end"><span t-field="o.fecha_orden" t-options='{"widget": "date"}'/></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="p-0"><strong>Vence:</strong></td>
-                                        <td class="p-0 text-end"><span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/></td>
                                     </tr>
                                     <tr>
                                         <td class="p-0"><strong>Moneda:</strong></td>
@@ -104,16 +100,25 @@
                                         </td>
                                     </tr>
                                 </table>
+
+                                <!-- CUADRO ROJO DE URGENCIA -->
+                                <div class="text-center mt-2" style="border: 3px solid #ff0000; padding: 5px; background-color: #fff5f5;">
+                                    <div style="color: #ff0000; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">
+                                        ⚠️ FECHA DE VENCIMIENTO
+                                    </div>
+                                    <div style="color: #ff0000; font-weight: 900; font-size: 16px; margin-top: 2px;">
+                                        <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- 3. RESUMEN POR PRODUCTO (PYTHON) -->
+                        <!-- 3. RESUMEN POR PRODUCTO -->
                         <div class="row mt-2 mb-3">
                             <div class="col-12">
                                 <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
                                     <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen por Producto:</strong>
                                     
-                                    <!-- ✅ CALCULAR RESUMEN EN PYTHON -->
                                     <t t-set="product_summary" t-value="{}"/>
                                     <t t-foreach="o.hold_line_ids" t-as="line">
                                         <t t-set="pid" t-value="line.product_id.id"/>
@@ -169,9 +174,6 @@
                                             </tr>
                                         </tfoot>
                                     </table>
-                                    <div style="font-size: 7px; font-style: italic; color: #666; margin-top: 4px;">
-                                        * Precios antes de impuestos
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -180,15 +182,17 @@
                         <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
                             <thead>
                                 <tr style="border-bottom: 2px solid #000; color: #000;">
-                                    <th class="text-center" style="width: 4%;">#</th>
-                                    <th style="width: 18%;">Lote</th>
-                                    <th style="width: 28%;">Producto</th>
-                                    <th class="text-center" style="width: 6%;">Grosor</th>
-                                    <th class="text-center" style="width: 6%;">Alto</th>
-                                    <th class="text-center" style="width: 6%;">Ancho</th>
-                                    <th class="text-end" style="width: 8%;">m²</th>
+                                    <th class="text-center" style="width: 3%;">#</th>
+                                    <th style="width: 14%;">Lote</th>
+                                    <th style="width: 9%;">Bloque</th>
+                                    <th style="width: 9%;">Pedimento</th>
+                                    <th style="width: 8%;">Atado</th>
+                                    <th class="text-center" style="width: 5%;">Grosor</th>
+                                    <th class="text-center" style="width: 5%;">Alto</th>
+                                    <th class="text-center" style="width: 5%;">Ancho</th>
+                                    <th class="text-end" style="width: 10%;">m²</th>
                                     <th class="text-end" style="width: 10%;">Precio/m²</th>
-                                    <th class="text-end" style="width: 14%;">Total</th>
+                                    <th class="text-end" style="width: 12%;">Total</th>
                                 </tr>
                             </thead>
                             <tbody style="border-bottom: 1px solid #000;">
@@ -199,14 +203,14 @@
                                 <t t-set="sorted_lines" t-value="o.hold_line_ids.sorted(key=lambda l: l.product_id.display_name)"/>
                                 
                                 <t t-foreach="sorted_lines" t-as="line">
-                                    <!-- Separador de producto -->
+                                    <!-- Encabezado de Producto -->
                                     <t t-if="current_product != line.product_id.id">
-                                        <t t-if="seq > 1">
-                                            <tr style="background-color: #e9ecef;">
-                                                <td colspan="9" style="height: 3px; padding: 0;"></td>
-                                            </tr>
-                                        </t>
                                         <t t-set="current_product" t-value="line.product_id.id"/>
+                                        <tr style="background-color: #343a40; color: white;">
+                                            <td colspan="11" style="padding: 4px 8px; font-weight: bold; font-size: 10px; text-transform: uppercase;">
+                                                <span t-field="line.product_id.display_name"/>
+                                            </td>
+                                        </tr>
                                     </t>
                                     
                                     <tr>
@@ -217,9 +221,17 @@
                                         <td class="align-middle">
                                             <strong t-field="line.lot_id.name"/>
                                         </td>
+                                        <!-- Nuevos Campos -->
                                         <td class="align-middle">
-                                            <span t-field="line.product_id.display_name"/>
+                                            <span t-field="line.lot_id.x_bloque"/>
                                         </td>
+                                        <td class="align-middle">
+                                            <span t-field="line.lot_id.x_pedimento"/>
+                                        </td>
+                                        <td class="align-middle">
+                                            <span t-field="line.lot_id.x_atado"/>
+                                        </td>
+                                        <!-- Dimensiones y Precios -->
                                         <td class="text-center align-middle">
                                             <span t-field="line.x_grosor" t-options='{"precision": 2}'/>
                                         </td>
@@ -245,7 +257,7 @@
                             </tbody>
                             <tfoot>
                                 <tr style="border-top: 2px solid #000;">
-                                    <td colspan="6" class="text-end" style="padding-top: 5px;">
+                                    <td colspan="8" class="text-end" style="padding-top: 5px;">
                                         <span style="text-transform: uppercase; font-weight: bold;">Total m²:</span>
                                     </td>
                                     <td class="text-end" style="padding-top: 5px;">
@@ -261,7 +273,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td colspan="9" class="text-end" style="font-size: 7px; font-style: italic; color: #666; padding-top: 2px;">
+                                    <td colspan="11" class="text-end" style="font-size: 7px; font-style: italic; color: #666; padding-top: 2px;">
                                         * Precios antes de impuestos
                                     </td>
                                 </tr>
