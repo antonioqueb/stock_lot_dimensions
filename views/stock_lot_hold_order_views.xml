@@ -157,74 +157,67 @@
                     <notebook>
                         <!-- Pestaña de Placas Reservadas -->
                         <page string="Placas Reservadas" name="lines">
-                            <field name="hold_line_ids" 
-                                   mode="tree"
-                                   context="{'default_order_id': id}">
-                                <tree editable="bottom" 
-                                      create="1" 
-                                      delete="1"
-                                      decoration-muted="hold_id != False">
+                            <field name="hold_line_ids">
+                                <tree editable="bottom" decoration-muted="hold_id != False">
                                     <field name="sequence" widget="handle"/>
                                     
-                                    <field name="quant_id" 
-                                           column_invisible="1"/>
+                                    <field name="quant_id" column_invisible="1"/>
                                     
                                     <field name="lot_id" 
-                                           required="1"
+                                           required="1" 
                                            domain="[('product_id', '!=', False)]"
-                                           context="{'show_location': True}"
                                            options="{'no_create': True}"/>
                                     
                                     <field name="product_id" 
-                                           readonly="1"
+                                           readonly="1" 
                                            force_save="1"/>
                                     
                                     <field name="cantidad_m2" 
-                                           string="m²"
-                                           sum="Total m²"
-                                           readonly="1"
+                                           string="m²" 
+                                           sum="Total m²" 
+                                           readonly="1" 
                                            force_save="1"/>
                                     
                                     <field name="x_grosor" 
-                                           string="Grosor"
-                                           optional="show"
+                                           string="Grosor" 
+                                           optional="show" 
                                            readonly="1"/>
                                     
                                     <field name="x_alto" 
-                                           string="Alto"
-                                           optional="show"
+                                           string="Alto" 
+                                           optional="show" 
                                            readonly="1"/>
                                     
                                     <field name="x_ancho" 
-                                           string="Ancho"
-                                           optional="show"
+                                           string="Ancho" 
+                                           optional="show" 
                                            readonly="1"/>
                                     
                                     <field name="x_bloque" 
-                                           string="Bloque"
-                                           optional="show"
+                                           string="Bloque" 
+                                           optional="show" 
                                            readonly="1"/>
                                     
                                     <field name="x_tipo" 
-                                           string="Tipo"
-                                           optional="show"
-                                           readonly="1"
-                                           widget="badge"
-                                           decoration-info="x_tipo == 'placa'"
+                                           string="Tipo" 
+                                           optional="show" 
+                                           readonly="1" 
+                                           widget="badge" 
+                                           decoration-info="x_tipo == 'placa'" 
                                            decoration-secondary="x_tipo == 'formato'"/>
                                     
                                     <field name="hold_id" 
-                                           string="Hold Creado"
+                                           string="Hold Creado" 
                                            readonly="1" 
-                                           optional="show"
-                                           widget="badge"
+                                           optional="show" 
+                                           widget="badge" 
                                            decoration-success="hold_id != False"/>
                                 </tree>
                             </field>
                             
                             <!-- Mensaje de ayuda cuando no hay líneas -->
                             <div class="alert alert-info text-center" 
-                                 role="alert"
+                                 role="alert" 
                                  invisible="hold_line_ids">
                                 <p class="mb-0">
                                     <i class="fa fa-info-circle"/> 
@@ -247,7 +240,7 @@
                                     <div>
                                         <field name="fecha_orden" 
                                                widget="datetime" 
-                                               readonly="1"
+                                               readonly="1" 
                                                class="oe_inline"/>
                                     </div>
                                     
@@ -255,7 +248,7 @@
                                     <div>
                                         <field name="fecha_expiracion" 
                                                widget="datetime" 
-                                               readonly="1"
+                                               readonly="1" 
                                                class="oe_inline"/>
                                         <span invisible="state != 'confirmed'" 
                                               class="ms-2">
