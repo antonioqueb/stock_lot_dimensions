@@ -88,8 +88,7 @@ class StockLotHoldWizard(models.TransientModel):
     )
     
     notas = fields.Text(
-        string='Notas',
-        placeholder='Notas adicionales sobre esta reserva...'
+        string='Notas'
     )
     
     x_grosor = fields.Float(related='lot_id.x_grosor', readonly=True)
@@ -187,7 +186,7 @@ class StockLotHoldWizard(models.TransientModel):
             'project_id': project_id,
             'arquitecto_id': arquitecto_id,
             'fecha_inicio': fecha_inicio,
-            'fecha_expiracion': fecha_expiracion,  # 🔑 AGREGAR AQUÍ
+            'fecha_expiracion': fecha_expiracion,
             'notas': self.notas,
         })
         

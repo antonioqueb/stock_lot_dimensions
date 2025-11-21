@@ -28,8 +28,7 @@ class StockLotHoldOrder(models.Model):
         'res.partner',
         string='Cliente',
         required=True,
-        tracking=True,
-        states={'done': [('readonly', True)], 'cancel': [('readonly', True)]}
+        tracking=True
     )
     
     user_id = fields.Many2one(
@@ -37,23 +36,20 @@ class StockLotHoldOrder(models.Model):
         string='Vendedor',
         default=lambda self: self.env.user,
         required=True,
-        tracking=True,
-        states={'done': [('readonly', True)], 'cancel': [('readonly', True)]}
+        tracking=True
     )
     
     project_id = fields.Many2one(
         'project.project',
         string='Proyecto',
-        tracking=True,
-        states={'done': [('readonly', True)], 'cancel': [('readonly', True)]}
+        tracking=True
     )
     
     arquitecto_id = fields.Many2one(
         'res.partner',
         string='Arquitecto',
         domain=[('x_es_arquitecto', '=', True)],
-        tracking=True,
-        states={'done': [('readonly', True)], 'cancel': [('readonly', True)]}
+        tracking=True
     )
     
     fecha_orden = fields.Datetime(
@@ -79,13 +75,11 @@ class StockLotHoldOrder(models.Model):
     hold_line_ids = fields.One2many(
         'stock.lot.hold.order.line',
         'order_id',
-        string='Líneas de Reserva',
-        states={'done': [('readonly', True)], 'cancel': [('readonly', True)]}
+        string='Líneas de Reserva'
     )
     
     notas = fields.Text(
-        string='Notas',
-        states={'done': [('readonly', True)], 'cancel': [('readonly', True)]}
+        string='Notas'
     )
     
     total_placas = fields.Integer(

@@ -30,8 +30,7 @@ class StockLotImageWizard(models.TransientModel):
     )
     
     notas = fields.Text(
-        string='Notas',
-        placeholder='Notas adicionales sobre esta fotografía...'
+        string='Notas'
     )
 
     def action_save_image(self):
