@@ -20,7 +20,9 @@
         'security/stock_lot_hold_security.xml',
         'security/ir.model.access.csv',
         'data/stock_lot_hold_cron.xml',
+        'data/stock_lot_hold_order_sequence.xml',
         'views/stock_lot_views.xml',
+        'views/stock_lot_hold_order_views.xml',
         'views/stock_lot_group_views.xml',
         'views/stock_move_views.xml',
         'views/stock_quant_views.xml',
@@ -29,6 +31,7 @@
         'views/stock_lot_hold_wizard_views.xml',
         'views/res_partner_views.xml',
         'views/project_project_views.xml',
+        'reports/stock_lot_hold_order_report.xml',
     ],
     'assets': {
         'web.assets_backend': [
