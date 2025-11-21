@@ -152,7 +152,7 @@
                         <field name="hold_line_ids" readonly="state in ['done', 'cancel']">
                             <tree editable="bottom" decoration-muted="hold_id != False">
                                 <!-- SIN FIELD SEQUENCE -->
-                                <field name="quant_id" column_invisible="1"/>
+                                <field name="quant_id"/>
                                 
                                 <field name="lot_id" 
                                     required="1" 
