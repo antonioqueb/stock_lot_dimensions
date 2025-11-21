@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+# models/stock_lot_hold_order.py
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+from .utils.business_days import BusinessDaysCalculator
 
 class StockLotHoldOrder(models.Model):
     _name = 'stock.lot.hold.order'
@@ -108,11 +110,9 @@ class StockLotHoldOrder(models.Model):
     
     @api.depends('fecha_expiracion', 'state')
     def _compute_dias_restantes(self):
-        from .utils.business_days import BusinessDaysCalculator
         ahora = fields.Datetime.now()
-        
         for order in self:
-            if order.state not in ['confirmed'] or order.fecha_expiracion <= ahora:
+            if order.state not in ['confirmed'] or not order.fecha_expiracion or order.fecha_expiracion <= ahora:
                 order.dias_restantes = 0
             else:
                 order.dias_restantes = BusinessDaysCalculator.count_business_days(
@@ -127,7 +127,6 @@ class StockLotHoldOrder(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('stock.lot.hold.order') or '/'
             
             if 'fecha_expiracion' not in vals and vals.get('fecha_orden'):
-                from .utils.business_days import BusinessDaysCalculator
                 fecha_orden = fields.Datetime.to_datetime(vals['fecha_orden'])
                 vals['fecha_expiracion'] = BusinessDaysCalculator.add_business_days(fecha_orden, 5)
         
@@ -153,6 +152,7 @@ class StockLotHoldOrder(models.Model):
                     'fecha_inicio': order.fecha_orden,
                     'fecha_expiracion': order.fecha_expiracion,
                     'notas': f'Orden: {order.name}\n{order.notas or ""}',
+                    'company_id': order.company_id.id,
                 })
                 line.hold_id = hold.id
             
@@ -176,11 +176,12 @@ class StockLotHoldOrder(models.Model):
             if order.state != 'confirmed':
                 raise UserError('Solo puede renovar órdenes confirmadas.')
             
+            # Renovar holds hijos
             order.hold_line_ids.mapped('hold_id').filtered(
                 lambda h: h.estado == 'activo'
             ).action_renovar_hold()
             
-            from .utils.business_days import BusinessDaysCalculator
+            # Renovar orden padre
             order.fecha_expiracion = BusinessDaysCalculator.get_expiration_date(days=5)
 
 
@@ -269,12 +270,20 @@ class StockLotHoldOrderLine(models.Model):
     def _onchange_lot_id(self):
         """Cargar quant_id cuando se selecciona un lote"""
         if self.lot_id:
-            # Buscar quant disponible para este lote
-            quant = self.env['stock.quant'].search([
+            # Buscar quant disponible para este lote en la compañía de la orden
+            domain = [
                 ('lot_id', '=', self.lot_id.id),
                 ('quantity', '>', 0),
                 ('location_id.usage', '=', 'internal')
-            ], limit=1)
+            ]
+            
+            # Intentar filtrar por compañía si existe el contexto o el padre
+            if self.order_id and self.order_id.company_id:
+                domain.append(('company_id', '=', self.order_id.company_id.id))
+            elif self.env.context.get('default_company_id'):
+                 domain.append(('company_id', '=', self.env.context.get('default_company_id')))
+
+            quant = self.env['stock.quant'].search(domain, limit=1)
             
             if quant:
                 self.quant_id = quant.id
