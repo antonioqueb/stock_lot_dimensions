@@ -183,10 +183,10 @@
                             <thead>
                                 <tr style="border-bottom: 2px solid #000; color: #000;">
                                     <th class="text-center" style="width: 3%;">#</th>
-                                    <th style="width: 10%;">Lote</th>      <!-- REDUCIDO DE 14% -->
-                                    <th style="width: 8%;">Bloque</th>      <!-- AJUSTADO -->
-                                    <th style="width: 16%;">Pedimento</th>  <!-- AMPLIADO DE 9% -->
-                                    <th style="width: 7%;">Atado</th>       <!-- AJUSTADO -->
+                                    <th style="width: 10%;">Lote</th>
+                                    <th style="width: 8%;">Bloque</th>
+                                    <th style="width: 16%;">Pedimento</th>
+                                    <th style="width: 7%;">Atado</th>
                                     <th class="text-center" style="width: 5%;">Grosor</th>
                                     <th class="text-center" style="width: 5%;">Alto</th>
                                     <th class="text-center" style="width: 5%;">Ancho</th>
@@ -255,16 +255,21 @@
                                     </tr>
                                 </t>
                             </tbody>
+                            
+                            <!-- PIE DE PÁGINA CON IVA 16% -->
                             <tfoot>
+                                <!-- Fila 1: Total m² y Subtotal -->
                                 <tr style="border-top: 2px solid #000;">
                                     <td colspan="8" class="text-end" style="padding-top: 5px;">
                                         <span style="text-transform: uppercase; font-weight: bold;">Total m²:</span>
                                     </td>
                                     <td class="text-end" style="padding-top: 5px;">
-                                        <strong style="font-size: 10px;"><span t-field="o.total_m2" t-options='{"precision": 2}'/></strong>
+                                        <strong style="font-size: 10px;">
+                                            <span t-field="o.total_m2" t-options='{"precision": 2}'/>
+                                        </strong>
                                     </td>
                                     <td class="text-end" style="padding-top: 5px;">
-                                        <span style="text-transform: uppercase; font-weight: bold;">Total:</span>
+                                        <span style="font-weight: bold;">Subtotal:</span>
                                     </td>
                                     <td class="text-end" style="padding-top: 5px;">
                                         <strong style="font-size: 10px;">
@@ -272,9 +277,30 @@
                                         </strong>
                                     </td>
                                 </tr>
+
+                                <!-- Fila 2: IVA 16% -->
                                 <tr>
-                                    <td colspan="11" class="text-end" style="font-size: 7px; font-style: italic; color: #666; padding-top: 2px;">
-                                        * Precios antes de impuestos
+                                    <td colspan="9" style="border: none;"></td>
+                                    <td class="text-end">
+                                        <span style="font-weight: bold;">IVA (16%):</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span t-esc="o.total_con_precio * 0.16" 
+                                              t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                </tr>
+
+                                <!-- Fila 3: Total General -->
+                                <tr style="border-bottom: 2px solid #000;">
+                                    <td colspan="9" style="border: none;"></td>
+                                    <td class="text-end" style="padding-bottom: 5px;">
+                                        <span style="text-transform: uppercase; font-weight: 900;">Total:</span>
+                                    </td>
+                                    <td class="text-end" style="padding-bottom: 5px;">
+                                        <strong style="font-size: 12px;">
+                                            <span t-esc="o.total_con_precio * 1.16" 
+                                                  t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </strong>
                                     </td>
                                 </tr>
                             </tfoot>
