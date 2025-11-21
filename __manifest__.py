@@ -28,7 +28,7 @@
         'views/stock_quant_views.xml',
         'views/stock_lot_image_wizard_views.xml',
         'views/stock_lot_hold_views.xml',
-        'views/stock_lot_hold_order_views.xml',  # ← AHORA PUEDE USAR EL REPORTE
+        # 'views/stock_lot_hold_order_views.xml',  
         'views/stock_lot_hold_wizard_views.xml',
         'views/res_partner_views.xml',
         'views/project_project_views.xml',
