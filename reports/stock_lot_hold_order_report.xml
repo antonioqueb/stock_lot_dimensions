@@ -18,19 +18,17 @@
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
                 <t t-call="web.external_layout">
-                    <!-- Contenedor Principal con Tipografía Profesional y Compacta -->
+                    <!-- Contenedor Principal -->
                     <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                         
                         <!-- 1. ENCABEZADO -->
                         <div class="row border-bottom pb-2 mb-3" style="border-color: #000 !important; align-items: center;">
                             <div class="col-8">
-                                <!-- Título + Código juntos -->
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
                                     Orden de Reserva <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
                                 </h4>
                             </div>
                             <div class="col-4 text-end">
-                                <!-- FECHA DE VENCIMIENTO (Movido aquí) -->
                                 <div class="text-center" style="border: 2px solid #ff0000; padding: 4px; background-color: #fff5f5; display: inline-block; width: 100%;">
                                     <div style="color: #ff0000; font-weight: bold; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
                                         ⚠️ FECHA DE VENCIMIENTO
@@ -42,7 +40,7 @@
                             </div>
                         </div>
 
-                        <!-- 2. INFORMACIÓN GENERAL (3 Columnas) -->
+                        <!-- 2. INFORMACIÓN GENERAL -->
                         <div class="row mb-2">
                             <!-- Columna Cliente -->
                             <div class="col-4">
@@ -65,7 +63,6 @@
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Referencia</strong>
                                 </div>
-                                <!-- Se agregó style padding a las celdas (td) -->
                                 <table class="table table-borderless table-sm mb-0 p-0" style="width: 100%;">
                                     <tr t-if="o.project_id">
                                         <td class="p-0" style="width: 30%; padding: 2px 5px !important;"><strong>Proyecto:</strong></td>
@@ -87,7 +84,6 @@
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Estado</strong>
                                 </div>
-                                <!-- Se agregó style padding a las celdas (td) -->
                                 <table class="table table-borderless table-sm mb-1 p-0" style="width: 100%;">
                                     <tr>
                                         <td class="p-0" style="padding: 2px 5px !important;"><strong>Fecha Emisión:</strong></td>
@@ -109,7 +105,6 @@
                                         </td>
                                     </tr>
                                 </table>
-                                <!-- El cuadro rojo se movió arriba -->
                             </div>
                         </div>
 
@@ -163,7 +158,6 @@
                                             </t>
                                         </tbody>
                                         <tfoot style="border-top: 2px solid #000;">
-                                            <!-- SUBTOTAL -->
                                             <tr style="font-weight: bold;">
                                                 <td>SUBTOTAL</td>
                                                 <td class="text-center"><span t-esc="o.total_placas"/></td>
@@ -173,7 +167,6 @@
                                                     <span t-field="o.currency_id.symbol"/>
                                                 </td>
                                             </tr>
-                                            <!-- IMPUESTO -->
                                             <tr style="font-weight: bold; color: #555;">
                                                 <td colspan="3" class="text-end">IMPUESTO (16%)</td>
                                                 <td class="text-end">
@@ -181,7 +174,6 @@
                                                     <span t-field="o.currency_id.symbol"/>
                                                 </td>
                                             </tr>
-                                            <!-- TOTAL FINAL -->
                                             <tr style="font-weight: 900; font-size: 11px; border-top: 1px solid #ccc;">
                                                 <td colspan="3" class="text-end">TOTAL</td>
                                                 <td class="text-end">
@@ -195,37 +187,38 @@
                             </div>
                         </div>
 
-                        <!-- 4. TABLA DE CONTENIDO DETALLADO -->
+                        <!-- 4. TABLA DE CONTENIDO DETALLADO (Con columnas IVA y TOTAL) -->
                         <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
                             <thead>
                                 <tr style="border-bottom: 2px solid #000; color: #000;">
-                                    <th class="text-center" style="width: 4%;">#</th>
-                                    <th style="width: 18%;">Lote</th>
-                                    <th style="width: 12%;">Bloque</th>
-                                    <!-- Pedimento Eliminado -->
-                                    <th style="width: 12%;">Atado</th>
-                                    <th class="text-center" style="width: 8%;">Grosor</th>
-                                    <th class="text-center" style="width: 8%;">Alto</th>
-                                    <th class="text-center" style="width: 8%;">Ancho</th>
-                                    <th class="text-end" style="width: 10%;">m²</th>
-                                    <th class="text-end" style="width: 10%;">Precio/m²</th>
+                                    <!-- Ajuste de anchos para acomodar nuevas columnas -->
+                                    <th class="text-center" style="width: 3%;">#</th>
+                                    <th style="width: 12%;">Lote</th>
+                                    <th style="width: 8%;">Bloque</th>
+                                    <th style="width: 8%;">Atado</th>
+                                    <th class="text-center" style="width: 5%;">Grosor</th>
+                                    <th class="text-center" style="width: 5%;">Alto</th>
+                                    <th class="text-center" style="width: 5%;">Ancho</th>
+                                    <th class="text-end" style="width: 8%;">m²</th>
+                                    <th class="text-end" style="width: 8%;">Precio/m²</th>
                                     <th class="text-end" style="width: 10%;">Subtotal</th>
+                                    <th class="text-end" style="width: 10%;">IVA (16%)</th>
+                                    <th class="text-end" style="width: 12%;">Total</th>
                                 </tr>
                             </thead>
                             <tbody style="border-bottom: 1px solid #000;">
                                 <t t-set="seq" t-value="1"/>
                                 <t t-set="current_product" t-value="None"/>
                                 
-                                <!-- Ordenar líneas por producto -->
                                 <t t-set="sorted_lines" t-value="o.hold_line_ids.sorted(key=lambda l: l.product_id.display_name)"/>
                                 
                                 <t t-foreach="sorted_lines" t-as="line">
-                                    <!-- Encabezado de Producto (FONDO NEGRO Y LETRA BLANCA) -->
+                                    <!-- Encabezado de Producto -->
                                     <t t-if="current_product != line.product_id.id">
                                         <t t-set="current_product" t-value="line.product_id.id"/>
                                         <tr style="background-color: #000000; color: #FFFFFF;">
-                                            <!-- Colspan ajustado a 10 por la eliminación de pedimento -->
-                                            <td colspan="10" style="padding: 4px 8px; font-weight: bold; font-size: 10px; text-transform: uppercase; color: #FFFFFF;">
+                                            <!-- Colspan ajustado a 12 -->
+                                            <td colspan="12" style="padding: 4px 8px; font-weight: bold; font-size: 10px; text-transform: uppercase; color: #FFFFFF;">
                                                 <span t-field="line.product_id.display_name"/>
                                             </td>
                                         </tr>
@@ -242,11 +235,9 @@
                                         <td class="align-middle">
                                             <span t-field="line.lot_id.x_bloque"/>
                                         </td>
-                                        <!-- Pedimento Eliminado -->
                                         <td class="align-middle">
                                             <span t-field="line.lot_id.x_atado"/>
                                         </td>
-                                        <!-- Dimensiones y Precios -->
                                         <td class="text-center align-middle">
                                             <span t-field="line.x_grosor" t-options='{"precision": 2}'/>
                                         </td>
@@ -263,61 +254,56 @@
                                             <span t-if="line.precio_unitario" t-field="line.precio_unitario" t-options='{"widget": "monetary", "display_currency": line.currency_id}'/>
                                             <span t-else="">-</span>
                                         </td>
+                                        <!-- Subtotal -->
                                         <td class="text-end align-middle">
                                             <strong t-if="line.precio_total" t-field="line.precio_total" t-options='{"widget": "monetary", "display_currency": line.currency_id}'/>
+                                            <span t-else="">-</span>
+                                        </td>
+                                        <!-- IVA (Calculado 16%) -->
+                                        <td class="text-end align-middle" style="color: #555;">
+                                            <span t-if="line.precio_total" t-esc="line.precio_total * 0.16" t-options='{"widget": "monetary", "display_currency": line.currency_id}'/>
+                                            <span t-else="">-</span>
+                                        </td>
+                                        <!-- Total (Subtotal + IVA) -->
+                                        <td class="text-end align-middle">
+                                            <strong t-if="line.precio_total" t-esc="line.precio_total * 1.16" t-options='{"widget": "monetary", "display_currency": line.currency_id}'/>
                                             <span t-else="">-</span>
                                         </td>
                                     </tr>
                                 </t>
                             </tbody>
                             
-                            <!-- PIE DE PÁGINA CON IVA 16% -->
-                            <tfoot>
-                                <!-- Fila 1: Total m² y Subtotal -->
-                                <tr style="border-top: 2px solid #000;">
-                                    <!-- Ajuste de colspan -->
+                            <!-- PIE DE PÁGINA ALINEADO POR COLUMNAS -->
+                            <tfoot style="border-top: 2px solid #000;">
+                                <tr>
+                                    <!-- Espacio vacío hasta columna m2 -->
                                     <td colspan="7" class="text-end" style="padding-top: 5px;">
-                                        <span style="text-transform: uppercase; font-weight: bold;">Total m²:</span>
+                                        <span style="text-transform: uppercase; font-weight: bold;">Totales:</span>
                                     </td>
+                                    <!-- Total M2 -->
                                     <td class="text-end" style="padding-top: 5px;">
                                         <strong style="font-size: 10px;">
                                             <span t-field="o.total_m2" t-options='{"precision": 2}'/>
                                         </strong>
                                     </td>
-                                    <td class="text-end" style="padding-top: 5px;">
-                                        <span style="font-weight: bold;">Subtotal:</span>
-                                    </td>
+                                    <!-- Espacio Precio -->
+                                    <td></td>
+                                    <!-- Total Subtotal -->
                                     <td class="text-end" style="padding-top: 5px;">
                                         <strong style="font-size: 10px;">
                                             <span t-field="o.total_con_precio" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                         </strong>
                                     </td>
-                                </tr>
-
-                                <!-- Fila 2: IVA 16% -->
-                                <tr>
-                                    <!-- Ajuste de colspan -->
-                                    <td colspan="8" style="border: none;"></td>
-                                    <td class="text-end">
-                                        <span style="font-weight: bold;">Impuesto (16%):</span>
+                                    <!-- Total IVA -->
+                                    <td class="text-end" style="padding-top: 5px;">
+                                        <span style="font-size: 10px;">
+                                            <span t-esc="o.total_con_precio * 0.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </span>
                                     </td>
-                                    <td class="text-end">
-                                        <span t-esc="o.total_con_precio * 0.16" 
-                                              t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                    </td>
-                                </tr>
-
-                                <!-- Fila 3: Total General -->
-                                <tr style="border-bottom: 2px solid #000;">
-                                    <!-- Ajuste de colspan -->
-                                    <td colspan="8" style="border: none;"></td>
-                                    <td class="text-end" style="padding-bottom: 5px;">
-                                        <span style="text-transform: uppercase; font-weight: 900;">Total:</span>
-                                    </td>
-                                    <td class="text-end" style="padding-bottom: 5px;">
-                                        <strong style="font-size: 12px;">
-                                            <span t-esc="o.total_con_precio * 1.16" 
-                                                  t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    <!-- Total Final -->
+                                    <td class="text-end" style="padding-top: 5px;">
+                                        <strong style="font-size: 11px; font-weight: 900;">
+                                            <span t-esc="o.total_con_precio * 1.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                         </strong>
                                     </td>
                                 </tr>
@@ -351,7 +337,6 @@
                                         <strong style="font-size: 11px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
                                             Términos y Condiciones de la Reserva
                                         </strong>
-                                        <!-- Tamaño de fuente aumentado a 9px -->
                                         <ul class="list-unstyled mb-0" style="font-size: 9px; text-align: justify; color: #000;">
                                             <li class="mb-2">1. <strong>VIGENCIA:</strong> El material descrito en este documento permanecerá reservado únicamente hasta la "Fecha de Expiración" indicada. Posterior a dicha fecha, el sistema liberará el inventario automáticamente, quedando disponible para venta general sin previo aviso.</li>
                                             <li class="mb-2">2. <strong>MATERIAL NATURAL:</strong> Las piedras naturales (mármol, granito, cuarcita, etc.) son productos de la naturaleza y, por tanto, están sujetas a variaciones de tono, veta, textura y color. Las muestras fotográficas o físicas son meramente indicativas.</li>
