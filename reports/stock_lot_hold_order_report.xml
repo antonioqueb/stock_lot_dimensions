@@ -111,7 +111,7 @@
                             </div>
                         </div>
 
-                        <!-- RESUMEN POR PRODUCTO -->
+                        <!-- RESUMEN POR PRODUCTO (MODIFICADO AQUI) -->
                         <div class="row mt-2 mb-3">
                             <div class="col-12">
                                 <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
@@ -154,7 +154,8 @@
                                                     <td class="text-center"><span t-esc="data['placas']"/></td>
                                                     <td class="text-end"><span t-esc="'%.2f' % data['m2']"/></td>
                                                     <td class="text-end">
-                                                        <span t-esc="'%.2f' % data['total']"/> 
+                                                        <!-- MODIFICADO: {:,.2f} para formato 1,000.00 -->
+                                                        <span t-esc="'{:,.2f}'.format(data['total'])"/> 
                                                         <span t-esc="data['currency'].symbol"/>
                                                     </td>
                                                 </tr>
@@ -166,21 +167,24 @@
                                                 <td class="text-center"><span t-esc="o.total_placas"/></td>
                                                 <td class="text-end"><span t-esc="'%.2f' % o.total_m2"/></td>
                                                 <td class="text-end">
-                                                    <span t-esc="'%.2f' % o.total_con_precio"/> 
+                                                    <!-- MODIFICADO: {:,.2f} -->
+                                                    <span t-esc="'{:,.2f}'.format(o.total_con_precio)"/> 
                                                     <span t-field="o.currency_id.symbol"/>
                                                 </td>
                                             </tr>
                                             <tr style="font-weight: bold; color: #555;">
                                                 <td colspan="3" class="text-end">IMPUESTO (16%)</td>
                                                 <td class="text-end">
-                                                    <span t-esc="'%.2f' % (o.total_con_precio * 0.16)"/> 
+                                                    <!-- MODIFICADO: {:,.2f} -->
+                                                    <span t-esc="'{:,.2f}'.format(o.total_con_precio * 0.16)"/> 
                                                     <span t-field="o.currency_id.symbol"/>
                                                 </td>
                                             </tr>
                                             <tr style="font-weight: 900; font-size: 11px; border-top: 1px solid #ccc;">
                                                 <td colspan="3" class="text-end">TOTAL</td>
                                                 <td class="text-end">
-                                                    <span t-esc="'%.2f' % (o.total_con_precio * 1.16)"/> 
+                                                    <!-- MODIFICADO: {:,.2f} -->
+                                                    <span t-esc="'{:,.2f}'.format(o.total_con_precio * 1.16)"/> 
                                                     <span t-field="o.currency_id.symbol"/>
                                                 </td>
                                             </tr>
