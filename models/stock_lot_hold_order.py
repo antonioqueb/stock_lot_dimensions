@@ -33,6 +33,12 @@ class StockLotHoldOrder(models.Model):
         tracking=True
     )
     
+    # NUEVO CAMPO
+    delivery_address = fields.Text(
+        string='Dirección de Entrega',
+        tracking=True
+    )
+    
     user_id = fields.Many2one(
         'res.users',
         string='Vendedor',
@@ -90,7 +96,6 @@ class StockLotHoldOrder(models.Model):
         tracking=True
     )
     
-    # NUEVO: Orden de venta generada
     sale_order_id = fields.Many2one(
         'sale.order',
         string='Orden de Venta Generada',
@@ -122,6 +127,32 @@ class StockLotHoldOrder(models.Model):
         string='Días Restantes',
         compute='_compute_dias_restantes'
     )
+    
+    @api.onchange('partner_id')
+    def _onchange_partner_id(self):
+        """Actualiza dirección de entrega al cambiar cliente"""
+        if self.partner_id:
+            address_parts = []
+            if self.partner_id.street:
+                address_parts.append(self.partner_id.street)
+            if self.partner_id.street2:
+                address_parts.append(self.partner_id.street2)
+            
+            city_parts = []
+            if self.partner_id.city:
+                city_parts.append(self.partner_id.city)
+            if self.partner_id.state_id:
+                city_parts.append(self.partner_id.state_id.name)
+            if self.partner_id.zip:
+                city_parts.append(f"C.P. {self.partner_id.zip}")
+            
+            if city_parts:
+                address_parts.append(', '.join(city_parts))
+            
+            if self.partner_id.country_id:
+                address_parts.append(self.partner_id.country_id.name)
+            
+            self.delivery_address = '\n'.join(address_parts) if address_parts else ''
     
     @api.depends('hold_line_ids.cantidad_m2', 'hold_line_ids.precio_total')
     def _compute_totals(self):
@@ -211,7 +242,6 @@ class StockLotHoldOrder(models.Model):
         if inactive_holds:
             raise UserError('Hay reservas que ya no están activas. Renueve las reservas antes de convertir.')
         
-        # Agrupar productos
         product_groups = {}
         for line in self.hold_line_ids:
             pid = line.product_id.id
@@ -227,7 +257,6 @@ class StockLotHoldOrder(models.Model):
         
         products = list(product_groups.values())
         
-        # Preparar notas
         notes = f'=== CONVERTIDO DESDE ORDEN DE RESERVA ===\n'
         notes += f'Orden de Reserva: {self.name}\n'
         notes += f'Fecha de Reserva: {self.fecha_orden.strftime("%d/%m/%Y %H:%M")}\n'
@@ -239,7 +268,6 @@ class StockLotHoldOrder(models.Model):
         if self.notas:
             notes += f'\n{self.notas}'
         
-        # Obtener lista de precios
         pricelist = self.env['product.pricelist'].search([
             ('name', '=', self.currency_id.name)
         ], limit=1)
@@ -282,7 +310,6 @@ class StockLotHoldOrder(models.Model):
                     'state': 'done'
                 })
                 
-                # Cancelar holds
                 for line in self.hold_line_ids:
                     if line.hold_id and line.hold_id.estado == 'activo':
                         line.hold_id.action_cancelar_hold()
