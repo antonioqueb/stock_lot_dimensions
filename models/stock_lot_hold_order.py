@@ -33,7 +33,6 @@ class StockLotHoldOrder(models.Model):
         tracking=True
     )
     
-    # NUEVO CAMPO
     delivery_address = fields.Text(
         string='Dirección de Entrega',
         tracking=True
@@ -126,6 +125,30 @@ class StockLotHoldOrder(models.Model):
     dias_restantes = fields.Integer(
         string='Días Restantes',
         compute='_compute_dias_restantes'
+    )
+    
+    # ==================== CAMPOS DEL CHATTER ====================
+    message_follower_ids = fields.One2many(
+        'mail.followers',
+        'res_id',
+        string='Followers',
+        domain=lambda self: [('res_model', '=', self._name)]
+    )
+    
+    message_ids = fields.One2many(
+        'mail.message',
+        'res_id',
+        string='Messages',
+        domain=lambda self: [('model', '=', self._name)],
+        auto_join=True
+    )
+    
+    activity_ids = fields.One2many(
+        'mail.activity',
+        'res_id',
+        string='Activities',
+        domain=lambda self: [('res_model', '=', self._name)],
+        auto_join=True
     )
     
     @api.onchange('partner_id')
