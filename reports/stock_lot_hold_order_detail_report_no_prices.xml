@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="action_report_stock_lot_hold_order_detail_no_prices" model="ir.actions.report">
-        <field name="name">Orden de Reserva - Solo Detalle (Sin Precios)</field>
+        <field name="name">Orden de Reserva - Detalle (Sin Precios)</field>
         <field name="model">stock.lot.hold.order</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">stock_lot_dimensions.report_stock_lot_hold_order_detail_document_no_prices</field>

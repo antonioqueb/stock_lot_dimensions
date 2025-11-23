@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="action_report_stock_lot_hold_order_detail" model="ir.actions.report">
-        <field name="name">Orden de Reserva - Solo Detalle</field>
+        <field name="name">Orden de Reserva - Detalle</field>
         <field name="model">stock.lot.hold.order</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">stock_lot_dimensions.report_stock_lot_hold_order_detail_document</field>
@@ -37,7 +37,7 @@
                                         ⚠️ RESERVA CON VENCIMIENTO: <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
                                     </div>
                                     <div style="color: #333; font-size: 12px; margin-top: 3px; font-style: italic;">
-                                        ⏱️ A partir de esa fecha, las placas se liberan automáticamente y podrán ser asignadas a otro proyecto sin previo aviso.
+                                       A partir de esa fecha, las placas se liberan automáticamente y podrán ser asignadas a otro proyecto sin previo aviso.
                                     </div>
                                 </div>
                             </div>
