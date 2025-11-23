@@ -4,7 +4,7 @@
     <!-- ACCIÓN: REPORTE RESUMEN (Agrupado por Producto) -->
     <!-- ======================================================= -->
     <record id="action_report_sale_order_custom_summary" model="ir.actions.report">
-        <field name="name">Orden de Venta - Resumen (Sin desglosar placas)</field>
+        <field name="name">Orden de Venta - Resumen</field>
         <field name="model">sale.order</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">stock_lot_dimensions.report_sale_order_custom_summary</field>
@@ -27,7 +27,7 @@
                         <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                             <div class="col-12">
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
-                                    Orden de Venta (Resumen) <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
+                                    Orden de Venta <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
                                 </h4>
                                 <div style="font-size: 8px; color: #999; margin-top: 4px;">
                                     Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
