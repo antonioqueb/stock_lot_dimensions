@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ======================================================= -->
+    <!-- ACCIONES DE REPORTE (Aparecerán en el botón Imprimir) -->
+    <!-- ======================================================= -->
+
+    <!-- 1. REPORTE DETALLADO (Con Lotes Individuales) -->
+    <record id="action_report_sale_order_custom_detail" model="ir.actions.report">
+        <field name="name">Orden de Venta - Detalle de Placas</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">stock_lot_dimensions.report_sale_order_custom_detail</field>
+        <field name="report_file">stock_lot_dimensions.report_sale_order_custom_detail</field>
+        <field name="print_report_name">'Orden Detalle - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- 2. REPORTE RESUMEN (Agrupado por Producto) -->
+    <record id="action_report_sale_order_custom_summary" model="ir.actions.report">
+        <field name="name">Orden de Venta - Resumen (Sin desglosar placas)</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">stock_lot_dimensions.report_sale_order_custom_summary</field>
+        <field name="report_file">stock_lot_dimensions.report_sale_order_custom_summary</field>
+        <field name="print_report_name">'Orden Resumen - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- ======================================================= -->
+    <!-- PLANTILLA 1: DETALLE (Muestra cada placa seleccionada)  -->
+    <!-- ======================================================= -->
+    <template id="report_sale_order_custom_detail">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
+                        
+                        <!-- ENCABEZADO -->
+                        <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
+                            <div class="col-12">
+                                <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
+                                    Orden de Venta <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
+                                </h4>
+                                <div style="font-size: 8px; color: #999; margin-top: 4px;">
+                                    Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ALERTA DE VENCIMIENTO (Usando validity_date de sale.order) -->
+                        <div class="row mb-4" t-if="o.validity_date">
+                            <div class="col-12">
+                                <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
+                                    <div style="color: #ff0000; font-weight: 900; font-size: 16px; text-transform: uppercase;">
+                                        ⚠️ OFERTA VÁLIDA HASTA: <span t-field="o.validity_date" t-options='{"widget": "date"}'/>
+                                    </div>
+                                    <div style="color: #333; font-size: 12px; margin-top: 3px; font-style: italic;">
+                                        A partir de esa fecha, los precios y la disponibilidad de los lotes pueden cambiar sin previo aviso.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- INFORMACIÓN GENERAL -->
+                        <div class="row mb-2">
+                            <div class="col-4">
+                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
+                                </div>
+                                <div style="line-height: 1.2; padding-left: 2px;">
+                                    <span style="font-weight: bold; font-size: 12px;" t-field="o.partner_id.name"/><br/>
+                                    <span t-if="o.partner_id.vat">RFC: <span t-field="o.partner_id.vat"/></span>
+                                </div>
+                                <div class="mt-1" style="border-top: 1px dotted #9f9f9fff; padding-top: 1px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase; color: #555; display: block; margin-bottom: 0px;">Dirección Fiscal / Entrega:</strong>
+                                    <div style="font-size: 10px; color: #333; line-height: 0.6; white-space: pre-line; margin-top: 0px;">
+                                        <span t-field="o.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": True}'/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-4">
+                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Referencias</strong>
+                                </div>
+                                <table class="table table-borderless table-sm mb-0 p-0" style="width: 100%;">
+                                    <tr t-if="o.client_order_ref">
+                                        <td class="p-0" style="width: 30%;"><strong>Ref. Cliente:</strong></td>
+                                        <td class="p-0"><span t-field="o.client_order_ref"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-0"><strong>Vendedor:</strong></td>
+                                        <td class="p-0"><span t-field="o.user_id.name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-0"><strong>Plazos:</strong></td>
+                                        <td class="p-0"><span t-field="o.payment_term_id.name"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <div class="col-4">
+                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Estado</strong>
+                                </div>
+                                <table class="table table-borderless table-sm mb-1 p-0" style="width: 100%;">
+                                    <tr>
+                                        <td class="p-0"><strong>Fecha:</strong></td>
+                                        <td class="p-0 text-end"><span t-field="o.date_order" t-options='{"widget": "date"}'/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-0"><strong>Moneda:</strong></td>
+                                        <td class="p-0 text-end"><span t-field="o.currency_id.name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-0 pt-1"><strong>Estatus:</strong></td>
+                                        <td class="p-0 pt-1 text-end">
+                                            <span style="font-weight: 900; text-transform: uppercase;" t-field="o.state"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TABLA DETALLADA -->
+                        <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse; margin-top: 15px;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #000; color: #000;">
+                                    <th class="text-center" style="width: 3%;">#</th>
+                                    <th style="width: 15%;">Lote</th>
+                                    <th style="width: 10%;">Bloque</th>
+                                    <th style="width: 10%;">Atado</th>
+                                    <th class="text-center" style="width: 6%;">Grosor</th>
+                                    <th class="text-center" style="width: 6%;">Alto</th>
+                                    <th class="text-center" style="width: 6%;">Ancho</th>
+                                    <th class="text-end" style="width: 8%;">m²</th>
+                                    <th class="text-end" style="width: 10%;">Precio/m²</th>
+                                    <th class="text-end" style="width: 10%;">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody style="border-bottom: 1px solid #000;">
+                                <t t-set="global_seq" t-value="1"/>
+                                
+                                <t t-foreach="o.order_line" t-as="line">
+                                    <t t-if="not line.display_type">
+                                        <!-- ENCABEZADO DE PRODUCTO -->
+                                        <tr style="background-color: #000000; color: #FFFFFF;">
+                                            <td colspan="10" style="padding: 4px 8px; font-weight: bold; font-size: 10px; text-transform: uppercase; color: #FFFFFF;">
+                                                <span t-field="line.product_id.display_name"/>
+                                                <span t-if="line.name != line.product_id.display_name" style="font-weight: normal; font-style: italic;">
+                                                    - <span t-esc="line.name"/>
+                                                </span>
+                                            </td>
+                                        </tr>
+
+                                        <!-- CASO A: TIENE LOTES SELECCIONADOS (Iteramos los lotes) -->
+                                        <t t-if="line.x_selected_lots">
+                                            <t t-foreach="line.x_selected_lots" t-as="quant">
+                                                <tr>
+                                                    <td class="text-center align-middle">
+                                                        <span t-esc="global_seq"/>
+                                                        <t t-set="global_seq" t-value="global_seq + 1"/>
+                                                    </td>
+                                                    <td class="align-middle"><strong t-field="quant.lot_id.name"/></td>
+                                                    <td class="align-middle"><span t-field="quant.lot_id.x_bloque"/></td>
+                                                    <td class="align-middle"><span t-field="quant.lot_id.x_atado"/></td>
+                                                    <td class="text-center align-middle"><span t-field="quant.lot_id.x_grosor" t-options='{"precision": 2}'/></td>
+                                                    <td class="text-center align-middle"><span t-field="quant.lot_id.x_alto" t-options='{"precision": 3}'/></td>
+                                                    <td class="text-center align-middle"><span t-field="quant.lot_id.x_ancho" t-options='{"precision": 3}'/></td>
+                                                    <td class="text-end align-middle"><strong t-field="quant.quantity" t-options='{"precision": 2}'/></td>
+                                                    <td class="text-end align-middle">
+                                                        <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                                    </td>
+                                                    <td class="text-end align-middle">
+                                                        <!-- Calculo manual del subtotal por placa -->
+                                                        <span t-esc="quant.quantity * line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </t>
+
+                                        <!-- CASO B: NO TIENE LOTES (Producto normal o servicio) -->
+                                        <t t-else="">
+                                            <tr>
+                                                <td class="text-center align-middle"><span t-esc="global_seq"/><t t-set="global_seq" t-value="global_seq + 1"/></td>
+                                                <td colspan="6" class="align-middle" style="font-style: italic; color: #555;">(Sin selección específica de lotes)</td>
+                                                <td class="text-end align-middle"><strong t-field="line.product_uom_qty" t-options='{"precision": 2}'/> <span t-field="line.product_uom.name"/></td>
+                                                <td class="text-end align-middle"><span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td>
+                                                <td class="text-end align-middle"><span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td>
+                                            </tr>
+                                        </t>
+                                    </t>
+                                </t>
+                            </tbody>
+                            
+                            <tfoot style="border-top: 2px solid #000;">
+                                <tr style="font-weight: bold;">
+                                    <td colspan="8" class="text-end">SUBTOTAL</td>
+                                    <td colspan="2" class="text-end">
+                                        <span t-field="o.amount_untaxed" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                </tr>
+                                <tr style="font-weight: bold; color: #555;">
+                                    <td colspan="8" class="text-end">IMPUESTOS</td>
+                                    <td colspan="2" class="text-end">
+                                        <span t-field="o.amount_tax" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                </tr>
+                                <tr style="font-weight: 900; font-size: 11px; border-top: 1px solid #ccc;">
+                                    <td colspan="8" class="text-end">TOTAL</td>
+                                    <td colspan="2" class="text-end">
+                                        <span t-field="o.amount_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        <!-- FOOTER / FIRMAS -->
+                        <div style="page-break-inside: avoid;">
+                            <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
+                                <div class="col-1"></div>
+                                <div class="col-4 text-center">
+                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                                        <strong style="font-size: 9px; text-transform: uppercase;">FIRMA DEL VENDEDOR</strong>
+                                    </div>
+                                </div>
+                                <div class="col-2"></div>
+                                <div class="col-4 text-center">
+                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                                        <strong style="font-size: 9px; text-transform: uppercase;">FIRMA DEL CLIENTE / ACEPTACIÓN</strong>
+                                    </div>
+                                </div>
+                                <div class="col-1"></div>
+                            </div>
+
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
+                                        <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
+                                            Notas y Condiciones
+                                        </strong>
+                                        <div class="mb-1" style="font-size: 8px; text-align: justify; color: #555;">
+                                            <span t-field="o.note"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+
+    <!-- ======================================================= -->
+    <!-- PLANTILLA 2: RESUMEN (Agrupa y suma, oculta lotes)     -->
+    <!-- ======================================================= -->
+    <template id="report_sale_order_custom_summary">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
+                        
+                        <!-- MISMO ENCABEZADO -->
+                        <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
+                            <div class="col-12">
+                                <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
+                                    Orden de Venta (Resumen) <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
+                                </h4>
+                                <div style="font-size: 8px; color: #999; margin-top: 4px;">
+                                    Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ALERTA VENCIMIENTO -->
+                        <div class="row mb-4" t-if="o.validity_date">
+                            <div class="col-12">
+                                <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
+                                    <div style="color: #ff0000; font-weight: 900; font-size: 16px; text-transform: uppercase;">
+                                        ⚠️ OFERTA VÁLIDA HASTA: <span t-field="o.validity_date" t-options='{"widget": "date"}'/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- INFO CLIENTE (Igual que arriba) -->
+                        <div class="row mb-2">
+                             <div class="col-6">
+                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
+                                </div>
+                                <div style="line-height: 1.2; padding-left: 2px;">
+                                    <span style="font-weight: bold; font-size: 12px;" t-field="o.partner_id.name"/><br/>
+                                    <span t-if="o.partner_id.vat">RFC: <span t-field="o.partner_id.vat"/></span>
+                                </div>
+                                <div class="mt-1">
+                                    <span t-field="o.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
+                                </div>
+                            </div>
+                            <div class="col-6 text-end">
+                                <strong style="font-size: 12px;">Estado: <span t-field="o.state"/></strong><br/>
+                                Fecha: <span t-field="o.date_order" t-options='{"widget": "date"}'/>
+                            </div>
+                        </div>
+
+                        <!-- LÓGICA DE AGRUPACIÓN (RESUMEN) -->
+                        <div class="row mt-2 mb-3">
+                            <div class="col-12">
+                                <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
+                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen por Producto:</strong>
+                                    
+                                    <!-- Preparar Datos -->
+                                    <t t-set="product_summary" t-value="{}"/>
+                                    <t t-foreach="o.order_line" t-as="line">
+                                        <t t-if="not line.display_type">
+                                            <t t-set="key" t-value="line.product_id.id"/>
+                                            <t t-if="key not in product_summary">
+                                                <t t-set="dummy" t-value="product_summary.update({key: {
+                                                    'name': line.product_id.display_name,
+                                                    'qty_lot': 0,
+                                                    'qty_total': 0.0,
+                                                    'uom': line.product_uom.name,
+                                                    'subtotal': 0.0
+                                                }})"/>
+                                            </t>
+                                            
+                                            <!-- Calcular conteo de placas si hay lotes, sino 0 -->
+                                            <t t-set="current_plates" t-value="len(line.x_selected_lots) if line.x_selected_lots else 0"/>
+                                            
+                                            <t t-set="dummy" t-value="product_summary[key].update({
+                                                'qty_lot': product_summary[key]['qty_lot'] + current_plates,
+                                                'qty_total': product_summary[key]['qty_total'] + line.product_uom_qty,
+                                                'subtotal': product_summary[key]['subtotal'] + line.price_subtotal
+                                            })"/>
+                                        </t>
+                                    </t>
+                                    
+                                    <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid #ccc;">
+                                                <th style="width: 50%;">Producto</th>
+                                                <th class="text-center" style="width: 15%;">Placas (Lotes)</th>
+                                                <th class="text-end" style="width: 15%;">Cantidad Total</th>
+                                                <th class="text-end" style="width: 20%;">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="product_summary.values()" t-as="data">
+                                                <tr>
+                                                    <td><span t-esc="data['name']"/></td>
+                                                    <td class="text-center">
+                                                        <span t-if="data['qty_lot'] > 0" t-esc="data['qty_lot']"/>
+                                                        <span t-else="">-</span>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                        <tfoot style="border-top: 2px solid #000;">
+                                            <tr style="font-weight: bold;">
+                                                <td colspan="3" class="text-end">SUBTOTAL</td>
+                                                <td class="text-end"><span t-field="o.amount_untaxed" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="3" class="text-end">IMPUESTOS</td>
+                                                <td class="text-end"><span t-field="o.amount_tax" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td>
+                                            </tr>
+                                            <tr style="font-weight: 900; font-size: 11px; border-top: 1px solid #ccc;">
+                                                <td colspan="3" class="text-end">TOTAL GENERAL</td>
+                                                <td class="text-end"><span t-field="o.amount_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FIRMAS Y NOTAS -->
+                        <div style="page-break-inside: avoid;">
+                             <div class="row mt-4">
+                                <div class="col-12">
+                                    <strong>Notas:</strong> <span t-field="o.note"/>
+                                </div>
+                             </div>
+                             <div class="row" style="margin-top: 50px;">
+                                <div class="col-5 text-center" style="border-top: 1px solid #000;">
+                                    Firma Vendedor
+                                </div>
+                                <div class="col-2"></div>
+                                <div class="col-5 text-center" style="border-top: 1px solid #000;">
+                                    Firma Cliente
+                                </div>
+                             </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
