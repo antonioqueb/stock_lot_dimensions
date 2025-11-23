@@ -47,16 +47,16 @@
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
                                 </div>
-                                <div style="line-height: 1.3; padding-left: 2px;">
+                                <div style="line-height: 1.2; padding-left: 2px;">
                                     <span style="font-weight: bold; font-size: 12px;" t-field="o.partner_id.name"/><br/>
                                     <span t-if="o.partner_id.vat">RFC: <span t-field="o.partner_id.vat"/></span>
                                 </div>
                                 
-                                <!-- DIRECCIÓN DE ENTREGA (MODIFICADO: Compactado) -->
-                                <div class="mt-1" style="border-top: 1px dotted #ddd; padding-top: 2px;">
-                                    <strong style="font-size: 9px; text-transform: uppercase; color: #555;">Dirección de Entrega:</strong>
-                                    <!-- Se redujo line-height a 1.1 y margin-top a 0px -->
-                                    <div style="font-size: 9px; color: #333; line-height: 1.1; white-space: pre-line; margin-top: 0px;">
+                                <!-- DIRECCIÓN DE ENTREGA (ULTRA COMPACTA) -->
+                                <div class="mt-1" style="border-top: 1px dotted #ddd; padding-top: 1px;">
+                                    <strong style="font-size: 9px; text-transform: uppercase; color: #555; display: block; margin-bottom: 0px;">Dirección de Entrega:</strong>
+                                    <!-- AQUI ESTA EL CAMBIO CLAVE: line-height: 0.9 y margin-top negativo si fuera necesario -->
+                                    <div style="font-size: 9px; color: #333; line-height: 0.9; white-space: pre-line; margin-top: 0px;">
                                         <span t-field="o.delivery_address"/>
                                     </div>
                                 </div>
