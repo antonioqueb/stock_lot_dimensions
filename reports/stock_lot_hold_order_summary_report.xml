@@ -21,7 +21,7 @@
                         <div class="row border-bottom pb-2 mb-3" style="border-color: #000 !important; align-items: center;">
                             <div class="col-8">
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
-                                    Orden de Reserva - RESUMEN <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
+                                    Orden de Reserva <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
                                 </h4>
                                 <div style="font-size: 8px; color: #999; margin-top: 4px;">
                                     Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
