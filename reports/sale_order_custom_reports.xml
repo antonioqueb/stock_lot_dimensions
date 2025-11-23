@@ -49,7 +49,7 @@
                             </div>
                         </div>
 
-                        <!-- ALERTA DE VENCIMIENTO (Usando validity_date de sale.order) -->
+                        <!-- ALERTA DE VENCIMIENTO -->
                         <div class="row mb-4" t-if="o.validity_date">
                             <div class="col-12">
                                 <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
@@ -155,7 +155,7 @@
                                             </td>
                                         </tr>
 
-                                        <!-- CASO A: TIENE LOTES SELECCIONADOS (Iteramos los lotes) -->
+                                        <!-- CASO A: TIENE LOTES SELECCIONADOS -->
                                         <t t-if="line.x_selected_lots">
                                             <t t-foreach="line.x_selected_lots" t-as="quant">
                                                 <tr>
@@ -174,19 +174,22 @@
                                                         <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                                     </td>
                                                     <td class="text-end align-middle">
-                                                        <!-- Calculo manual del subtotal por placa -->
                                                         <span t-esc="quant.quantity * line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                                     </td>
                                                 </tr>
                                             </t>
                                         </t>
 
-                                        <!-- CASO B: NO TIENE LOTES (Producto normal o servicio) -->
+                                        <!-- CASO B: NO TIENE LOTES (CORREGIDO EL UOM) -->
                                         <t t-else="">
                                             <tr>
                                                 <td class="text-center align-middle"><span t-esc="global_seq"/><t t-set="global_seq" t-value="global_seq + 1"/></td>
                                                 <td colspan="6" class="align-middle" style="font-style: italic; color: #555;">(Sin selección específica de lotes)</td>
-                                                <td class="text-end align-middle"><strong t-field="line.product_uom_qty" t-options='{"precision": 2}'/> <span t-field="line.product_uom.name"/></td>
+                                                <td class="text-end align-middle">
+                                                    <strong t-field="line.product_uom_qty" t-options='{"precision": 2}'/> 
+                                                    <!-- CORRECCIÓN AQUI TAMBIEN: -->
+                                                    <span t-field="line.product_id.uom_id.name"/>
+                                                </td>
                                                 <td class="text-end align-middle"><span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td>
                                                 <td class="text-end align-middle"><span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td>
                                             </tr>
@@ -287,7 +290,7 @@
                             </div>
                         </div>
 
-                        <!-- INFO CLIENTE (Igual que arriba) -->
+                        <!-- INFO CLIENTE -->
                         <div class="row mb-2">
                              <div class="col-6">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
@@ -319,11 +322,12 @@
                                         <t t-if="not line.display_type">
                                             <t t-set="key" t-value="line.product_id.id"/>
                                             <t t-if="key not in product_summary">
+                                                <!-- CORRECCIÓN CRÍTICA AQUI: Usamos product_id.uom_id.name -->
                                                 <t t-set="dummy" t-value="product_summary.update({key: {
                                                     'name': line.product_id.display_name,
                                                     'qty_lot': 0,
                                                     'qty_total': 0.0,
-                                                    'uom': line.product_uom.name,
+                                                    'uom': line.product_id.uom_id.name, 
                                                     'subtotal': 0.0
                                                 }})"/>
                                             </t>
