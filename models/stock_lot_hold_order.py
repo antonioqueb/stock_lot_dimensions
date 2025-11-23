@@ -8,6 +8,8 @@ class StockLotHoldOrder(models.Model):
     _name = 'stock.lot.hold.order'
     _description = 'Orden de Reserva de Lotes'
     _order = 'create_date desc'
+    # Al heredar estos mixins, Odoo crea automáticamente los campos del chatter
+    # con la configuración correcta para la interfaz visual.
     _inherit = ['mail.thread', 'mail.activity.mixin']
     
     name = fields.Char(
@@ -127,29 +129,9 @@ class StockLotHoldOrder(models.Model):
         compute='_compute_dias_restantes'
     )
     
-    # ==================== CAMPOS DEL CHATTER ====================
-    message_follower_ids = fields.One2many(
-        'mail.followers',
-        'res_id',
-        string='Followers',
-        domain=lambda self: [('res_model', '=', self._name)]
-    )
-    
-    message_ids = fields.One2many(
-        'mail.message',
-        'res_id',
-        string='Messages',
-        domain=lambda self: [('model', '=', self._name)],
-        auto_join=True
-    )
-    
-    activity_ids = fields.One2many(
-        'mail.activity',
-        'res_id',
-        string='Activities',
-        domain=lambda self: [('res_model', '=', self._name)],
-        auto_join=True
-    )
+    # ==================== CORRECCIÓN ====================
+    # Se eliminaron las definiciones manuales de message_follower_ids, message_ids y activity_ids.
+    # Esto permite que Odoo use las definiciones estándar de 'mail.thread' que funcionan con el widget visual.
     
     @api.onchange('partner_id')
     def _onchange_partner_id(self):
