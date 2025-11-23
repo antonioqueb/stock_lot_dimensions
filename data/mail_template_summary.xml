@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="sale.email_template_edi_sale" model="mail.template">
+            <!-- 1. Apuntamos a tu reporte de Resumen -->
+            <field name="report_template" ref="stock_lot_dimensions.action_report_sale_order_custom_summary"/>
+            
+            <!-- 2. Definimos el nombre del archivo adjunto LIMPIO (sin la palabra resumen) -->
+            <field name="report_name">Orden de Venta - {{ (object.name or '') }}</field>
+        </record>
+    </data>
+</odoo>
