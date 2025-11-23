@@ -244,17 +244,25 @@
                             </div>
                         </div>
 
-                        <!-- TÉRMINOS Y CONDICIONES (PIE DE PÁGINA ESPECÍFICO) -->
-                        <div style="margin-top: 30px; page-break-inside: avoid;">
-                            <div class="row">
-                                <div class="col-12">
-                                    <p style="font-size: 8px; color: #777; text-align: justify;">
-                                        <strong>CONDICIONES GENERALES DE VENTA:</strong> 
-                                        1. El material pétreo es un producto natural, por lo que está sujeto a variaciones de tono, veta y textura. 
-                                        2. Las muestras son solo indicativas. 
-                                        3. Los precios están sujetos a cambio sin previo aviso salvo confirmación de pedido. 
-                                        4. La mercancía viaja por cuenta y riesgo del comprador.
-                                    </p>
+                        <!-- TÉRMINOS Y CONDICIONES ESPECÍFICOS (MÁRMOL) -->
+                        <div class="row mt-4" style="page-break-inside: avoid;">
+                            <div class="col-12">
+                                <div style="border: 1px solid #ddd; padding: 10px; background-color: #fcfcfc;">
+                                    <strong style="font-size: 9px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase; color: #333;">
+                                        Términos y Condiciones Generales de Venta
+                                    </strong>
+                                    <div class="row" style="font-size: 7px; text-align: justify; color: #555;">
+                                        <div class="col-6">
+                                            <p class="mb-1"><strong>1. NATURALEZA DEL PRODUCTO:</strong> La piedra natural está sujeta a variaciones de tono, veta y textura. Las muestras son indicativas. Poros, cristalizaciones y vetas naturales no se consideran defectos ni motivo de devolución.</p>
+                                            <p class="mb-1"><strong>2. INSPECCIÓN:</strong> La firma de recibido o salida del almacén implica la aceptación total del material. <strong>No se aceptan devoluciones de material cortado o instalado.</strong></p>
+                                            <p class="mb-0"><strong>3. APARTADOS (HOLDS):</strong> Las reservas expiran automáticamente a los 5 días hábiles si no hay confirmación. El material se libera sin previo aviso.</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <p class="mb-1"><strong>4. MEDIDAS:</strong> Las dimensiones son nominales y pueden variar ligeramente. El cliente asume la merma natural por corte.</p>
+                                            <p class="mb-1"><strong>5. TRANSPORTE:</strong> La mercancía viaja por cuenta y riesgo del cliente. La entrega es a pie de camión; maniobras de descarga son responsabilidad del cliente.</p>
+                                            <p class="mb-0"><strong>6. PAGOS:</strong> Precios sujetos a cambio por divisa. El material debe estar liquidado 100% antes de la entrega.</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             

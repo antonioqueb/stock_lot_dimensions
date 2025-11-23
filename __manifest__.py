@@ -24,10 +24,11 @@
         'reports/stock_lot_hold_order_report.xml',
         'reports/stock_lot_hold_order_summary_report.xml', 
         'reports/stock_lot_hold_order_detail_report.xml',
-        'reports/stock_lot_hold_order_report_no_prices.xml',              # NUEVO
-        'reports/stock_lot_hold_order_summary_report_no_prices.xml',     # NUEVO
+        'reports/stock_lot_hold_order_report_no_prices.xml',
+        'reports/stock_lot_hold_order_summary_report_no_prices.xml',
         'reports/stock_lot_hold_order_detail_report_no_prices.xml',  
-        'reports/sale_order_custom_reports.xml', 
+        'reports/sale_order_custom_detail_report.xml',
+        'reports/sale_order_custom_summary_report.xml',
         'reports/sale_quotation_custom_report.xml',
         'views/stock_lot_views.xml',
         'views/stock_lot_group_views.xml',
