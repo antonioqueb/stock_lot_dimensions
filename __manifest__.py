@@ -23,7 +23,10 @@
         'data/stock_lot_hold_order_sequence.xml',
         'reports/stock_lot_hold_order_report.xml',
         'reports/stock_lot_hold_order_summary_report.xml', 
-        'reports/stock_lot_hold_order_detail_report.xml',   
+        'reports/stock_lot_hold_order_detail_report.xml',
+    'reports/stock_lot_hold_order_report_no_prices.xml',              # NUEVO
+    'reports/stock_lot_hold_order_summary_report_no_prices.xml',     # NUEVO
+    'reports/stock_lot_hold_order_detail_report_no_prices.xml',   
         'views/stock_lot_views.xml',
         'views/stock_lot_group_views.xml',
         'views/stock_move_views.xml',

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_stock_lot_hold_order_summary_no_prices" model="ir.actions.report">
+        <field name="name">Orden de Reserva - Solo Resumen (Sin Precios)</field>
+        <field name="model">stock.lot.hold.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">stock_lot_dimensions.report_stock_lot_hold_order_summary_document_no_prices</field>
+        <field name="report_file">stock_lot_dimensions.report_stock_lot_hold_order_summary_document_no_prices</field>
+        <field name="print_report_name">'Reserva Resumen Sin Precios - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_stock_lot_hold_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_stock_lot_hold_order_summary_document_no_prices">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
+                        
+                        <!-- ENCABEZADO -->
+                        <div class="row border-bottom pb-2 mb-3" style="border-color: #000 !important; align-items: center;">
+                            <div class="col-8">
+                                <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
+                                    Orden de Reserva - RESUMEN <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
+                                </h4>
+                                <div style="font-size: 8px; color: #999; margin-top: 4px;">
+                                    Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                                </div>
+                            </div>
+                            <div class="col-4 text-end">
+                                <div class="text-center" style="border: 2px solid #ff0000; padding: 4px; background-color: #fff5f5; display: inline-block; width: 100%;">
+                                    <div style="color: #ff0000; font-weight: bold; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
+                                        ⚠️ FECHA DE VENCIMIENTO
+                                    </div>
+                                    <div style="color: #ff0000; font-weight: 900; font-size: 14px; margin-top: 1px;">
+                                        <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- INFORMACIÓN GENERAL -->
+                        <div class="row mb-2">
+                            <div class="col-4">
+                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
+                                </div>
+                                <div style="line-height: 1.2; padding-left: 2px;">
+                                    <span style="font-weight: bold; font-size: 12px;" t-field="o.partner_id.name"/><br/>
+                                    <span t-if="o.partner_id.vat">RFC: <span t-field="o.partner_id.vat"/></span>
+                                </div>
+                                <div class="mt-1" style="border-top: 1px dotted #9f9f9fff; padding-top: 1px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase; color: #555; display: block; margin-bottom: 0px;">Dirección de Entrega:</strong>
+                                    <div style="font-size: 10px; color: #333; line-height: 0.6; white-space: pre-line; margin-top: 0px;">
+                                        <span t-field="o.delivery_address"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-4">
+                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Referencia</strong>
+                                </div>
+                                <table class="table table-borderless table-sm mb-0 p-0" style="width: 100%;">
+                                    <tr t-if="o.project_id">
+                                        <td class="p-0" style="width: 30%; padding: 2px 5px !important;"><strong>Proyecto:</strong></td>
+                                        <td class="p-0" style="padding: 2px 5px !important;"><span t-field="o.project_id.name"/></td>
+                                    </tr>
+                                    <tr t-if="o.arquitecto_id">
+                                        <td class="p-0" style="padding: 2px 5px !important;"><strong>Arquitecto:</strong></td>
+                                        <td class="p-0" style="padding: 2px 5px !important;"><span t-field="o.arquitecto_id.name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-0" style="padding: 2px 5px !important;"><strong>Vendedor:</strong></td>
+                                        <td class="p-0" style="padding: 2px 5px !important;"><span t-field="o.user_id.name"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <div class="col-4">
+                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Estado</strong>
+                                </div>
+                                <table class="table table-borderless table-sm mb-1 p-0" style="width: 100%;">
+                                    <tr>
+                                        <td class="p-0" style="padding: 2px 5px !important;"><strong>Fecha Emisión:</strong></td>
+                                        <td class="p-0 text-end" style="padding: 2px 5px !important;"><span t-field="o.fecha_orden" t-options='{"widget": "date"}'/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-0 pt-1" style="padding: 2px 5px !important;"><strong>Estatus:</strong></td>
+                                        <td class="p-0 pt-1 text-end" style="padding: 2px 5px !important;">
+                                            <span style="font-weight: 900; text-transform: uppercase;">
+                                                <t t-if="o.state == 'draft'">Borrador</t>
+                                                <t t-if="o.state == 'confirmed'">Confirmada</t>
+                                                <t t-if="o.state == 'done'">Finalizada</t>
+                                                <t t-if="o.state == 'cancel'">Cancelada</t>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- RESUMEN POR PRODUCTO (SIN PRECIOS) -->
+                        <div class="row mt-2 mb-3">
+                            <div class="col-12">
+                                <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
+                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen por Producto:</strong>
+                                    
+                                    <t t-set="product_summary" t-value="{}"/>
+                                    <t t-foreach="o.hold_line_ids" t-as="line">
+                                        <t t-set="pid" t-value="line.product_id.id"/>
+                                        <t t-if="pid not in product_summary">
+                                            <t t-set="dummy" t-value="product_summary.update({pid: {
+                                                'name': line.product_id.display_name,
+                                                'placas': 0,
+                                                'm2': 0.0
+                                            }})"/>
+                                        </t>
+                                        <t t-set="dummy" t-value="product_summary[pid].update({
+                                            'placas': product_summary[pid]['placas'] + 1,
+                                            'm2': product_summary[pid]['m2'] + line.cantidad_m2
+                                        })"/>
+                                    </t>
+                                    
+                                    <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid #ccc;">
+                                                <th style="width: 70%;">Nombre</th>
+                                                <th class="text-center" style="width: 15%;">Placas</th>
+                                                <th class="text-end" style="width: 15%;">m²</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="product_summary.items()" t-as="item">
+                                                <t t-set="pid" t-value="item[0]"/>
+                                                <t t-set="data" t-value="item[1]"/>
+                                                <tr>
+                                                    <td><span t-esc="data['name']"/></td>
+                                                    <td class="text-center"><span t-esc="data['placas']"/></td>
+                                                    <td class="text-end"><span t-esc="'%.2f' % data['m2']"/></td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                        <tfoot style="border-top: 2px solid #000;">
+                                            <tr style="font-weight: bold;">
+                                                <td>TOTAL</td>
+                                                <td class="text-center"><span t-esc="o.total_placas"/></td>
+                                                <td class="text-end"><span t-esc="'%.2f' % o.total_m2"/></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FIRMAS Y TÉRMINOS -->
+                        <div style="page-break-inside: avoid;">
+                            <div class="row" style="margin-top: 30px; margin-bottom: 20px;">
+                                <div class="col-1"></div>
+                                <div class="col-4 text-center">
+                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                                        <strong style="font-size: 9px; text-transform: uppercase;">Firma Vendedor</strong>
+                                    </div>
+                                </div>
+                                <div class="col-2"></div>
+                                <div class="col-4 text-center">
+                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                                        <strong style="font-size: 9px; text-transform: uppercase;">Firma Cliente / Aceptación</strong>
+                                    </div>
+                                </div>
+                                <div class="col-1"></div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div style="border: 1px solid #000; padding: 8px;">
+                                        <strong style="font-size: 11px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
+                                            Términos y Condiciones de la Reserva
+                                        </strong>
+                                        <ul class="list-unstyled mb-0" style="font-size: 9px; text-align: justify; color: #000;">
+                                            <li class="mb-2">1. <strong>VIGENCIA:</strong> El material descrito en este documento permanecerá reservado únicamente hasta la "Fecha de Expiración" indicada. Posterior a dicha fecha, el sistema liberará el inventario automáticamente, quedando disponible para venta general sin previo aviso.</li>
+                                            <li class="mb-2">2. <strong>MATERIAL NATURAL:</strong> Las piedras naturales (mármol, granito, cuarcita, etc.) son productos de la naturaleza y, por tanto, están sujetas a variaciones de tono, veta, textura y color. Las muestras fotográficas o físicas son meramente indicativas.</li>
+                                            <li class="mb-2">3. <strong>DIMENSIONES:</strong> Las medidas expresadas en este documento son nominales y pueden presentar variaciones mínimas propias del proceso de corte y medición. Se recomienda la inspección física antes de la transformación.</li>
+                                            <li>4. <strong>ACEPTACIÓN:</strong> La firma de este documento constituye la aceptación de las placas seleccionadas en el estado en que se encuentran. No se aceptan reclamaciones posteriores sobre características visibles del material una vez procesado o entregado.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center text-muted mt-2" style="font-size: 7px;">
+                                Documento Interno | Página <span class="page"/>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
