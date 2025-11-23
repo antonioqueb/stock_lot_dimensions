@@ -189,3 +189,30 @@ class SaleOrder(models.Model):
         for order in self:
             if order.picking_ids:
                 cleaner.clear_pickings_lots(order.picking_ids)
+
+    @api.model
+    def _update_email_template_report(self):
+        """
+        Función llamada desde XML (data/mail_template_summary.xml) para actualizar 
+        la plantilla de correo y forzar el uso del reporte personalizado.
+        Esto se hace vía Python para saltar la protección noupdate="1" del registro original.
+        """
+        # 1. Buscar la plantilla original de ventas
+        template = self.env.ref('sale.email_template_edi_sale', raise_if_not_found=False)
+        
+        # 2. Buscar tu reporte personalizado
+        report = self.env.ref('stock_lot_dimensions.action_report_sale_order_custom_summary', raise_if_not_found=False)
+        
+        if template and report:
+            try:
+                # 3. Forzar la escritura (Python ignora noupdate)
+                # Usamos 'report_template_ids' que es el campo estándar en versiones recientes (Many2many)
+                template.write({
+                    'report_template_ids': [(6, 0, [report.id])],
+                    'report_name': "Orden de Venta - {{ (object.name or '') }}"
+                })
+                _logger.info("SUCCESS: Plantilla de correo de ventas actualizada al reporte personalizado (stock_lot_dimensions).")
+            except Exception as e:
+                _logger.error(f"ERROR: No se pudo actualizar la plantilla de correo: {str(e)}")
+        else:
+            _logger.warning("WARNING: No se pudo actualizar la plantilla. Plantilla 'sale.email_template_edi_sale' o Reporte no encontrados.")

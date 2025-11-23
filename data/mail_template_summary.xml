@@ -2,19 +2,9 @@
 <odoo>
     <data>
         <!-- 
-            Usamos 'function' para forzar la escritura en la plantilla de email.
-            Esto es necesario porque Odoo protege la plantilla 'sale.email_template_edi_sale' 
-            con noupdate="1", por lo que un tag <record> normal es ignorado.
+            Llamamos a la función Python definida en sale.order.
+            Esto evita el error de argumentos XML y se salta la restricción noupdate.
         -->
-        <function name="write" model="mail.template">
-            <!-- 1. Buscamos la plantilla original de ventas -->
-            <value eval="[ref('sale.email_template_edi_sale')]"/>
-            
-            <!-- 2. Diccionario con los valores a escribir -->
-            <value eval="{
-                'report_template_ids': [(6, 0, [ref('stock_lot_dimensions.action_report_sale_order_custom_summary')])],
-                'report_name': 'Orden de Venta - {{ (object.name or \'\') }}'
-            }"/>
-        </function>
+        <function model="sale.order" name="_update_email_template_report"/>
     </data>
 </odoo>
