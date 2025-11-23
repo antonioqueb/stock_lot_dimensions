@@ -17,9 +17,9 @@
                 <t t-call="web.external_layout">
                     <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                         
-                        <!-- ENCABEZADO -->
-                        <div class="row border-bottom pb-2 mb-3" style="border-color: #000 !important; align-items: center;">
-                            <div class="col-8">
+                        <!-- ENCABEZADO SIMPLE -->
+                        <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
+                            <div class="col-12">
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
                                     Orden de Reserva <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
                                 </h4>
@@ -27,13 +27,17 @@
                                     Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
                                 </div>
                             </div>
-                            <div class="col-4 text-end">
-                                <div class="text-center" style="border: 2px solid #ff0000; padding: 4px; background-color: #fff5f5; display: inline-block; width: 100%;">
-                                    <div style="color: #ff0000; font-weight: bold; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
-                                        ⚠️ FECHA DE VENCIMIENTO
+                        </div>
+
+                        <!-- NUEVO BLOQUE DE ALERTA (VENCIMIENTO) -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div style="border: 2px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
+                                    <div style="color: #ff0000; font-weight: 900; font-size: 12px; text-transform: uppercase;">
+                                        ⚠️ RESERVA CON VENCIMIENTO: <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
                                     </div>
-                                    <div style="color: #ff0000; font-weight: 900; font-size: 14px; margin-top: 1px;">
-                                        <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
+                                    <div style="color: #333; font-size: 10px; margin-top: 3px; font-style: italic;">
+                                        ⏱️ A partir de esa fecha, las placas se liberan automáticamente y podrán ser asignadas a otro proyecto sin previo aviso.
                                     </div>
                                 </div>
                             </div>
@@ -177,33 +181,41 @@
 
                         <!-- FIRMAS Y TÉRMINOS -->
                         <div style="page-break-inside: avoid;">
-                            <div class="row" style="margin-top: 30px; margin-bottom: 20px;">
+                            <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                                 <div class="col-1"></div>
                                 <div class="col-4 text-center">
                                     <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                        <strong style="font-size: 9px; text-transform: uppercase;">Firma Vendedor</strong>
+                                        <strong style="font-size: 9px; text-transform: uppercase;">FIRMA DEL VENDEDOR</strong>
                                     </div>
                                 </div>
                                 <div class="col-2"></div>
                                 <div class="col-4 text-center">
                                     <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                        <strong style="font-size: 9px; text-transform: uppercase;">Firma Cliente / Aceptación</strong>
+                                        <strong style="font-size: 9px; text-transform: uppercase;">FIRMA DEL CLIENTE / ACEPTACIÓN DE LA RESERVA</strong>
                                     </div>
                                 </div>
                                 <div class="col-1"></div>
                             </div>
 
-                            <div class="row mt-3">
+                            <!-- LEYENDA DE ACEPTACIÓN DE VENCIMIENTO -->
+                            <div class="row mb-3">
+                                <div class="col-12 text-center">
+                                    <p style="font-size: 9px; margin-top: 5px; padding: 0 20px;">
+                                        Al firmar este documento, el cliente confirma la selección de las placas y acepta que la <span style="font-weight: bold;">RESERVA ES VÁLIDA SOLO HASTA EL <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/></span>. Para garantizar la disponibilidad del material en su proyecto, se recomienda firmar y formalizar las condiciones comerciales antes de esa fecha.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="row mt-2">
                                 <div class="col-12">
-                                    <div style="border: 1px solid #000; padding: 8px;">
-                                        <strong style="font-size: 11px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
-                                            Términos y Condiciones de la Reserva
+                                    <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
+                                        <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
+                                            Términos y Condiciones Generales
                                         </strong>
-                                        <ul class="list-unstyled mb-0" style="font-size: 9px; text-align: justify; color: #000;">
-                                            <li class="mb-2">1. <strong>VIGENCIA:</strong> El material descrito en este documento permanecerá reservado únicamente hasta la "Fecha de Expiración" indicada. Posterior a dicha fecha, el sistema liberará el inventario automáticamente, quedando disponible para venta general sin previo aviso.</li>
-                                            <li class="mb-2">2. <strong>MATERIAL NATURAL:</strong> Las piedras naturales (mármol, granito, cuarcita, etc.) son productos de la naturaleza y, por tanto, están sujetas a variaciones de tono, veta, textura y color. Las muestras fotográficas o físicas son meramente indicativas.</li>
-                                            <li class="mb-2">3. <strong>DIMENSIONES:</strong> Las medidas expresadas en este documento son nominales y pueden presentar variaciones mínimas propias del proceso de corte y medición. Se recomienda la inspección física antes de la transformación.</li>
-                                            <li>4. <strong>ACEPTACIÓN:</strong> La firma de este documento constituye la aceptación de las placas seleccionadas en el estado en que se encuentran. No se aceptan reclamaciones posteriores sobre características visibles del material una vez procesado o entregado.</li>
+                                        <ul class="list-unstyled mb-0" style="font-size: 8px; text-align: justify; color: #555;">
+                                            <li class="mb-1">1. <strong>MATERIAL NATURAL:</strong> Las piedras naturales son productos de la naturaleza y están sujetas a variaciones de tono, veta y textura.</li>
+                                            <li class="mb-1">2. <strong>DIMENSIONES:</strong> Las medidas son nominales y pueden presentar variaciones mínimas.</li>
+                                            <li>3. <strong>ACEPTACIÓN:</strong> La firma constituye la aceptación del material en el estado en que se encuentra.</li>
                                         </ul>
                                     </div>
                                 </div>
