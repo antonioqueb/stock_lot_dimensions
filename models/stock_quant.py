@@ -89,9 +89,10 @@ class StockQuant(models.Model):
         help='Fecha de expiración del hold'
     )
     
+    # CORRECCIÓN APLICADA: Usar un compute method separado para este campo NO almacenado
     x_hold_dias_restantes = fields.Integer(
         string='Días Restantes',
-        compute='_compute_estado_hold',
+        compute='_compute_hold_dias_restantes',
         help='Días hábiles restantes del hold'
     )
     
@@ -112,9 +113,10 @@ class StockQuant(models.Model):
                 quant.x_detalles_placa.strip()
             )
     
+    # CORRECCIÓN APLICADA: Solo campos STORE=TRUE aquí
     @api.depends('x_hold_ids.estado', 'x_hold_ids.fecha_expiracion', 'x_hold_ids.company_id', 'company_id')
     def _compute_estado_hold(self):
-        """Computar el estado del hold manual de la compañía actual"""
+        """Computar el estado del hold manual de la compañía actual (Campos Almacenados)"""
         for quant in self:
             # Obtener compañía del quant
             company_id = quant.company_id.id if quant.company_id else self.env.company.id
@@ -131,12 +133,20 @@ class StockQuant(models.Model):
                 quant.x_hold_activo_id = hold_activo.id
                 quant.x_hold_para = hold_activo.partner_id.name
                 quant.x_hold_expira = hold_activo.fecha_expiracion
-                quant.x_hold_dias_restantes = hold_activo.dias_restantes
             else:
                 quant.x_tiene_hold = False
                 quant.x_hold_activo_id = False
                 quant.x_hold_para = False
                 quant.x_hold_expira = False
+
+    # CORRECCIÓN APLICADA: Nuevo método para campo STORE=FALSE
+    @api.depends('x_hold_activo_id', 'x_hold_activo_id.dias_restantes')
+    def _compute_hold_dias_restantes(self):
+        """Calcular días restantes (Campo NO Almacenado)"""
+        for quant in self:
+            if quant.x_hold_activo_id:
+                quant.x_hold_dias_restantes = quant.x_hold_activo_id.dias_restantes
+            else:
                 quant.x_hold_dias_restantes = 0
     
     @api.depends('reserved_quantity', 'quantity', 'lot_id')
