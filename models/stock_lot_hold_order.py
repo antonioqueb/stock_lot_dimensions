@@ -129,10 +129,6 @@ class StockLotHoldOrder(models.Model):
         compute='_compute_dias_restantes'
     )
     
-    # ==================== CORRECCIÓN ====================
-    # Se eliminaron las definiciones manuales de message_follower_ids, message_ids y activity_ids.
-    # Esto permite que Odoo use las definiciones estándar de 'mail.thread' que funcionan con el widget visual.
-    
     @api.onchange('partner_id')
     def _onchange_partner_id(self):
         """Actualiza dirección de entrega al cambiar cliente"""
@@ -200,6 +196,11 @@ class StockLotHoldOrder(models.Model):
                 if order.notas:
                     notas_hold += f'\n{order.notas}'
                 
+                # Al confirmar, necesitamos que el quant exista (para tener stock).
+                # Si el quant es False aquí, fallará, lo cual es correcto para una reserva nueva.
+                if not line.quant_id:
+                     raise UserError(f'El lote {line.lot_id.name} no tiene stock disponible para reservar.')
+
                 hold = self.env['stock.lot.hold'].create({
                     'lot_id': line.lot_id.id,
                     'quant_id': line.quant_id.id,
@@ -249,6 +250,10 @@ class StockLotHoldOrder(models.Model):
         
         product_groups = {}
         for line in self.hold_line_ids:
+            # Validar que el quant exista antes de convertir a venta
+            if not line.quant_id:
+                 raise UserError(f'El lote {line.lot_id.name} ya no tiene stock disponible (fue vendido o movido).')
+
             pid = line.product_id.id
             if pid not in product_groups:
                 product_groups[pid] = {
@@ -352,10 +357,15 @@ class StockLotHoldOrderLine(models.Model):
         ondelete='cascade'
     )
     
+    # === CORRECCIÓN APLICADA: CAMPO OPTIONAL ===
+    # Se cambia required=False y ondelete='set null'
+    # Esto permite borrar el stock.quant si la cantidad llega a 0
     quant_id = fields.Many2one(
         'stock.quant', 
         string='Quant', 
-        required=True
+        required=False,
+        ondelete='set null',
+        index=True
     )
     
     lot_id = fields.Many2one(
@@ -372,11 +382,15 @@ class StockLotHoldOrderLine(models.Model):
         readonly=True
     )
     
+    # === RECOMENDACIÓN APLICADA: CAMPO COMPUTADO ===
+    # Se elimina related='quant_id.quantity' para evitar que se ponga en 0 al borrar el quant.
+    # Se usa compute con store=True para "congelar" el valor.
     cantidad_m2 = fields.Float(
         string='Cantidad (m²)', 
-        related='quant_id.quantity', 
         store=True, 
-        readonly=True
+        readonly=True,
+        compute='_compute_cantidad_m2',
+        precompute=True
     )
     
     currency_id = fields.Many2one(
@@ -432,6 +446,15 @@ class StockLotHoldOrderLine(models.Model):
         readonly=True
     )
     
+    # === LÓGICA PARA CONSERVAR HISTORIAL ===
+    @api.depends('quant_id', 'quant_id.quantity')
+    def _compute_cantidad_m2(self):
+        for line in self:
+            # Solo actualizamos si el quant existe.
+            # Si el quant fue borrado (quant_id es False), mantenemos el valor anterior.
+            if line.quant_id:
+                line.cantidad_m2 = line.quant_id.quantity
+
     @api.depends('cantidad_m2', 'precio_unitario')
     def _compute_precio_total(self):
         for line in self:
