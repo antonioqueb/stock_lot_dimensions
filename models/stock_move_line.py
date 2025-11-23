@@ -177,8 +177,8 @@ class StockMoveLine(models.Model):
     @api.constrains('lot_id', 'picking_id', 'state')
     def _check_lot_hold(self):
         """Validación de holds al asignar/confirmar lotes con soporte multi-compañía"""
-        # Bypass si ya se validó
-        if self._context.get('skip_hold_validation'):
+        # Bypass si ya se validó - CORREGIDO PARA ODOO 19
+        if self.env.context.get('skip_hold_validation'):
             return
         
         validator = HoldValidator(self.env)

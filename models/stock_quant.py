@@ -390,8 +390,9 @@ class StockQuant(models.Model):
         Returns:
             recordset: Quants filtrados
         """
-        cliente_permitido_id = self._context.get('allowed_partner_id')
-        company_id = self._context.get('company_id') or self.env.company.id
+        # CORREGIDO PARA ODOO 19: Usar self.env.context
+        cliente_permitido_id = self.env.context.get('allowed_partner_id')
+        company_id = self.env.context.get('company_id') or self.env.company.id
         
         # Sin cliente en contexto → retornar todos
         if not cliente_permitido_id:
@@ -1693,7 +1694,7 @@ class StockQuant(models.Model):
         fecha_expiracion = fecha_actual
         
         # Preparar notas con información de precios
-        notes_with_prices = notes or ''
+        notes_with_prices = notas or ''
         if product_prices:
             notes_with_prices += f'\n\n=== PRECIOS ({currency_code}) ===\n'
             for product_id_str, price in product_prices.items():
