@@ -1,4 +1,3 @@
-<!-- reports/stock_lot_hold_order_detail_report.xml (NUEVO) -->
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="action_report_stock_lot_hold_order_detail" model="ir.actions.report">
