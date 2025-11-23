@@ -2,7 +2,7 @@
 <!-- reports/stock_lot_hold_order_report.xml -->
 <odoo>
     <record id="action_report_stock_lot_hold_order" model="ir.actions.report">
-        <field name="name">Orden de Reserva</field>
+        <field name="name">Orden de Reserva - Completo</field>
         <field name="model">stock.lot.hold.order</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">stock_lot_dimensions.report_stock_lot_hold_order_document</field>
