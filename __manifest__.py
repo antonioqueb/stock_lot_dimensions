@@ -30,7 +30,7 @@
         'reports/sale_order_custom_detail_report.xml',
         'reports/sale_order_custom_summary_report.xml',
         'reports/sale_quotation_custom_report.xml',
-        'data/mail_template_summary.xml',
+        'reports/report_sale_order_overwrite.xml'
         'views/stock_lot_views.xml',
         'views/stock_lot_group_views.xml',
         'views/stock_move_views.xml',

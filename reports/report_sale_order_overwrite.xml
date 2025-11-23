@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Sobrescribir el documento base del reporte de ventas original -->
+    <template id="report_sale_order_document_inherit_marmol" inherit_id="sale.report_saleorder_document">
+        <!-- Reemplazamos todo el contenido de la página -->
+        <xpath expr="//div[hasclass('page')]" position="replace">
+            <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
+                
+                <!-- ENCABEZADO ORIGINAL ADAPTADO -->
+                <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
+                    <div class="col-12">
+                        <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
+                            <span t-if="doc.state in ['draft','sent']">Cotización</span>
+                            <span t-else="">Orden de Venta</span> 
+                            <span t-field="doc.name" style="margin-left: 10px; color: #333;"/>
+                        </h4>
+                        <div style="font-size: 8px; color: #999; margin-top: 4px;">
+                            Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ALERTA VENCIMIENTO -->
+                <div class="row mb-4" t-if="doc.validity_date and doc.state in ['draft', 'sent']">
+                    <div class="col-12">
+                        <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
+                            <div style="color: #ff0000; font-weight: 900; font-size: 16px; text-transform: uppercase;">
+                                ⚠️ OFERTA VÁLIDA HASTA: <span t-field="doc.validity_date" t-options='{"widget": "date"}'/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INFO CLIENTE -->
+                <div class="row mb-2">
+                        <div class="col-6">
+                        <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                            <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
+                        </div>
+                        <div style="line-height: 1.2; padding-left: 2px;">
+                            <span style="font-weight: bold; font-size: 12px;" t-field="doc.partner_id.name"/><br/>
+                            <span t-if="doc.partner_id.vat">RFC: <span t-field="doc.partner_id.vat"/></span>
+                        </div>
+                        <div class="mt-1">
+                            <span t-field="doc.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
+                        </div>
+                    </div>
+                    <div class="col-6 text-end">
+                        <strong style="font-size: 12px;">Estado: <span t-field="doc.state"/></strong><br/>
+                        Fecha: <span t-field="doc.date_order" t-options='{"widget": "date"}'/><br/>
+                        Vendedor: <span t-field="doc.user_id.name"/>
+                    </div>
+                </div>
+
+                <!-- LÓGICA DE AGRUPACIÓN (TU DISEÑO DE RESUMEN) -->
+                <div class="row mt-2 mb-3">
+                    <div class="col-12">
+                        <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
+                            <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen por Producto:</strong>
+                            
+                            <!-- Preparar Datos -->
+                            <t t-set="product_summary" t-value="{}"/>
+                            <t t-foreach="doc.order_line" t-as="line">
+                                <t t-if="not line.display_type">
+                                    <t t-set="key" t-value="line.product_id.id"/>
+                                    <t t-if="key not in product_summary">
+                                        <t t-set="dummy" t-value="product_summary.update({key: {
+                                            'name': line.product_id.display_name,
+                                            'qty_lot': 0,
+                                            'qty_total': 0.0,
+                                            'uom': line.product_id.uom_id.name, 
+                                            'subtotal': 0.0
+                                        }})"/>
+                                    </t>
+                                    
+                                    <!-- Calcular conteo de placas si hay lotes, sino 0 -->
+                                    <t t-set="current_plates" t-value="len(line.x_selected_lots) if line.x_selected_lots else 0"/>
+                                    
+                                    <t t-set="dummy" t-value="product_summary[key].update({
+                                        'qty_lot': product_summary[key]['qty_lot'] + current_plates,
+                                        'qty_total': product_summary[key]['qty_total'] + line.product_uom_qty,
+                                        'subtotal': product_summary[key]['subtotal'] + line.price_subtotal
+                                    })"/>
+                                </t>
+                            </t>
+                            
+                            <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid #ccc;">
+                                        <th style="width: 50%;">Producto</th>
+                                        <th class="text-center" style="width: 15%;">Placas (Lotes)</th>
+                                        <th class="text-end" style="width: 15%;">Cantidad Total</th>
+                                        <th class="text-end" style="width: 20%;">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="product_summary.values()" t-as="data">
+                                        <tr>
+                                            <td><span t-esc="data['name']"/></td>
+                                            <td class="text-center">
+                                                <span t-if="data['qty_lot'] > 0" t-esc="data['qty_lot']"/>
+                                                <span t-else="">-</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
+                                            </td>
+                                            <td class="text-end">
+                                                <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot style="border-top: 2px solid #000;">
+                                    <tr style="font-weight: bold;">
+                                        <td colspan="3" class="text-end">SUBTOTAL</td>
+                                        <td class="text-end"><span t-field="doc.amount_untaxed" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3" class="text-end">IMPUESTOS</td>
+                                        <td class="text-end"><span t-field="doc.amount_tax" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    </tr>
+                                    <tr style="font-weight: 900; font-size: 11px; border-top: 1px solid #ccc;">
+                                        <td colspan="3" class="text-end">TOTAL GENERAL</td>
+                                        <td class="text-end"><span t-field="doc.amount_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FIRMAS Y NOTAS -->
+                <div style="page-break-inside: avoid;">
+                        <!-- TÉRMINOS Y CONDICIONES (De tu ejemplo) -->
+                        <div class="row mt-4">
+                        <div class="col-12">
+                            <div style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa;">
+                                <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
+                                    Términos y Condiciones Comerciales (Especializados en Piedra Natural)
+                                </strong>
+                                <div style="font-size: 8px; text-align: justify; color: #555;">
+                                    <p class="mb-1"><strong>1. NATURALEZA DEL PRODUCTO:</strong> La piedra natural (mármol, granito, cuarcita, ónix, etc.) es un producto de la naturaleza. Por lo tanto, está sujeta a variaciones de tono, color, veta, textura y estructura geológica. Las muestras presentadas son únicamente indicativas y no garantizan una identidad exacta con el lote entregado. La presencia de "poros", "cristalizaciones", "venas abiertas" o "fissures" son características propias del material y no se consideran defectos de calidad.</p>
+                                    <p class="mb-1"><strong>2. INSPECCIÓN Y ACEPTACIÓN:</strong> El cliente o su representante tiene la responsabilidad de inspeccionar el material físicamente antes de su transformación. La firma de la remisión de entrega o la salida del material de nuestro almacén constituye la aceptación total de la calidad. <strong>No se aceptan reclamaciones una vez que el material ha sido cortado.</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+
+                        <div class="row" style="margin-top: 50px;">
+                        <div class="col-5 text-center" style="border-top: 1px solid #000;">
+                            Firma Vendedor
+                        </div>
+                        <div class="col-2"></div>
+                        <div class="col-5 text-center" style="border-top: 1px solid #000;">
+                            Firma Cliente
+                        </div>
+                        </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>
