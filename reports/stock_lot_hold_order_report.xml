@@ -56,7 +56,7 @@
                                 <div class="mt-1" style="border-top: 1px dotted #9f9f9fff; padding-top: 1px;">
                                     <strong style="font-size: 10px; text-transform: uppercase; color: #555; display: block; margin-bottom: 0px;">Dirección de Entrega:</strong>
                                     <!-- AQUI ESTA EL CAMBIO CLAVE: line-height: 0.9 y margin-top negativo si fuera necesario -->
-                                    <div style="font-size: 10px; color: #333; line-height: 0.3; white-space: pre-line; margin-top: 0px;">
+                                    <div style="font-size: 10px; color: #333; line-height: 0.6; white-space: pre-line; margin-top: 0px;">
                                         <span t-field="o.delivery_address"/>
                                     </div>
                                 </div>
