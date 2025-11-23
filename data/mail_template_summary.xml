@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <record id="sale.email_template_edi_sale" model="mail.template">
-            <!-- 1. Apuntamos a tu reporte de Resumen -->
-            <field name="report_template" ref="stock_lot_dimensions.action_report_sale_order_custom_summary"/>
+        <!-- 
+            Usamos 'function' para forzar la escritura en la plantilla de email.
+            Esto es necesario porque Odoo protege la plantilla 'sale.email_template_edi_sale' 
+            con noupdate="1", por lo que un tag <record> normal es ignorado.
+        -->
+        <function name="write" model="mail.template">
+            <!-- 1. Buscamos la plantilla original de ventas -->
+            <value eval="[ref('sale.email_template_edi_sale')]"/>
             
-            <!-- 2. Definimos el nombre del archivo adjunto LIMPIO (sin la palabra resumen) -->
-            <field name="report_name">Orden de Venta - {{ (object.name or '') }}</field>
-        </record>
+            <!-- 2. Diccionario con los valores a escribir -->
+            <value eval="{
+                'report_template_ids': [(6, 0, [ref('stock_lot_dimensions.action_report_sale_order_custom_summary')])],
+                'report_name': 'Orden de Venta - {{ (object.name or \'\') }}'
+            }"/>
+        </function>
     </data>
 </odoo>
