@@ -403,8 +403,7 @@ class StockLotHoldOrderLine(models.Model):
     
     precio_unitario = fields.Monetary(
         string='Precio/m²',
-        currency_field='currency_id',
-        digits='Product Price'
+        currency_field='currency_id'
     )
     
     precio_total = fields.Monetary(

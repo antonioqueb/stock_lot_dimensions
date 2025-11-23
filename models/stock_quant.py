@@ -64,6 +64,7 @@ class StockQuant(models.Model):
         string='Tiene Hold',
         compute='_compute_estado_hold',
         store=True,
+        compute_sudo=True,
         help='Indica si el lote tiene una reserva manual activa'
     )
     
@@ -72,6 +73,7 @@ class StockQuant(models.Model):
         string='Hold Activo',
         compute='_compute_estado_hold',
         store=True,
+        compute_sudo=True,
         help='Hold activo actualmente en este quant'
     )
     
@@ -79,6 +81,7 @@ class StockQuant(models.Model):
         string='Reservado Para',
         compute='_compute_estado_hold',
         store=True,
+        compute_sudo=True,
         help='Cliente para quien está reservado'
     )
     
@@ -86,6 +89,7 @@ class StockQuant(models.Model):
         string='Expira',
         compute='_compute_estado_hold',
         store=True,
+        compute_sudo=True,
         help='Fecha de expiración del hold'
     )
     
@@ -93,6 +97,7 @@ class StockQuant(models.Model):
     x_hold_dias_restantes = fields.Integer(
         string='Días Restantes',
         compute='_compute_hold_dias_restantes',
+        compute_sudo=True,
         help='Días hábiles restantes del hold'
     )
     
