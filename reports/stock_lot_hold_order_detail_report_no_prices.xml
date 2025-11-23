@@ -32,12 +32,12 @@
                         <!-- NUEVO BLOQUE DE ALERTA (VENCIMIENTO) -->
                         <div class="row mb-4">
                             <div class="col-12">
-                                <div style="border: 2px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
-                                    <div style="color: #ff0000; font-weight: 900; font-size: 12px; text-transform: uppercase;">
+                                <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
+                                    <div style="color: #ff0000; font-weight: 900; font-size: 16px; text-transform: uppercase;">
                                         ⚠️ RESERVA CON VENCIMIENTO: <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
                                     </div>
-                                    <div style="color: #333; font-size: 10px; margin-top: 3px; font-style: italic;">
-                                        ⏱️ A partir de esa fecha, las placas se liberan automáticamente y podrán ser asignadas a otro proyecto sin previo aviso.
+                                    <div style="color: #333; font-size: 12px; margin-top: 3px; font-style: italic;">
+                                        A partir de esa fecha, las placas se liberan automáticamente y podrán ser asignadas a otro proyecto sin previo aviso.
                                     </div>
                                 </div>
                             </div>
