@@ -21,7 +21,9 @@
         'security/ir.model.access.csv',
         'data/stock_lot_hold_cron.xml',
         'data/stock_lot_hold_order_sequence.xml',
-        'reports/stock_lot_hold_order_report.xml',  # ← DEBE IR ANTES DE LAS VISTAS
+        'reports/stock_lot_hold_order_report.xml',
+        'reports/stock_lot_hold_order_summary_report.xml', 
+        'reports/stock_lot_hold_order_detail_report.xml',   
         'views/stock_lot_views.xml',
         'views/stock_lot_group_views.xml',
         'views/stock_move_views.xml',
