@@ -248,13 +248,7 @@
                                 </div>
                                 <div class="col-6">
                                     <table class="table table-sm" style="font-size: 10px; margin-top: 15px;">
-                                        <!-- Total Metros (Informativo) -->
-                                        <tr>
-                                            <td class="border-0"><strong>Total Material (m²)</strong></td>
-                                            <td class="text-end border-0">
-                                                <span t-esc="'%.2f' % sum(materials.mapped('cantidad_m2'))"/> m²
-                                            </td>
-                                        </tr>
+                                       
                                         
                                         <!-- Subtotal -->
                                         <tr class="border-black o_subtotal" style="">
