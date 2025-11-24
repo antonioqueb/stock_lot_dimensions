@@ -1,23 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- reports/stock_lot_hold_order_report.xml -->
 <odoo>
-    <record id="action_report_stock_lot_hold_order_detail" model="ir.actions.report">
-        <field name="name">Orden de Reserva - Detalle</field>
+    <record id="action_report_stock_lot_hold_order" model="ir.actions.report">
+        <field name="name">Orden de Reserva - Completo</field>
         <field name="model">stock.lot.hold.order</field>
         <field name="report_type">qweb-pdf</field>
-        <field name="report_name">stock_lot_dimensions.report_stock_lot_hold_order_detail_document</field>
-        <field name="report_file">stock_lot_dimensions.report_stock_lot_hold_order_detail_document</field>
-        <field name="print_report_name">'Reserva Detalle - %s' % (object.name)</field>
+        <field name="report_name">stock_lot_dimensions.report_stock_lot_hold_order_document</field>
+        <field name="report_file">stock_lot_dimensions.report_stock_lot_hold_order_document</field>
+        <field name="print_report_name">'Reserva - %s' % (object.name)</field>
         <field name="binding_model_id" ref="model_stock_lot_hold_order"/>
         <field name="binding_type">report</field>
     </record>
 
-    <template id="report_stock_lot_hold_order_detail_document">
+    <template id="report_stock_lot_hold_order_document">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
                 <t t-call="web.external_layout">
                     <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                         
-                        <!-- ENCABEZADO SIMPLE (Actualizado) -->
+                        <!-- ENCABEZADO SIMPLE -->
                         <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                             <div class="col-12">
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
@@ -29,7 +30,7 @@
                             </div>
                         </div>
 
-                        <!-- NUEVO BLOQUE DE ALERTA (VENCIMIENTO) - Estilo Ajustado (Borde 4px) -->
+                        <!-- NUEVO BLOQUE DE ALERTA (VENCIMIENTO) -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
@@ -37,7 +38,7 @@
                                         ⚠️ RESERVA CON VENCIMIENTO: <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
                                     </div>
                                     <div style="color: #333; font-size: 12px; margin-top: 3px; font-style: italic;">
-                                       A partir de esa fecha, las placas se liberan automáticamente y podrán ser asignadas a otro proyecto sin previo aviso.
+                                        ⏱️ A partir de esa fecha, las placas se liberan automáticamente y podrán ser asignadas a otro proyecto sin previo aviso.
                                     </div>
                                 </div>
                             </div>
@@ -115,10 +116,141 @@
                         <t t-set="materials" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type != 'service').sorted(key=lambda l: l.product_id.display_name)"/>
                         <t t-set="services" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type == 'service')"/>
 
-                        <!-- TABLA DETALLADA DE MATERIALES (Con Lotes y Precios) -->
-                        <div t-if="materials">
-                            <div class="mt-3 mb-1">
-                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Materiales</strong>
+                        <!-- ============================================================ -->
+                        <!-- SECCIÓN 1: RESUMENES AGRUPADOS -->
+                        <!-- ============================================================ -->
+
+                        <!-- RESUMEN POR PRODUCTO (MATERIALES) -->
+                        <div class="row mt-2 mb-3" t-if="materials">
+                            <div class="col-12">
+                                <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
+                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen de Materiales:</strong>
+                                    
+                                    <t t-set="product_summary" t-value="{}"/>
+                                    <t t-foreach="materials" t-as="line">
+                                        <t t-set="pid" t-value="line.product_id.id"/>
+                                        <t t-if="pid not in product_summary">
+                                            <t t-set="dummy" t-value="product_summary.update({pid: {
+                                                'name': line.product_id.display_name,
+                                                'placas': 0,
+                                                'm2': 0.0,
+                                                'total': 0.0,
+                                                'currency': line.currency_id
+                                            }})"/>
+                                        </t>
+                                        <t t-set="dummy" t-value="product_summary[pid].update({
+                                            'placas': product_summary[pid]['placas'] + 1,
+                                            'm2': product_summary[pid]['m2'] + line.cantidad_m2,
+                                            'total': product_summary[pid]['total'] + line.precio_total
+                                        })"/>
+                                    </t>
+                                    
+                                    <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid #ccc;">
+                                                <th style="width: 50%;">Nombre</th>
+                                                <th class="text-center" style="width: 15%;">Placas</th>
+                                                <th class="text-end" style="width: 15%;">m²</th>
+                                                <th class="text-end" style="width: 20%;">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="product_summary.items()" t-as="item">
+                                                <t t-set="pid" t-value="item[0]"/>
+                                                <t t-set="data" t-value="item[1]"/>
+                                                <tr>
+                                                    <td><span t-esc="data['name']"/></td>
+                                                    <td class="text-center"><span t-esc="data['placas']"/></td>
+                                                    <td class="text-end"><span t-esc="'%.2f' % data['m2']"/></td>
+                                                    <td class="text-end">
+                                                        <span t-esc="'{:,.2f}'.format(data['total'])"/> 
+                                                        <span t-esc="data['currency'].symbol"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                        <tfoot style="border-top: 2px solid #000;">
+                                            <tr style="font-weight: bold;">
+                                                <td>SUBTOTAL MATERIALES</td>
+                                                <td class="text-center"><span t-esc="o.total_placas"/></td>
+                                                <td class="text-end"><span t-esc="'%.2f' % sum(materials.mapped('cantidad_m2'))"/></td>
+                                                <td class="text-end">
+                                                    <span t-esc="'{:,.2f}'.format(sum(materials.mapped('precio_total')))"/> 
+                                                    <span t-field="o.currency_id.symbol"/>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RESUMEN DE SERVICIOS -->
+                        <div class="row mb-3" t-if="services">
+                            <div class="col-12">
+                                <div style="border: 1px solid #ccc; border-top: none; padding: 6px; background-color: #fff;">
+                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px; color: #555;">Resumen de Servicios:</strong>
+                                    
+                                    <t t-set="service_summary" t-value="{}"/>
+                                    <t t-foreach="services" t-as="line">
+                                        <t t-set="pid" t-value="line.product_id.id"/>
+                                        <t t-if="pid not in service_summary">
+                                            <t t-set="dummy" t-value="service_summary.update({pid: {
+                                                'name': line.product_id.display_name,
+                                                'qty': 0.0,
+                                                'total': 0.0,
+                                                'currency': line.currency_id
+                                            }})"/>
+                                        </t>
+                                        <t t-set="dummy" t-value="service_summary[pid].update({
+                                            'qty': service_summary[pid]['qty'] + line.cantidad_m2,
+                                            'total': service_summary[pid]['total'] + line.precio_total
+                                        })"/>
+                                    </t>
+
+                                    <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid #eee;">
+                                                <th style="width: 65%;">Descripción</th>
+                                                <th class="text-end" style="width: 15%;">Cantidad</th>
+                                                <th class="text-end" style="width: 20%;">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="service_summary.values()" t-as="data">
+                                                <tr>
+                                                    <td><span t-esc="data['name']"/></td>
+                                                    <td class="text-end"><span t-esc="'%.2f' % data['qty']"/></td>
+                                                    <td class="text-end">
+                                                        <span t-esc="'{:,.2f}'.format(data['total'])"/> 
+                                                        <span t-esc="data['currency'].symbol"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                        <tfoot style="border-top: 1px solid #ccc;">
+                                            <tr style="font-weight: bold; color: #555;">
+                                                <td>TOTAL SERVICIOS</td>
+                                                <td></td>
+                                                <td class="text-end">
+                                                    <span t-esc="'{:,.2f}'.format(sum(services.mapped('precio_total')))"/> 
+                                                    <span t-field="o.currency_id.symbol"/>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ============================================================ -->
+                        <!-- SECCIÓN 2: DETALLES -->
+                        <!-- ============================================================ -->
+
+                        <!-- TABLA DETALLADA MATERIALES -->
+                        <div t-if="materials" style="margin-top: 20px;">
+                            <div class="mb-1">
+                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Detalle de Materiales</strong>
                             </div>
                             <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
                                 <thead>
@@ -177,7 +309,6 @@
                                             <td class="text-end align-middle">
                                                 <strong t-field="line.cantidad_m2" t-options='{"precision": 2}'/>
                                             </td>
-                                            <!-- Columnas de Precios -->
                                             <td class="text-end align-middle">
                                                 <span t-if="line.precio_unitario" t-field="line.precio_unitario" t-options='{"widget": "monetary", "display_currency": line.currency_id}'/>
                                                 <span t-else="">-</span>
@@ -200,14 +331,14 @@
                             </table>
                         </div>
 
-                        <!-- TABLA DETALLADA DE SERVICIOS (Con Precios y Formato Correcto) -->
+                        <!-- TABLA DETALLADA SERVICIOS -->
                         <div t-if="services" style="margin-top: 20px;">
                             <div class="mb-1">
-                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Servicios Adicionales</strong>
+                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Detalle de Servicios</strong>
                             </div>
-                            <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
+                            <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
                                 <thead>
-                                    <tr style="border-bottom: 1px solid #ccc; color: #555;">
+                                    <tr style="border-bottom: 2px solid #000; color: #000;">
                                         <th style="width: 40%;">Descripción</th>
                                         <th class="text-end" style="width: 10%;">Cantidad</th>
                                         <th class="text-end" style="width: 15%;">Precio Unit.</th>
@@ -216,7 +347,7 @@
                                         <th class="text-end" style="width: 13%;">Total</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody style="border-bottom: 1px solid #000;">
                                     <tr t-foreach="services" t-as="line">
                                         <td class="align-middle">
                                             <span t-field="line.product_id.display_name"/>
@@ -241,7 +372,7 @@
                             </table>
                         </div>
 
-                        <!-- TOTALES GENERALES (UNIFICADOS) -->
+                        <!-- TOTALES GENERALES -->
                         <table class="table table-sm table-borderless" style="font-size: 9px; margin-top: 15px; border-top: 2px solid #000;">
                             <tfoot>
                                 <tr>
@@ -274,7 +405,7 @@
                             </tfoot>
                         </table>
 
-                        <!-- SECCIÓN INFERIOR (FIRMAS Y TÉRMINOS ACTUALIZADOS) -->
+                        <!-- SECCIÓN INFERIOR -->
                         <div style="page-break-inside: avoid;">
                             
                             <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
@@ -328,4 +459,4 @@
             </t>
         </t>
     </template>
-</odoo>
+</odoo>```
