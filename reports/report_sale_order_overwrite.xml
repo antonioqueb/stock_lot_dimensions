@@ -125,11 +125,13 @@
                                         <th class="text-center" style="width: 15%;">Placas (Lotes)</th>
                                         <th name="th_quantity" class="text-end" style="width: 15%;">Cantidad</th>
                                         
-                                        <!-- ✅ SOLUCIÓN AL ERROR RPC_ERROR: -->
-                                        <!-- Restauramos los 'hooks' que Odoo busca, pero los mantenemos ocultos -->
+                                        <!-- ===================================================== -->
+                                        <!-- HOOKS DE COMPATIBILIDAD (HEADER) - NO BORRAR -->
+                                        <!-- ===================================================== -->
                                         <th name="th_priceunit" t-if="False"></th>
                                         <th name="th_discount" t-if="False"></th>
                                         <th name="th_taxes" t-if="False"></th>
+                                        <!-- ===================================================== -->
                                         
                                         <th name="th_subtotal" class="text-end" style="width: 20%;">Subtotal</th>
                                     </tr>
@@ -142,14 +144,20 @@
                                                 <span t-if="data['qty_lot'] > 0" t-esc="data['qty_lot']"/>
                                                 <span t-else="">-</span>
                                             </td>
-                                            <td name="td_product_quantity" class="text-end">
+                                            <td name="td_quantity" class="text-end"> <!-- name="td_quantity" es importante -->
                                                 <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
                                             </td>
                                             
-                                            <!-- ✅ Hooks ocultos en el body también -->
+                                            <!-- ===================================================== -->
+                                            <!-- HOOKS DE COMPATIBILIDAD (BODY) - NO BORRAR -->
+                                            <!-- Estos son los que causaban el error RPC_ERROR -->
+                                            <!-- ===================================================== -->
                                             <td name="td_priceunit" t-if="False"></td>
                                             <td name="td_discount" t-if="False"></td>
+                                            <td name="td_product_discount" t-if="False"></td> <!-- CRITICO -->
                                             <td name="td_taxes" t-if="False"></td>
+                                            <td name="td_product_taxes" t-if="False"></td>
+                                            <!-- ===================================================== -->
                                             
                                             <td name="td_subtotal" class="text-end">
                                                 <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
