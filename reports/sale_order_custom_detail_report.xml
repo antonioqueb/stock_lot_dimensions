@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- ======================================================= -->
-    <!-- 1. ACCIÓN: ESTO CREA EL BOTÓN EN EL MENÚ DE IMPRESIÓN -->
+    <!-- ACCIÓN: REPORTE DETALLADO (Con Lotes Individuales) -->
     <!-- ======================================================= -->
     <record id="action_report_sale_order_custom_detail" model="ir.actions.report">
         <field name="name">Orden de Venta - Detalle de Placas</field>
@@ -15,7 +15,7 @@
     </record>
 
     <!-- ======================================================= -->
-    <!-- 2. PLANTILLA DEL REPORTE (Materiales y Servicios separados) -->
+    <!-- PLANTILLA: DETALLE (Muestra cada placa seleccionada)  -->
     <!-- ======================================================= -->
     <template id="report_sale_order_custom_detail">
         <t t-call="web.html_container">
@@ -211,7 +211,9 @@
                                             <span t-field="line.name"/>
                                         </td>
                                         <td class="text-end align-middle">
-                                            <span t-field="line.product_uom_qty"/> <span t-field="line.product_uom"/>
+                                            <span t-field="line.product_uom_qty"/> 
+                                            <!-- ✅ CAMBIO CRÍTICO: Usamos product_id.uom_id para evitar KeyError -->
+                                            <span t-field="line.product_id.uom_id"/>
                                         </td>
                                         <td class="text-end align-middle">
                                             <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
