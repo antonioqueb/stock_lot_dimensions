@@ -15,7 +15,7 @@
     """,
     'author': 'Alphaqueb Consulting',
     'website': 'https://alphaqueb.com',
-    'depends': ['stock', 'sale', 'web', 'project', 'mail'],
+    'depends': ['stock', 'sale', 'web', 'project', 'mail', 'sale_stock'],
     'data': [
         'security/stock_lot_hold_security.xml',
         'security/ir.model.access.csv',
