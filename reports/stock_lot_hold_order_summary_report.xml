@@ -17,7 +17,7 @@
                 <t t-call="web.external_layout">
                     <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                         
-                        <!-- ENCABEZADO SIMPLE (Actualizado) -->
+                        <!-- ENCABEZADO SIMPLE -->
                         <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                             <div class="col-12">
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
@@ -29,7 +29,7 @@
                             </div>
                         </div>
 
-                        <!-- NUEVO BLOQUE DE ALERTA (VENCIMIENTO) - Estilo Ajustado (Borde 4px) -->
+                        <!-- NUEVO BLOQUE DE ALERTA (VENCIMIENTO) -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
@@ -109,14 +109,20 @@
                             </div>
                         </div>
 
-                        <!-- RESUMEN POR PRODUCTO (CON PRECIOS) - Se conserva igual -->
-                        <div class="row mt-2 mb-3">
+                        <!-- ============================================================ -->
+                        <!-- SEPARACIÓN DE MATERIALES Y SERVICIOS -->
+                        <!-- ============================================================ -->
+                        <t t-set="materials" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type != 'service')"/>
+                        <t t-set="services" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type == 'service')"/>
+
+                        <!-- RESUMEN POR PRODUCTO (MATERIALES) -->
+                        <div class="row mt-2 mb-3" t-if="materials">
                             <div class="col-12">
                                 <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
-                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen por Producto:</strong>
+                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen de Materiales:</strong>
                                     
                                     <t t-set="product_summary" t-value="{}"/>
-                                    <t t-foreach="o.hold_line_ids" t-as="line">
+                                    <t t-foreach="materials" t-as="line">
                                         <t t-set="pid" t-value="line.product_id.id"/>
                                         <t t-if="pid not in product_summary">
                                             <t t-set="dummy" t-value="product_summary.update({pid: {
@@ -160,25 +166,11 @@
                                         </tbody>
                                         <tfoot style="border-top: 2px solid #000;">
                                             <tr style="font-weight: bold;">
-                                                <td>SUBTOTAL</td>
+                                                <td>TOTAL MATERIALES</td>
                                                 <td class="text-center"><span t-esc="o.total_placas"/></td>
-                                                <td class="text-end"><span t-esc="'%.2f' % o.total_m2"/></td>
+                                                <td class="text-end"><span t-esc="'%.2f' % sum(materials.mapped('cantidad_m2'))"/></td>
                                                 <td class="text-end">
-                                                    <span t-esc="'{:,.2f}'.format(o.total_con_precio)"/> 
-                                                    <span t-field="o.currency_id.symbol"/>
-                                                </td>
-                                            </tr>
-                                            <tr style="font-weight: bold; color: #555;">
-                                                <td colspan="3" class="text-end">IMPUESTO (16%)</td>
-                                                <td class="text-end">
-                                                    <span t-esc="'{:,.2f}'.format(o.total_con_precio * 0.16)"/> 
-                                                    <span t-field="o.currency_id.symbol"/>
-                                                </td>
-                                            </tr>
-                                            <tr style="font-weight: 900; font-size: 11px; border-top: 1px solid #ccc;">
-                                                <td colspan="3" class="text-end">TOTAL</td>
-                                                <td class="text-end">
-                                                    <span t-esc="'{:,.2f}'.format(o.total_con_precio * 1.16)"/> 
+                                                    <span t-esc="'{:,.2f}'.format(sum(materials.mapped('precio_total')))"/> 
                                                     <span t-field="o.currency_id.symbol"/>
                                                 </td>
                                             </tr>
@@ -188,7 +180,98 @@
                             </div>
                         </div>
 
-                        <!-- FIRMAS Y TÉRMINOS (Estilo Actualizado) -->
+                        <!-- RESUMEN DE SERVICIOS ADICIONALES -->
+                        <div class="row mb-3" t-if="services">
+                            <div class="col-12">
+                                <div style="border: 1px solid #ccc; border-top: none; padding: 6px; background-color: #fff;">
+                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px; color: #555;">Servicios Adicionales:</strong>
+                                    
+                                    <!-- Agrupamos servicios por si hay repetidos -->
+                                    <t t-set="service_summary" t-value="{}"/>
+                                    <t t-foreach="services" t-as="line">
+                                        <t t-set="pid" t-value="line.product_id.id"/>
+                                        <t t-if="pid not in service_summary">
+                                            <t t-set="dummy" t-value="service_summary.update({pid: {
+                                                'name': line.product_id.display_name,
+                                                'qty': 0.0,
+                                                'total': 0.0,
+                                                'currency': line.currency_id
+                                            }})"/>
+                                        </t>
+                                        <t t-set="dummy" t-value="service_summary[pid].update({
+                                            'qty': service_summary[pid]['qty'] + line.cantidad_m2,
+                                            'total': service_summary[pid]['total'] + line.precio_total
+                                        })"/>
+                                    </t>
+
+                                    <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid #eee;">
+                                                <th style="width: 65%;">Descripción</th>
+                                                <th class="text-end" style="width: 15%;">Cantidad</th>
+                                                <th class="text-end" style="width: 20%;">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="service_summary.values()" t-as="data">
+                                                <tr>
+                                                    <td><span t-esc="data['name']"/></td>
+                                                    <td class="text-end"><span t-esc="'%.2f' % data['qty']"/></td>
+                                                    <td class="text-end">
+                                                        <span t-esc="'{:,.2f}'.format(data['total'])"/> 
+                                                        <span t-esc="data['currency'].symbol"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                        <tfoot style="border-top: 1px solid #ccc;">
+                                            <tr style="font-weight: bold; color: #555;">
+                                                <td>TOTAL SERVICIOS</td>
+                                                <td></td>
+                                                <td class="text-end">
+                                                    <span t-esc="'{:,.2f}'.format(sum(services.mapped('precio_total')))"/> 
+                                                    <span t-field="o.currency_id.symbol"/>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TOTALES GENERALES (UNIFICADOS) -->
+                        <table class="table table-sm table-borderless" style="font-size: 9px; margin-top: 15px; border-top: 2px solid #000;">
+                            <tfoot>
+                                <tr>
+                                    <td style="width: 50%;"></td>
+                                    <td class="text-end" style="width: 15%; padding-top: 5px;">
+                                        <span style="text-transform: uppercase; font-weight: bold;">Totales:</span>
+                                    </td>
+                                    <td class="text-end" style="width: 10%; padding-top: 5px;">
+                                        <strong style="font-size: 10px;">SUBTOTAL:</strong>
+                                    </td>
+                                    <td class="text-end" style="width: 15%; padding-top: 5px;">
+                                        <strong style="font-size: 10px;">
+                                            <span t-field="o.total_con_precio" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </strong>
+                                    </td>
+                                    <td class="text-end" style="width: 15%; padding-top: 5px;">
+                                        <strong style="font-size: 10px;">IVA (16%):</strong> <br/>
+                                        <span style="font-size: 10px;">
+                                            <span t-esc="o.total_con_precio * 0.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </span>
+                                    </td>
+                                    <td class="text-end" style="width: 15%; padding-top: 5px;">
+                                        <strong style="font-size: 10px;">TOTAL:</strong> <br/>
+                                        <strong style="font-size: 11px; font-weight: 900;">
+                                            <span t-esc="o.total_con_precio * 1.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </strong>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        <!-- FIRMAS Y TÉRMINOS -->
                         <div style="page-break-inside: avoid;">
                             <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                                 <div class="col-1"></div>

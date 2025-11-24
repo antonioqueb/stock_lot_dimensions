@@ -202,7 +202,7 @@
                                         <th style="width: 60%;">Descripción</th>
                                         <th class="text-end" style="width: 10%;">Cantidad</th>
                                         <th class="text-end" style="width: 15%;">Precio Unit.</th>
-                                        <th class="text-end" style="width: 15%;">Total</th>
+                                        <th class="text-end" style="width: 15%;">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody>

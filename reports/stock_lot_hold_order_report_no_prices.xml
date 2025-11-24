@@ -105,14 +105,20 @@
                             </div>
                         </div>
 
-                        <!-- RESUMEN POR PRODUCTO (SIN CAMBIOS, EXCLUSIVO DE ESTE REPORTE) -->
-                        <div class="row mt-2 mb-3">
+                        <!-- ============================================================ -->
+                        <!-- SEPARACIÓN DE MATERIALES Y SERVICIOS -->
+                        <!-- ============================================================ -->
+                        <t t-set="materials" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type != 'service')"/>
+                        <t t-set="services" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type == 'service')"/>
+
+                        <!-- RESUMEN POR PRODUCTO (MATERIALES) -->
+                        <div class="row mt-2 mb-3" t-if="materials">
                             <div class="col-12">
                                 <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
                                     <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen por Producto:</strong>
                                     
                                     <t t-set="product_summary" t-value="{}"/>
-                                    <t t-foreach="o.hold_line_ids" t-as="line">
+                                    <t t-foreach="materials" t-as="line">
                                         <t t-set="pid" t-value="line.product_id.id"/>
                                         <t t-if="pid not in product_summary">
                                             <t t-set="dummy" t-value="product_summary.update({pid: {
@@ -158,8 +164,8 @@
                             </div>
                         </div>
 
-                        <!-- TABLA DETALLADA (SIN PRECIOS) -->
-                        <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
+                        <!-- TABLA DETALLADA DE MATERIALES -->
+                        <table t-if="materials" class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
                             <thead>
                                 <tr style="border-bottom: 2px solid #000; color: #000;">
                                     <th class="text-center" style="width: 5%;">#</th>
@@ -176,7 +182,7 @@
                                 <t t-set="seq" t-value="1"/>
                                 <t t-set="current_product" t-value="None"/>
                                 
-                                <t t-set="sorted_lines" t-value="o.hold_line_ids.sorted(key=lambda l: l.product_id.display_name)"/>
+                                <t t-set="sorted_lines" t-value="materials.sorted(key=lambda l: l.product_id.display_name)"/>
                                 
                                 <t t-foreach="sorted_lines" t-as="line">
                                     <t t-if="current_product != line.product_id.id">
@@ -217,11 +223,10 @@
                                     </tr>
                                 </t>
                             </tbody>
-                            
                             <tfoot style="border-top: 2px solid #000;">
                                 <tr>
                                     <td colspan="7" class="text-end" style="padding-top: 5px;">
-                                        <span style="text-transform: uppercase; font-weight: bold;">Total m²:</span>
+                                        <span style="text-transform: uppercase; font-weight: bold;">Total m² Material:</span>
                                     </td>
                                     <td class="text-end" style="padding-top: 5px;">
                                         <strong style="font-size: 10px;">
@@ -231,6 +236,31 @@
                                 </tr>
                             </tfoot>
                         </table>
+
+                        <!-- TABLA DE SERVICIOS (NUEVA) -->
+                        <div t-if="services" style="margin-top: 20px;">
+                            <div class="mb-1">
+                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Servicios Adicionales</strong>
+                            </div>
+                            <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid #ccc; color: #555;">
+                                        <th style="width: 80%;">Descripción</th>
+                                        <th class="text-end" style="width: 20%;">Cantidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="services" t-as="line">
+                                        <td class="align-middle">
+                                            <span t-field="line.product_id.display_name"/>
+                                        </td>
+                                        <td class="text-end align-middle">
+                                            <span t-field="line.cantidad_m2" t-options='{"precision": 2}'/> <span t-field="line.product_id.uom_id"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
                         <!-- FIRMAS Y TÉRMINOS (Estilo Actualizado) -->
                         <div style="page-break-inside: avoid;">
