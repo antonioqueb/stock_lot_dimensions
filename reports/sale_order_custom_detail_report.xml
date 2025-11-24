@@ -125,7 +125,7 @@
                                         <th class="text-center" style="width: 15%;">Placas (Lotes)</th>
                                         <th name="th_quantity" class="text-end" style="width: 15%;">Cantidad</th>
                                         
-                                        <!-- ✅ COLUMNAS OCULTAS PARA COMPATIBILIDAD ESTRICTA -->
+                                        <!-- ✅ COLUMNAS OCULTAS (HEADER) PARA EVITAR ERRORES -->
                                         <th name="th_priceunit" t-if="False"></th>
                                         <th name="th_discount" t-if="False"></th>
                                         <th name="th_taxes" t-if="False"></th>
@@ -145,10 +145,16 @@
                                                 <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
                                             </td>
                                             
-                                            <!-- ✅ CELDAS OCULTAS PARA COMPATIBILIDAD ESTRICTA -->
+                                            <!-- ================================================== -->
+                                            <!-- ✅ CELDAS OCULTAS OBLIGATORIAS (PARA EVITAR RPC_ERROR) -->
+                                            <!-- ================================================== -->
                                             <td name="td_priceunit" t-if="False"></td>
                                             <td name="td_discount" t-if="False"></td>
                                             <td name="td_taxes" t-if="False"></td>
+                                            
+                                            <!-- Variantes comunes que buscan otros módulos -->
+                                            <td name="td_product_discount" t-if="False"></td>
+                                            <td name="td_product_quantity" t-if="False"></td> <!-- ESTE FALTABA -->
                                             
                                             <td name="td_subtotal" class="text-end">
                                                 <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
