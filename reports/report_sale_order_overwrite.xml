@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Sobrescribir el documento base del reporte de ventas original -->
     <template id="report_sale_order_document_inherit_marmol" inherit_id="sale.report_saleorder_document">
+        <!-- Reemplazamos todo el contenido de la página -->
         <xpath expr="//div[hasclass('page')]" position="replace">
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                 
@@ -12,8 +14,9 @@
                             <span t-else="">Orden de Venta</span> 
                             <span t-field="doc.name" style="margin-left: 10px; color: #333;"/>
                         </h4>
+                        <!-- CORRECCIÓN: Se eliminó context_timestamp para evitar error en vista previa -->
                         <div style="font-size: 8px; color: #999; margin-top: 4px;">
-                            Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                            Impreso: <span t-esc="datetime.datetime.now().strftime('%d/%m/%Y %H:%M')"/>
                         </div>
                     </div>
                 </div>
@@ -56,7 +59,7 @@
                         <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
                             <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen por Producto:</strong>
                             
-                            <!-- Cálculo de resumen en Python-ish -->
+                            <!-- Cálculo de resumen -->
                             <t t-set="product_summary" t-value="{}"/>
                             <t t-foreach="doc.order_line" t-as="line">
                                 <t t-if="not line.display_type">
@@ -90,7 +93,6 @@
                                         <th name="th_quantity" class="text-end" style="width: 15%;">Cantidad Total</th>
                                         
                                         <!-- Columnas Ocultas (Para satisfacer validación de Odoo) -->
-                                        <!-- t-if="False" hace que existan en el código pero no se rendericen -->
                                         <th name="th_priceunit" t-if="False"></th>
                                         <th name="th_discount" t-if="False"></th>
                                         <th name="th_taxes" t-if="False"></th>
@@ -115,9 +117,10 @@
                                             </td>
                                             
                                             <!-- Celdas Ocultas (Para satisfacer validación de Odoo) -->
-                                            <td name="td_product_priceunit" t-if="False"></td>
+                                            <td name="td_priceunit" t-if="False"></td>
                                             <td name="td_product_discount" t-if="False"></td>
                                             <td name="td_product_taxes" t-if="False"></td>
+                                            <td name="td_taxes" t-if="False"></td>
                                             
                                             <!-- Dato visible -->
                                             <td name="td_subtotal" class="text-end">
@@ -145,13 +148,10 @@
                     </div>
                 </div>
 
-                <!-- TOTALES DE IMPUESTOS ORIGINALES (Requerido a veces por módulos de contabilidad) -->
-                <!-- Lo dejamos oculto o vacío para no romper dependencias de 'so_total_summary' -->
+                <!-- TOTALES DE IMPUESTOS ORIGINALES (Oculto) -->
                 <div class="clearfix" name="so_total_summary" t-if="False">
                     <div id="total" class="row" name="total">
-                        <div class="col-6">
-                            <!-- Placeholder -->
-                        </div>
+                        <div class="col-6"></div>
                     </div>
                 </div>
 
