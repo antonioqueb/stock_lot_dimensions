@@ -166,9 +166,12 @@
                                         </tbody>
                                         <tfoot style="border-top: 2px solid #000;">
                                             <tr style="font-weight: bold;">
-                                                <td>TOTAL MATERIALES</td>
+                                                <td>SUBTOTAL MATERIALES</td>
                                                 <td class="text-center"><span t-esc="o.total_placas"/></td>
-                                                <td class="text-end"><span t-esc="'%.2f' % sum(materials.mapped('cantidad_m2'))"/></td>
+                                                <td class="text-end">
+                                                    <!-- Formato Python para evitar errores -->
+                                                    <span t-esc="'%.2f' % sum(materials.mapped('cantidad_m2'))"/>
+                                                </td>
                                                 <td class="text-end">
                                                     <span t-esc="'{:,.2f}'.format(sum(materials.mapped('precio_total')))"/> 
                                                     <span t-field="o.currency_id.symbol"/>
@@ -180,13 +183,12 @@
                             </div>
                         </div>
 
-                        <!-- RESUMEN DE SERVICIOS ADICIONALES -->
+                        <!-- RESUMEN DE SERVICIOS -->
                         <div class="row mb-3" t-if="services">
                             <div class="col-12">
                                 <div style="border: 1px solid #ccc; border-top: none; padding: 6px; background-color: #fff;">
-                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px; color: #555;">Servicios Adicionales:</strong>
+                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px; color: #555;">Resumen de Servicios:</strong>
                                     
-                                    <!-- Agrupamos servicios por si hay repetidos -->
                                     <t t-set="service_summary" t-value="{}"/>
                                     <t t-foreach="services" t-as="line">
                                         <t t-set="pid" t-value="line.product_id.id"/>
@@ -239,37 +241,51 @@
                             </div>
                         </div>
 
-                        <!-- TOTALES GENERALES (UNIFICADOS) -->
-                        <table class="table table-sm table-borderless" style="font-size: 9px; margin-top: 15px; border-top: 2px solid #000;">
-                            <tfoot>
-                                <tr>
-                                    <td style="width: 50%;"></td>
-                                    <td class="text-end" style="width: 15%; padding-top: 5px;">
-                                        <span style="text-transform: uppercase; font-weight: bold;">Totales:</span>
-                                    </td>
-                                    <td class="text-end" style="width: 10%; padding-top: 5px;">
-                                        <strong style="font-size: 10px;">SUBTOTAL:</strong>
-                                    </td>
-                                    <td class="text-end" style="width: 15%; padding-top: 5px;">
-                                        <strong style="font-size: 10px;">
-                                            <span t-field="o.total_con_precio" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </strong>
-                                    </td>
-                                    <td class="text-end" style="width: 15%; padding-top: 5px;">
-                                        <strong style="font-size: 10px;">IVA (16%):</strong> <br/>
-                                        <span style="font-size: 10px;">
-                                            <span t-esc="o.total_con_precio * 0.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </span>
-                                    </td>
-                                    <td class="text-end" style="width: 15%; padding-top: 5px;">
-                                        <strong style="font-size: 10px;">TOTAL:</strong> <br/>
-                                        <strong style="font-size: 11px; font-weight: 900;">
-                                            <span t-esc="o.total_con_precio * 1.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </strong>
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                        <!-- TOTALES GENERALES (VERTICAL - ESTILO FACTURA) -->
+                        <div class="clearfix" name="total_summary">
+                            <div id="total" class="row" name="total">
+                                <div class="col-6">
+                                    <!-- Espacio vacío a la izquierda -->
+                                </div>
+                                <div class="col-6">
+                                    <table class="table table-sm" style="font-size: 10px; margin-top: 15px;">
+                                        <!-- Total Material -->
+                                        <tr>
+                                            <td class="border-0"><strong>Total Material (m²)</strong></td>
+                                            <td class="text-end border-0">
+                                                <span t-esc="'%.2f' % sum(materials.mapped('cantidad_m2'))"/> m²
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Subtotal -->
+                                        <tr class="border-black o_subtotal">
+                                            <td class="border-0"><strong>Subtotal</strong></td>
+                                            <td class="text-end border-0">
+                                                <span t-field="o.total_con_precio" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- IVA -->
+                                        <tr>
+                                            <td class="border-0">Impuestos (16%)</td>
+                                            <td class="text-end border-0">
+                                                <span t-esc="o.total_con_precio * 0.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Total General -->
+                                        <tr class="border-black o_total">
+                                            <td class="border-top border-dark"><strong>Total</strong></td>
+                                            <td class="text-end border-top border-dark">
+                                                <strong style="font-size: 12px;">
+                                                    <span t-esc="o.total_con_precio * 1.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- FIRMAS Y TÉRMINOS -->
                         <div style="page-break-inside: avoid;">

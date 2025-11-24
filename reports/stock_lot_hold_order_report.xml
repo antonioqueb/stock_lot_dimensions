@@ -46,7 +46,6 @@
 
                         <!-- INFORMACIÓN GENERAL -->
                         <div class="row mb-2">
-                            <!-- Columna Cliente -->
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
@@ -64,7 +63,6 @@
                                 </div>
                             </div>
 
-                            <!-- Columna Referencia -->
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Referencia</strong>
@@ -85,7 +83,6 @@
                                 </table>
                             </div>
 
-                            <!-- Columna Estado -->
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Estado</strong>
@@ -114,15 +111,11 @@
                             </div>
                         </div>
 
-                        <!-- ============================================================ -->
                         <!-- SEPARACIÓN DE MATERIALES Y SERVICIOS -->
-                        <!-- ============================================================ -->
                         <t t-set="materials" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type != 'service').sorted(key=lambda l: l.product_id.display_name)"/>
                         <t t-set="services" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type == 'service')"/>
 
-                        <!-- ============================================================ -->
                         <!-- SECCIÓN 1: RESUMENES AGRUPADOS -->
-                        <!-- ============================================================ -->
 
                         <!-- RESUMEN POR PRODUCTO (MATERIALES) -->
                         <div class="row mt-2 mb-3" t-if="materials">
@@ -178,7 +171,6 @@
                                                 <td>SUBTOTAL MATERIALES</td>
                                                 <td class="text-center"><span t-esc="o.total_placas"/></td>
                                                 <td class="text-end">
-                                                    <!-- CORREGIDO: Formato de Python en lugar de widget para sumas calculadas -->
                                                     <span t-esc="'%.2f' % sum(materials.mapped('cantidad_m2'))"/>
                                                 </td>
                                                 <td class="text-end">
@@ -250,9 +242,7 @@
                             </div>
                         </div>
 
-                        <!-- ============================================================ -->
                         <!-- SECCIÓN 2: DETALLES -->
-                        <!-- ============================================================ -->
 
                         <!-- TABLA DETALLADA MATERIALES -->
                         <div t-if="materials" style="margin-top: 20px;">
@@ -379,43 +369,52 @@
                             </table>
                         </div>
 
-                        <!-- TOTALES GENERALES (UNIFICADOS) -->
-                        <table class="table table-sm table-borderless" style="font-size: 9px; margin-top: 15px; border-top: 2px solid #000;">
-                            <tfoot>
-                                <tr>
-                                    <td style="width: 60%;"></td>
-                                    <td class="text-end" style="width: 15%; padding-top: 5px;">
-                                        <span style="text-transform: uppercase; font-weight: bold;">Totales:</span>
-                                    </td>
-                                    <td class="text-end" style="width: 10%; padding-top: 5px;">
-                                        <!-- Total m2 solo de materiales -->
-                                        <strong style="font-size: 10px;">
-                                            <!-- CORREGIDO: Uso de formateo Python en vez de widget -->
-                                            <span t-esc="'%.2f' % sum(materials.mapped('cantidad_m2'))"/> m²
-                                        </strong>
-                                    </td>
-                                    <td class="text-end" style="width: 15%; padding-top: 5px;">
-                                        <strong style="font-size: 10px;">
-                                            <span t-field="o.total_con_precio" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </strong>
-                                    </td>
-                                    <td class="text-end" style="width: 15%; padding-top: 5px;">
-                                        <span style="font-size: 10px;">
-                                            <span t-esc="o.total_con_precio * 0.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </span>
-                                    </td>
-                                    <td class="text-end" style="width: 15%; padding-top: 5px;">
-                                        <strong style="font-size: 11px; font-weight: 900;">
-                                            <span t-esc="o.total_con_precio * 1.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </strong>
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                        <!-- TOTALES GENERALES (VERTICAL - ESTILO FACTURA) -->
+                        <div class="clearfix" name="total_summary">
+                            <div id="total" class="row" name="total">
+                                <div class="col-6"></div>
+                                <div class="col-6">
+                                    <table class="table table-sm" style="font-size: 10px; margin-top: 15px;">
+                                        <!-- Total Material -->
+                                        <tr>
+                                            <td class="border-0"><strong>Total Material (m²)</strong></td>
+                                            <td class="text-end border-0">
+                                                <span t-esc="'%.2f' % sum(materials.mapped('cantidad_m2'))"/> m²
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Subtotal -->
+                                        <tr class="border-black o_subtotal">
+                                            <td class="border-0"><strong>Subtotal</strong></td>
+                                            <td class="text-end border-0">
+                                                <span t-field="o.total_con_precio" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- IVA -->
+                                        <tr>
+                                            <td class="border-0">Impuestos (16%)</td>
+                                            <td class="text-end border-0">
+                                                <span t-esc="o.total_con_precio * 0.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Total General -->
+                                        <tr class="border-black o_total">
+                                            <td class="border-top border-dark"><strong>Total</strong></td>
+                                            <td class="text-end border-top border-dark">
+                                                <strong style="font-size: 12px;">
+                                                    <span t-esc="o.total_con_precio * 1.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
 
-                        <!-- SECCIÓN INFERIOR (FIRMAS Y TÉRMINOS ACTUALIZADOS) -->
+                        <!-- FIRMAS Y TÉRMINOS -->
                         <div style="page-break-inside: avoid;">
-                            
                             <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                                 <div class="col-1"></div>
                                 <div class="col-4 text-center">
@@ -441,7 +440,7 @@
                                 </div>
                             </div>
 
-                            <!-- TÉRMINOS SIMPLIFICADOS (Caja Gris) -->
+                            <!-- TÉRMINOS SIMPLIFICADOS -->
                             <div class="row mt-2">
                                 <div class="col-12">
                                     <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
