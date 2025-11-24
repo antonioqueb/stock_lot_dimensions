@@ -1,292 +1,264 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ======================================================= -->
-    <!-- ACCIÓN: REPORTE DETALLADO (Con Lotes Individuales) -->
-    <!-- ======================================================= -->
-    <record id="action_report_sale_order_custom_detail" model="ir.actions.report">
-        <field name="name">Orden de Venta - Detalle de Placas</field>
-        <field name="model">sale.order</field>
-        <field name="report_type">qweb-pdf</field>
-        <field name="report_name">stock_lot_dimensions.report_sale_order_custom_detail</field>
-        <field name="report_file">stock_lot_dimensions.report_sale_order_custom_detail</field>
-        <field name="print_report_name">'Orden Detalle - %s' % (object.name)</field>
-        <field name="binding_model_id" ref="sale.model_sale_order"/>
-        <field name="binding_type">report</field>
-    </record>
+    <!-- Sobrescribir el documento base del reporte de ventas original -->
+    <template id="report_sale_order_document_inherit_marmol" inherit_id="sale.report_saleorder_document">
+        
+        <!-- 1. OCULTAR DIRECCIÓN ESTÁNDAR -->
+        <xpath expr="//t[@t-set='address']" position="replace">
+            <t t-set="address" t-value="False"/>
+        </xpath>
 
-    <!-- ======================================================= -->
-    <!-- PLANTILLA: DETALLE (Muestra cada placa seleccionada)  -->
-    <!-- ======================================================= -->
-    <template id="report_sale_order_custom_detail">
-        <t t-call="web.html_container">
-            <t t-foreach="docs" t-as="o">
-                <t t-call="web.external_layout">
-                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
+        <!-- 2. OCULTAR INFORMACIÓN BLOCK -->
+        <xpath expr="//t[@t-set='information_block']" position="replace">
+            <t t-set="information_block" t-value="False"/>
+        </xpath>
+
+        <!-- 3. CONTENIDO PERSONALIZADO -->
+        <xpath expr="//div[hasclass('page')]" position="replace">
+            <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
+                
+                <!-- ENCABEZADO -->
+                <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
+                    <div class="col-12">
+                        <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
+                            <span t-if="doc.state in ['draft','sent']">Cotización</span>
+                            <span t-else="">Orden de Venta</span> 
+                            <span t-field="doc.name" style="margin-left: 10px; color: #333;"/>
+                        </h4>
+                        <div style="font-size: 8px; color: #999; margin-top: 4px;">
+                            Impreso: <span t-esc="datetime.datetime.now().strftime('%d/%m/%Y %H:%M')"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ALERTA VENCIMIENTO -->
+                <div class="row mb-4" t-if="doc.validity_date and doc.state in ['draft', 'sent']">
+                    <div class="col-12">
+                        <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
+                            <div style="color: #ff0000; font-weight: 900; font-size: 16px; text-transform: uppercase;">
+                                ⚠️ OFERTA VÁLIDA HASTA: <span t-field="doc.validity_date" t-options='{"widget": "date"}'/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INFO CLIENTE -->
+                <div class="row mb-2" id="informations">
+                    <div class="col-6">
+                        <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                            <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
+                        </div>
+                        <div style="line-height: 1.2; padding-left: 2px;">
+                            <span style="font-weight: bold; font-size: 12px;" t-field="doc.partner_id.name"/><br/>
+                            <span t-if="doc.partner_id.vat">RFC: <span t-field="doc.partner_id.vat"/></span>
+                        </div>
+                        <div class="mt-1">
+                            <span t-field="doc.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
+                        </div>
+                    </div>
+                    <div class="col-6 text-end">
+                        <strong style="font-size: 12px;">Estado: <span t-field="doc.state"/></strong><br/>
+                        Fecha: <span t-field="doc.date_order" t-options='{"widget": "date"}'/><br/>
+                        Vendedor: <span t-field="doc.user_id.name"/>
+                    </div>
+                </div>
+
+                <!-- ======================================================= -->
+                <!-- LÓGICA DE PROCESAMIENTO (MATERIALES VS SERVICIOS)       -->
+                <!-- ======================================================= -->
+                <t t-set="material_summary" t-value="{}"/>
+                <t t-set="service_summary" t-value="{}"/>
+
+                <t t-foreach="doc.order_line" t-as="line">
+                    <t t-if="not line.display_type">
+                        <t t-set="key" t-value="line.product_id.id"/>
                         
-                        <!-- ENCABEZADO -->
-                        <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
-                            <div class="col-12">
-                                <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
-                                    Orden de Venta <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
-                                </h4>
-                                <div style="font-size: 8px; color: #999; margin-top: 4px;">
-                                    Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- DETECTAR SI ES SERVICIO -->
+                        <t t-if="line.product_id.type == 'service'">
+                            <t t-if="key not in service_summary">
+                                <t t-set="dummy" t-value="service_summary.update({key: {
+                                    'name': line.product_id.display_name,
+                                    'qty_total': 0.0,
+                                    'uom': line.product_uom.name, 
+                                    'subtotal': 0.0
+                                }})"/>
+                            </t>
+                            <t t-set="dummy" t-value="service_summary[key].update({
+                                'qty_total': service_summary[key]['qty_total'] + line.product_uom_qty,
+                                'subtotal': service_summary[key]['subtotal'] + line.price_subtotal
+                            })"/>
+                        </t>
+                        
+                        <t t-else="">
+                            <!-- ACUMULAR EN MATERIALES -->
+                            <t t-if="key not in material_summary">
+                                <t t-set="dummy" t-value="material_summary.update({key: {
+                                    'name': line.product_id.display_name,
+                                    'qty_lot': 0,
+                                    'qty_total': 0.0,
+                                    'uom': line.product_uom.name, 
+                                    'subtotal': 0.0
+                                }})"/>
+                            </t>
+                            <t t-set="current_plates" t-value="len(line.x_selected_lots) if line.x_selected_lots else 0"/>
+                            <t t-set="dummy" t-value="material_summary[key].update({
+                                'qty_lot': material_summary[key]['qty_lot'] + current_plates,
+                                'qty_total': material_summary[key]['qty_total'] + line.product_uom_qty,
+                                'subtotal': material_summary[key]['subtotal'] + line.price_subtotal
+                            })"/>
+                        </t>
+                    </t>
+                </t>
 
-                        <!-- ALERTA DE VENCIMIENTO -->
-                        <div class="row mb-4" t-if="o.validity_date">
-                            <div class="col-12">
-                                <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
-                                    <div style="color: #ff0000; font-weight: 900; font-size: 16px; text-transform: uppercase;">
-                                        ⚠️ OFERTA VÁLIDA HASTA: <span t-field="o.validity_date" t-options='{"widget": "date"}'/>
-                                    </div>
-                                    <div style="color: #333; font-size: 12px; margin-top: 3px; font-style: italic;">
-                                        A partir de esa fecha, los precios y la disponibilidad de los lotes pueden cambiar sin previo aviso.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- INFORMACIÓN GENERAL -->
-                        <div class="row mb-2">
-                            <div class="col-4">
-                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
-                                    <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
-                                </div>
-                                <div style="line-height: 1.2; padding-left: 2px;">
-                                    <span style="font-weight: bold; font-size: 12px;" t-field="o.partner_id.name"/><br/>
-                                    <span t-if="o.partner_id.vat">RFC: <span t-field="o.partner_id.vat"/></span>
-                                </div>
-                                <div class="mt-1" style="border-top: 1px dotted #9f9f9fff; padding-top: 1px;">
-                                    <strong style="font-size: 10px; text-transform: uppercase; color: #555; display: block; margin-bottom: 0px;">Dirección Fiscal / Entrega:</strong>
-                                    <div style="font-size: 10px; color: #333; line-height: 0.6; white-space: pre-line; margin-top: 0px;">
-                                        <span t-field="o.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": True}'/>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-4">
-                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
-                                    <strong style="font-size: 10px; text-transform: uppercase;">Referencias</strong>
-                                </div>
-                                <table class="table table-borderless table-sm mb-0 p-0" style="width: 100%;">
-                                    <tr t-if="o.client_order_ref">
-                                        <td class="p-0" style="width: 30%;"><strong>Ref. Cliente:</strong></td>
-                                        <td class="p-0"><span t-field="o.client_order_ref"/></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="p-0"><strong>Vendedor:</strong></td>
-                                        <td class="p-0"><span t-field="o.user_id.name"/></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="p-0"><strong>Plazos:</strong></td>
-                                        <td class="p-0"><span t-field="o.payment_term_id.name"/></td>
-                                    </tr>
-                                </table>
-                            </div>
-
-                            <div class="col-4">
-                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
-                                    <strong style="font-size: 10px; text-transform: uppercase;">Estado</strong>
-                                </div>
-                                <table class="table table-borderless table-sm mb-1 p-0" style="width: 100%;">
-                                    <tr>
-                                        <td class="p-0"><strong>Fecha:</strong></td>
-                                        <td class="p-0 text-end"><span t-field="o.date_order" t-options='{"widget": "date"}'/></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="p-0"><strong>Moneda:</strong></td>
-                                        <td class="p-0 text-end"><span t-field="o.currency_id.name"/></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="p-0 pt-1"><strong>Estatus:</strong></td>
-                                        <td class="p-0 pt-1 text-end">
-                                            <span style="font-weight: 900; text-transform: uppercase;" t-field="o.state"/>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- ============================================================ -->
-                        <!-- PREPARACIÓN DE DATOS: SEPARAR MATERIALES Y SERVICIOS -->
-                        <!-- ============================================================ -->
-                        <t t-set="materials" t-value="o.order_line.filtered(lambda l: l.product_id.type != 'service' and not l.display_type)"/>
-                        <t t-set="services" t-value="o.order_line.filtered(lambda l: l.product_id.type == 'service' and not l.display_type)"/>
-
-                        <!-- TABLA 1: MATERIALES (Lotes, Dimensiones, etc.) -->
-                        <div t-if="materials">
-                            <div class="mt-3 mb-1">
-                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Materiales</strong>
-                            </div>
-                            <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
+                <!-- ======================================================= -->
+                <!-- TABLA 1: MATERIALES (PRODUCTOS FÍSICOS)                 -->
+                <!-- ======================================================= -->
+                <div class="row mt-2 mb-1">
+                    <div class="col-12">
+                        <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
+                            <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Materiales:</strong>
+                            
+                            <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
                                 <thead>
-                                    <tr style="border-bottom: 2px solid #000; color: #000;">
-                                        <th class="text-center" style="width: 3%;">#</th>
-                                        <th style="width: 15%;">Lote</th>
-                                        <th style="width: 10%;">Bloque</th>
-                                        <th style="width: 10%;">Atado</th>
-                                        <th class="text-center" style="width: 6%;">Grosor</th>
-                                        <th class="text-center" style="width: 6%;">Alto</th>
-                                        <th class="text-center" style="width: 6%;">Ancho</th>
-                                        <th class="text-end" style="width: 8%;">m²</th>
-                                        <th class="text-end" style="width: 10%;">Precio/m²</th>
-                                        <th class="text-end" style="width: 10%;">Subtotal</th>
+                                    <tr style="border-bottom: 1px solid #ccc;">
+                                        <th name="th_description" style="width: 50%;">Producto</th>
+                                        <th class="text-center" style="width: 15%;">Placas (Lotes)</th>
+                                        <th name="th_quantity" class="text-end" style="width: 15%;">Cantidad</th>
+                                        
+                                        <!-- ✅ COLUMNAS OCULTAS PARA COMPATIBILIDAD ESTRICTA -->
+                                        <th name="th_priceunit" t-if="False"></th>
+                                        <th name="th_discount" t-if="False"></th>
+                                        <th name="th_taxes" t-if="False"></th>
+                                        
+                                        <th name="th_subtotal" class="text-end" style="width: 20%;">Subtotal</th>
                                     </tr>
                                 </thead>
-                                <tbody style="border-bottom: 1px solid #000;">
-                                    <t t-set="global_seq" t-value="1"/>
-                                    
-                                    <t t-foreach="materials" t-as="line">
-                                        <!-- ENCABEZADO DE PRODUCTO -->
-                                        <tr style="background-color: #000000; color: #FFFFFF;">
-                                            <td colspan="10" style="padding: 4px 8px; font-weight: bold; font-size: 10px; text-transform: uppercase; color: #FFFFFF;">
-                                                <span t-field="line.product_id.display_name"/>
-                                                <span t-if="line.name != line.product_id.display_name" style="font-weight: normal; font-style: italic;">
-                                                    - <span t-esc="line.name"/>
-                                                </span>
+                                <tbody>
+                                    <t t-foreach="material_summary.values()" t-as="data">
+                                        <tr>
+                                            <td name="td_name"><span t-esc="data['name']"/></td>
+                                            <td class="text-center">
+                                                <span t-if="data['qty_lot'] > 0" t-esc="data['qty_lot']"/>
+                                                <span t-else="">-</span>
+                                            </td>
+                                            <td name="td_quantity" class="text-end">
+                                                <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
+                                            </td>
+                                            
+                                            <!-- ✅ CELDAS OCULTAS PARA COMPATIBILIDAD ESTRICTA -->
+                                            <td name="td_priceunit" t-if="False"></td>
+                                            <td name="td_discount" t-if="False"></td>
+                                            <td name="td_taxes" t-if="False"></td>
+                                            
+                                            <td name="td_subtotal" class="text-end">
+                                                <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                             </td>
                                         </tr>
+                                    </t>
+                                    <tr t-if="not material_summary">
+                                        <td colspan="4" class="text-center text-muted" style="font-style: italic;">No hay materiales físicos en esta orden.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
-                                        <!-- CASO A: TIENE LOTES SELECCIONADOS -->
-                                        <t t-if="line.x_selected_lots">
-                                            <t t-foreach="line.x_selected_lots" t-as="quant">
-                                                <tr>
-                                                    <td class="text-center align-middle">
-                                                        <span t-esc="global_seq"/>
-                                                        <t t-set="global_seq" t-value="global_seq + 1"/>
-                                                    </td>
-                                                    <td class="align-middle"><strong t-field="quant.lot_id.name"/></td>
-                                                    <td class="align-middle"><span t-field="quant.lot_id.x_bloque"/></td>
-                                                    <td class="align-middle"><span t-field="quant.lot_id.x_atado"/></td>
-                                                    <td class="text-center align-middle"><span t-field="quant.lot_id.x_grosor" t-options='{"precision": 2}'/></td>
-                                                    <td class="text-center align-middle"><span t-field="quant.lot_id.x_alto" t-options='{"precision": 3}'/></td>
-                                                    <td class="text-center align-middle"><span t-field="quant.lot_id.x_ancho" t-options='{"precision": 3}'/></td>
-                                                    <td class="text-end align-middle"><strong t-field="quant.quantity" t-options='{"precision": 2}'/></td>
-                                                    <td class="text-end align-middle">
-                                                        <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                                    </td>
-                                                    <td class="text-end align-middle">
-                                                        <span t-esc="quant.quantity * line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                                    </td>
-                                                </tr>
-                                            </t>
-                                        </t>
-
-                                        <!-- CASO B: NO TIENE LOTES (Pero es producto físico) -->
-                                        <t t-else="">
-                                            <tr>
-                                                <td class="text-center align-middle"><span t-esc="global_seq"/><t t-set="global_seq" t-value="global_seq + 1"/></td>
-                                                <td colspan="6" class="align-middle" style="font-style: italic; color: #555;">(Sin selección específica de lotes)</td>
-                                                <td class="text-end align-middle">
-                                                    <strong t-field="line.product_uom_qty" t-options='{"precision": 2}'/> 
-                                                    <span t-field="line.product_id.uom_id.name"/>
-                                                </td>
-                                                <td class="text-end align-middle"><span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td>
-                                                <td class="text-end align-middle"><span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td>
-                                            </tr>
-                                        </t>
+                <!-- ======================================================= -->
+                <!-- TABLA 2: SERVICIOS ADICIONALES (AL FINAL)               -->
+                <!-- ======================================================= -->
+                <div class="row mb-3" t-if="service_summary">
+                    <div class="col-12">
+                        <div style="border: 1px solid #ccc; border-top: none; padding: 6px; background-color: #fff;">
+                            <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px; color: #555;">Servicios Adicionales:</strong>
+                            
+                            <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <th style="width: 50%;">Descripción</th>
+                                        <th class="text-center" style="width: 15%;"></th> 
+                                        <th class="text-end" style="width: 15%;">Cantidad</th>
+                                        <th class="text-end" style="width: 20%;">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="service_summary.values()" t-as="data">
+                                        <tr>
+                                            <td><span t-esc="data['name']"/></td>
+                                            <td></td>
+                                            <td class="text-end">
+                                                <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
+                                            </td>
+                                            <td class="text-end">
+                                                <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                            </td>
+                                        </tr>
                                     </t>
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- TABLA 2: SERVICIOS (Simples) -->
-                        <div t-if="services" style="margin-top: 20px;">
-                            <div class="mb-1">
-                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Servicios Adicionales</strong>
-                            </div>
-                            <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
-                                <thead>
-                                    <tr style="border-bottom: 1px solid #ccc; color: #555;">
-                                        <th style="width: 60%;">Descripción</th>
-                                        <th class="text-end" style="width: 10%;">Cantidad</th>
-                                        <th class="text-end" style="width: 15%;">Precio Unit.</th>
-                                        <th class="text-end" style="width: 15%;">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr t-foreach="services" t-as="line">
-                                        <td class="align-middle">
-                                            <span t-field="line.name"/>
-                                        </td>
-                                        <td class="text-end align-middle">
-                                            <span t-field="line.product_uom_qty"/> <span t-field="line.product_uom"/>
-                                        </td>
-                                        <td class="text-end align-middle">
-                                            <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </td>
-                                        <td class="text-end align-middle">
-                                            <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <!-- TOTALES GENERALES (Unificados) -->
-                        <div class="row mt-2">
-                            <div class="col-6"></div>
-                            <div class="col-6">
-                                <table class="table table-sm table-borderless" style="font-size: 9px; border-top: 2px solid #000;">
-                                    <tr style="font-weight: bold;">
-                                        <td class="text-end">SUBTOTAL</td>
-                                        <td class="text-end" style="width: 30%;">
-                                            <span t-field="o.amount_untaxed" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </td>
-                                    </tr>
-                                    <tr style="font-weight: bold; color: #555;">
-                                        <td class="text-end">IMPUESTOS</td>
-                                        <td class="text-end">
-                                            <span t-field="o.amount_tax" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </td>
-                                    </tr>
-                                    <tr style="font-weight: 900; font-size: 11px; border-top: 1px solid #ccc;">
-                                        <td class="text-end">TOTAL</td>
-                                        <td class="text-end">
-                                            <span t-field="o.amount_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
+                <!-- TOTALES -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; border-top: 2px solid #000;">
+                            <tfoot>
+                                <tr style="font-weight: bold;">
+                                    <td style="width: 65%;"></td>
+                                    <td class="text-end" style="width: 15%;">SUBTOTAL</td>
+                                    <td class="text-end" style="width: 20%;"><span t-field="doc.amount_untaxed" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td class="text-end">IMPUESTOS</td>
+                                    <td class="text-end"><span t-field="doc.amount_tax" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                </tr>
+                                <tr style="font-weight: 900; font-size: 11px; border-top: 1px solid #ccc;">
+                                    <td></td>
+                                    <td class="text-end">TOTAL GENERAL</td>
+                                    <td class="text-end"><span t-field="doc.amount_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
 
-                        <!-- FOOTER / FIRMAS -->
-                        <div style="page-break-inside: avoid;">
-                            <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
-                                <div class="col-1"></div>
-                                <div class="col-4 text-center">
-                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                        <strong style="font-size: 9px; text-transform: uppercase;">FIRMA DEL VENDEDOR</strong>
-                                    </div>
-                                </div>
-                                <div class="col-2"></div>
-                                <div class="col-4 text-center">
-                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                        <strong style="font-size: 9px; text-transform: uppercase;">FIRMA DEL CLIENTE / ACEPTACIÓN</strong>
-                                    </div>
-                                </div>
-                                <div class="col-1"></div>
-                            </div>
+                <!-- TOTALES DE IMPUESTOS ORIGINALES (Oculto para compatibilidad) -->
+                <div class="clearfix" name="so_total_summary" t-if="False">
+                    <div id="total" class="row" name="total">
+                        <div class="col-6"></div>
+                    </div>
+                </div>
 
-                            <div class="row mt-2">
-                                <div class="col-12">
-                                    <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
-                                        <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
-                                            Notas y Condiciones
-                                        </strong>
-                                        <div class="mb-1" style="font-size: 8px; text-align: justify; color: #555;">
-                                            <span t-field="o.note"/>
-                                        </div>
-                                    </div>
+                <!-- FIRMAS Y NOTAS -->
+                <div style="page-break-inside: avoid;">
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa;">
+                                <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
+                                    Términos y Condiciones Comerciales (Especializados en Piedra Natural)
+                                </strong>
+                                <div style="font-size: 8px; text-align: justify; color: #555;">
+                                    <p class="mb-1"><strong>1. NATURALEZA DEL PRODUCTO:</strong> La piedra natural (mármol, granito, cuarcita, ónix, etc.) es un producto de la naturaleza. Por lo tanto, está sujeta a variaciones de tono, color, veta, textura y estructura geológica. Las muestras presentadas son únicamente indicativas y no garantizan una identidad exacta con el lote entregado. La presencia de "poros", "cristalizaciones", "venas abiertas" o "fissures" son características propias del material y no se consideran defectos de calidad.</p>
+                                    <p class="mb-1"><strong>2. INSPECCIÓN Y ACEPTACIÓN:</strong> El cliente o su representante tiene la responsabilidad de inspeccionar el material físicamente antes de su transformación. La firma de la remisión de entrega o la salida del material de nuestro almacén constituye la aceptación total de la calidad. <strong>No se aceptan reclamaciones una vez que el material ha sido cortado.</strong></p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </t>
-            </t>
-        </t>
+
+                    <div class="row" style="margin-top: 50px;">
+                        <div class="col-5 text-center" style="border-top: 1px solid #000;">
+                            Firma Vendedor
+                        </div>
+                        <div class="col-2"></div>
+                        <div class="col-5 text-center" style="border-top: 1px solid #000;">
+                            Firma Cliente
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
     </template>
 </odoo>
