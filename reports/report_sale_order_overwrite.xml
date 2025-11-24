@@ -64,7 +64,7 @@
                 </div>
 
                 <!-- ======================================================= -->
-                <!-- LÓGICA DE PROCESAMIENTO Y SEPARACIÓN (MATERIALES VS SERVICIOS) -->
+                <!-- LÓGICA DE PROCESAMIENTO (MATERIALES VS SERVICIOS)       -->
                 <!-- ======================================================= -->
                 <t t-set="material_summary" t-value="{}"/>
                 <t t-set="service_summary" t-value="{}"/>
@@ -75,7 +75,6 @@
                         
                         <!-- DETECTAR SI ES SERVICIO -->
                         <t t-if="line.product_id.type == 'service'">
-                            <!-- ACUMULAR EN SERVICIOS -->
                             <t t-if="key not in service_summary">
                                 <t t-set="dummy" t-value="service_summary.update({key: {
                                     'name': line.product_id.display_name,
@@ -91,7 +90,7 @@
                         </t>
                         
                         <t t-else="">
-                            <!-- ACUMULAR EN MATERIALES (Lógica original) -->
+                            <!-- ACUMULAR EN MATERIALES -->
                             <t t-if="key not in material_summary">
                                 <t t-set="dummy" t-value="material_summary.update({key: {
                                     'name': line.product_id.display_name,
@@ -125,6 +124,13 @@
                                         <th name="th_description" style="width: 50%;">Producto</th>
                                         <th class="text-center" style="width: 15%;">Placas (Lotes)</th>
                                         <th name="th_quantity" class="text-end" style="width: 15%;">Cantidad</th>
+                                        
+                                        <!-- ✅ SOLUCIÓN AL ERROR RPC_ERROR: -->
+                                        <!-- Restauramos los 'hooks' que Odoo busca, pero los mantenemos ocultos -->
+                                        <th name="th_priceunit" t-if="False"></th>
+                                        <th name="th_discount" t-if="False"></th>
+                                        <th name="th_taxes" t-if="False"></th>
+                                        
                                         <th name="th_subtotal" class="text-end" style="width: 20%;">Subtotal</th>
                                     </tr>
                                 </thead>
@@ -139,12 +145,17 @@
                                             <td name="td_product_quantity" class="text-end">
                                                 <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
                                             </td>
+                                            
+                                            <!-- ✅ Hooks ocultos en el body también -->
+                                            <td name="td_priceunit" t-if="False"></td>
+                                            <td name="td_discount" t-if="False"></td>
+                                            <td name="td_taxes" t-if="False"></td>
+                                            
                                             <td name="td_subtotal" class="text-end">
                                                 <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                             </td>
                                         </tr>
                                     </t>
-                                    <!-- Mensaje si no hay materiales -->
                                     <tr t-if="not material_summary">
                                         <td colspan="4" class="text-center text-muted" style="font-style: italic;">No hay materiales físicos en esta orden.</td>
                                     </tr>
@@ -155,7 +166,7 @@
                 </div>
 
                 <!-- ======================================================= -->
-                <!-- TABLA 2: SERVICIOS ADICIONALES (SOLO SI EXISTEN)        -->
+                <!-- TABLA 2: SERVICIOS ADICIONALES (AL FINAL)               -->
                 <!-- ======================================================= -->
                 <div class="row mb-3" t-if="service_summary">
                     <div class="col-12">
@@ -166,7 +177,7 @@
                                 <thead>
                                     <tr style="border-bottom: 1px solid #eee;">
                                         <th style="width: 50%;">Descripción</th>
-                                        <th class="text-center" style="width: 15%;"></th> <!-- Espacio vacío donde iría Placas -->
+                                        <th class="text-center" style="width: 15%;"></th> 
                                         <th class="text-end" style="width: 15%;">Cantidad</th>
                                         <th class="text-end" style="width: 20%;">Subtotal</th>
                                     </tr>
@@ -175,7 +186,7 @@
                                     <t t-foreach="service_summary.values()" t-as="data">
                                         <tr>
                                             <td><span t-esc="data['name']"/></td>
-                                            <td></td> <!-- Celda vacía para mantener alineación -->
+                                            <td></td>
                                             <td class="text-end">
                                                 <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
                                             </td>
@@ -193,7 +204,6 @@
                 <!-- TOTALES -->
                 <div class="row mb-3">
                     <div class="col-12">
-                        <!-- Usamos una tabla simple para los totales, alineada a la derecha -->
                         <table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; border-top: 2px solid #000;">
                             <tfoot>
                                 <tr style="font-weight: bold;">
