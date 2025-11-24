@@ -31,8 +31,7 @@
                     </div>
                 </div>
 
-                <!-- INFO CLIENTE + INFORMATIONS ID (CRÍTICO PARA QUE NO FALLE) -->
-                <!-- Agregamos id="informations" aquí para satisfacer dependencias de otros módulos -->
+                <!-- INFO CLIENTE + INFORMATIONS ID (CRÍTICO PARA COMPATIBILIDAD) -->
                 <div class="row mb-2" id="informations">
                     <div class="col-6">
                         <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
@@ -59,7 +58,6 @@
                         <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
                             <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen por Producto:</strong>
                             
-                            <!-- Preparar Datos -->
                             <t t-set="product_summary" t-value="{}"/>
                             <t t-foreach="doc.order_line" t-as="line">
                                 <t t-if="not line.display_type">
@@ -74,7 +72,6 @@
                                         }})"/>
                                     </t>
                                     
-                                    <!-- Calcular conteo de placas -->
                                     <t t-set="current_plates" t-value="len(line.x_selected_lots) if line.x_selected_lots else 0"/>
                                     
                                     <t t-set="dummy" t-value="product_summary[key].update({
