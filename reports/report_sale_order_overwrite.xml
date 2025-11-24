@@ -85,10 +85,11 @@
                             <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
                                 <thead>
                                     <tr style="border-bottom: 1px solid #ccc;">
-                                        <th style="width: 50%;">Producto</th>
+                                        <!-- CORRECCIÓN: Agregados atributos name="..." para evitar error de herencia -->
+                                        <th name="th_description" style="width: 50%;">Producto</th>
                                         <th class="text-center" style="width: 15%;">Placas (Lotes)</th>
-                                        <th class="text-end" style="width: 15%;">Cantidad Total</th>
-                                        <th class="text-end" style="width: 20%;">Subtotal</th>
+                                        <th name="th_quantity" class="text-end" style="width: 15%;">Cantidad Total</th>
+                                        <th name="th_subtotal" class="text-end" style="width: 20%;">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody>
