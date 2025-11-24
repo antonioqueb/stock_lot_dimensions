@@ -31,7 +31,7 @@
                     </div>
                 </div>
 
-                <!-- INFO CLIENTE + INFORMATIONS ID (CRÍTICO PARA COMPATIBILIDAD) -->
+                <!-- INFO CLIENTE -->
                 <div class="row mb-2" id="informations">
                     <div class="col-6">
                         <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
@@ -58,6 +58,7 @@
                         <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
                             <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen por Producto:</strong>
                             
+                            <!-- Cálculo de resumen -->
                             <t t-set="product_summary" t-value="{}"/>
                             <t t-foreach="doc.order_line" t-as="line">
                                 <t t-if="not line.display_type">
@@ -85,7 +86,7 @@
                             <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
                                 <thead>
                                     <tr style="border-bottom: 1px solid #ccc;">
-                                        <!-- CORRECCIÓN: Agregados atributos name="..." para evitar error de herencia -->
+                                        <!-- CORRECCIÓN 1: Nombres en TH (Ya lo tenías, lo mantengo) -->
                                         <th name="th_description" style="width: 50%;">Producto</th>
                                         <th class="text-center" style="width: 15%;">Placas (Lotes)</th>
                                         <th name="th_quantity" class="text-end" style="width: 15%;">Cantidad Total</th>
@@ -95,15 +96,22 @@
                                 <tbody>
                                     <t t-foreach="product_summary.values()" t-as="data">
                                         <tr>
-                                            <td><span t-esc="data['name']"/></td>
+                                            <!-- CORRECCIÓN 2: Nombres en TD (Esto soluciona el error actual y futuros) -->
+                                            <!-- Agregado name="td_name" para descripción -->
+                                            <td name="td_name"><span t-esc="data['name']"/></td>
+                                            
                                             <td class="text-center">
                                                 <span t-if="data['qty_lot'] > 0" t-esc="data['qty_lot']"/>
                                                 <span t-else="">-</span>
                                             </td>
-                                            <td class="text-end">
+                                            
+                                            <!-- Agregado name="td_product_quantity" (Esta es la causa del error RPC_ERROR actual) -->
+                                            <td name="td_product_quantity" class="text-end">
                                                 <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
                                             </td>
-                                            <td class="text-end">
+                                            
+                                            <!-- Agregado name="td_subtotal" (Prevención para el siguiente posible error) -->
+                                            <td name="td_subtotal" class="text-end">
                                                 <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                             </td>
                                         </tr>
