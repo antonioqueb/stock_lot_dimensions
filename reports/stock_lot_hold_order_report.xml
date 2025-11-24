@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- reports/stock_lot_hold_order_report.xml -->
 <odoo>
+    <!-- ACCIÓN DEL REPORTE -->
     <record id="action_report_stock_lot_hold_order" model="ir.actions.report">
         <field name="name">Orden de Reserva - Completo</field>
         <field name="model">stock.lot.hold.order</field>
@@ -12,13 +12,14 @@
         <field name="binding_type">report</field>
     </record>
 
+    <!-- PLANTILLA DEL REPORTE -->
     <template id="report_stock_lot_hold_order_document">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
                 <t t-call="web.external_layout">
                     <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                         
-                        <!-- ENCABEZADO SIMPLE -->
+                        <!-- ENCABEZADO -->
                         <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                             <div class="col-12">
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
@@ -30,7 +31,7 @@
                             </div>
                         </div>
 
-                        <!-- NUEVO BLOQUE DE ALERTA (VENCIMIENTO) -->
+                        <!-- ALERTA VENCIMIENTO -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
@@ -110,9 +111,7 @@
                             </div>
                         </div>
 
-                        <!-- ============================================================ -->
                         <!-- SEPARACIÓN DE MATERIALES Y SERVICIOS -->
-                        <!-- ============================================================ -->
                         <t t-set="materials" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type != 'service').sorted(key=lambda l: l.product_id.display_name)"/>
                         <t t-set="services" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type == 'service')"/>
 
@@ -336,9 +335,9 @@
                             <div class="mb-1">
                                 <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Detalle de Servicios</strong>
                             </div>
-                            <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
+                            <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
                                 <thead>
-                                    <tr style="border-bottom: 2px solid #000; color: #000;">
+                                    <tr style="border-bottom: 1px solid #ccc; color: #555;">
                                         <th style="width: 40%;">Descripción</th>
                                         <th class="text-end" style="width: 10%;">Cantidad</th>
                                         <th class="text-end" style="width: 15%;">Precio Unit.</th>
@@ -347,7 +346,7 @@
                                         <th class="text-end" style="width: 13%;">Total</th>
                                     </tr>
                                 </thead>
-                                <tbody style="border-bottom: 1px solid #000;">
+                                <tbody>
                                     <tr t-foreach="services" t-as="line">
                                         <td class="align-middle">
                                             <span t-field="line.product_id.display_name"/>
@@ -407,7 +406,6 @@
 
                         <!-- SECCIÓN INFERIOR -->
                         <div style="page-break-inside: avoid;">
-                            
                             <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                                 <div class="col-1"></div>
                                 <div class="col-4 text-center">
@@ -424,7 +422,7 @@
                                 <div class="col-1"></div>
                             </div>
 
-                            <!-- LEYENDA DE ACEPTACIÓN DE VENCIMIENTO -->
+                            <!-- LEYENDA DE ACEPTACIÓN -->
                             <div class="row mb-3">
                                 <div class="col-12 text-center">
                                     <p style="font-size: 9px; margin-top: 5px; padding: 0 20px;">
@@ -433,7 +431,7 @@
                                 </div>
                             </div>
 
-                            <!-- TÉRMINOS SIMPLIFICADOS (Caja Gris) -->
+                            <!-- TÉRMINOS -->
                             <div class="row mt-2">
                                 <div class="col-12">
                                     <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
@@ -452,11 +450,10 @@
                             <div class="text-center text-muted mt-2" style="font-size: 7px;">
                                 Documento Interno | Página <span class="page"/>
                             </div>
-
                         </div>
                     </div>
                 </t>
             </t>
         </t>
     </template>
-</odoo>```
+</odoo>
