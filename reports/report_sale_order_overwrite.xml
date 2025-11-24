@@ -3,30 +3,21 @@
     <!-- Sobrescribir el documento base del reporte de ventas original -->
     <template id="report_sale_order_document_inherit_marmol" inherit_id="sale.report_saleorder_document">
         
-        <!-- =================================================================== -->
-        <!-- 1. OCULTAR DIRECCIÓN ESTÁNDAR (Layout Header)                       -->
-        <!-- Redefinimos la variable 'address' a False para que no se imprima    -->
-        <!-- arriba, pero la variable sigue existiendo para evitar errores.      -->
-        <!-- =================================================================== -->
+        <!-- 1. OCULTAR DIRECCIÓN ESTÁNDAR -->
         <xpath expr="//t[@t-set='address']" position="replace">
             <t t-set="address" t-value="False"/>
         </xpath>
 
-        <!-- =================================================================== -->
-        <!-- 2. OCULTAR DIRECCIÓN DE ENVÍO/FACTURACIÓN (Layout Header)           -->
-        <!-- Lo mismo para el bloque de información adicional                    -->
-        <!-- =================================================================== -->
+        <!-- 2. OCULTAR INFORMACIÓN BLOCK -->
         <xpath expr="//t[@t-set='information_block']" position="replace">
             <t t-set="information_block" t-value="False"/>
         </xpath>
 
-        <!-- =================================================================== -->
-        <!-- 3. CONTENIDO PERSONALIZADO DE LA PÁGINA                             -->
-        <!-- =================================================================== -->
+        <!-- 3. CONTENIDO PERSONALIZADO -->
         <xpath expr="//div[hasclass('page')]" position="replace">
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                 
-                <!-- ENCABEZADO PERSONALIZADO -->
+                <!-- ENCABEZADO -->
                 <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                     <div class="col-12">
                         <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
@@ -34,7 +25,6 @@
                             <span t-else="">Orden de Venta</span> 
                             <span t-field="doc.name" style="margin-left: 10px; color: #333;"/>
                         </h4>
-                        <!-- Fecha de impresión corregida (sin context_timestamp) -->
                         <div style="font-size: 8px; color: #999; margin-top: 4px;">
                             Impreso: <span t-esc="datetime.datetime.now().strftime('%d/%m/%Y %H:%M')"/>
                         </div>
@@ -52,7 +42,7 @@
                     </div>
                 </div>
 
-                <!-- INFO CLIENTE (Tu diseño personalizado) -->
+                <!-- INFO CLIENTE -->
                 <div class="row mb-2" id="informations">
                     <div class="col-6">
                         <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
@@ -73,98 +63,156 @@
                     </div>
                 </div>
 
-                <!-- LÓGICA DE AGRUPACIÓN (RESUMEN) -->
-                <div class="row mt-2 mb-3">
+                <!-- ======================================================= -->
+                <!-- LÓGICA DE PROCESAMIENTO Y SEPARACIÓN (MATERIALES VS SERVICIOS) -->
+                <!-- ======================================================= -->
+                <t t-set="material_summary" t-value="{}"/>
+                <t t-set="service_summary" t-value="{}"/>
+
+                <t t-foreach="doc.order_line" t-as="line">
+                    <t t-if="not line.display_type">
+                        <t t-set="key" t-value="line.product_id.id"/>
+                        
+                        <!-- DETECTAR SI ES SERVICIO -->
+                        <t t-if="line.product_id.type == 'service'">
+                            <!-- ACUMULAR EN SERVICIOS -->
+                            <t t-if="key not in service_summary">
+                                <t t-set="dummy" t-value="service_summary.update({key: {
+                                    'name': line.product_id.display_name,
+                                    'qty_total': 0.0,
+                                    'uom': line.product_id.uom_id.name, 
+                                    'subtotal': 0.0
+                                }})"/>
+                            </t>
+                            <t t-set="dummy" t-value="service_summary[key].update({
+                                'qty_total': service_summary[key]['qty_total'] + line.product_uom_qty,
+                                'subtotal': service_summary[key]['subtotal'] + line.price_subtotal
+                            })"/>
+                        </t>
+                        
+                        <t t-else="">
+                            <!-- ACUMULAR EN MATERIALES (Lógica original) -->
+                            <t t-if="key not in material_summary">
+                                <t t-set="dummy" t-value="material_summary.update({key: {
+                                    'name': line.product_id.display_name,
+                                    'qty_lot': 0,
+                                    'qty_total': 0.0,
+                                    'uom': line.product_id.uom_id.name, 
+                                    'subtotal': 0.0
+                                }})"/>
+                            </t>
+                            <t t-set="current_plates" t-value="len(line.x_selected_lots) if line.x_selected_lots else 0"/>
+                            <t t-set="dummy" t-value="material_summary[key].update({
+                                'qty_lot': material_summary[key]['qty_lot'] + current_plates,
+                                'qty_total': material_summary[key]['qty_total'] + line.product_uom_qty,
+                                'subtotal': material_summary[key]['subtotal'] + line.price_subtotal
+                            })"/>
+                        </t>
+                    </t>
+                </t>
+
+                <!-- ======================================================= -->
+                <!-- TABLA 1: MATERIALES (PRODUCTOS FÍSICOS)                 -->
+                <!-- ======================================================= -->
+                <div class="row mt-2 mb-1">
                     <div class="col-12">
                         <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
-                            <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen por Producto:</strong>
-                            
-                            <!-- Cálculo de resumen -->
-                            <t t-set="product_summary" t-value="{}"/>
-                            <t t-foreach="doc.order_line" t-as="line">
-                                <t t-if="not line.display_type">
-                                    <t t-set="key" t-value="line.product_id.id"/>
-                                    <t t-if="key not in product_summary">
-                                        <t t-set="dummy" t-value="product_summary.update({key: {
-                                            'name': line.product_id.display_name,
-                                            'qty_lot': 0,
-                                            'qty_total': 0.0,
-                                            'uom': line.product_id.uom_id.name, 
-                                            'subtotal': 0.0
-                                        }})"/>
-                                    </t>
-                                    
-                                    <t t-set="current_plates" t-value="len(line.x_selected_lots) if line.x_selected_lots else 0"/>
-                                    
-                                    <t t-set="dummy" t-value="product_summary[key].update({
-                                        'qty_lot': product_summary[key]['qty_lot'] + current_plates,
-                                        'qty_total': product_summary[key]['qty_total'] + line.product_uom_qty,
-                                        'subtotal': product_summary[key]['subtotal'] + line.price_subtotal
-                                    })"/>
-                                </t>
-                            </t>
+                            <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Materiales:</strong>
                             
                             <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
                                 <thead>
                                     <tr style="border-bottom: 1px solid #ccc;">
-                                        <!-- Columnas Visibles -->
                                         <th name="th_description" style="width: 50%;">Producto</th>
                                         <th class="text-center" style="width: 15%;">Placas (Lotes)</th>
-                                        <th name="th_quantity" class="text-end" style="width: 15%;">Cantidad Total</th>
-                                        
-                                        <!-- Columnas Ocultas (Para satisfacer validación de Odoo) -->
-                                        <th name="th_priceunit" t-if="False"></th>
-                                        <th name="th_discount" t-if="False"></th>
-                                        <th name="th_taxes" t-if="False"></th>
-                                        
-                                        <!-- Columna Visible -->
+                                        <th name="th_quantity" class="text-end" style="width: 15%;">Cantidad</th>
                                         <th name="th_subtotal" class="text-end" style="width: 20%;">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <t t-foreach="product_summary.values()" t-as="data">
+                                    <t t-foreach="material_summary.values()" t-as="data">
                                         <tr>
-                                            <!-- Celdas Visibles -->
                                             <td name="td_name"><span t-esc="data['name']"/></td>
-                                            
                                             <td class="text-center">
                                                 <span t-if="data['qty_lot'] > 0" t-esc="data['qty_lot']"/>
                                                 <span t-else="">-</span>
                                             </td>
-                                            
                                             <td name="td_product_quantity" class="text-end">
                                                 <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
                                             </td>
-                                            
-                                            <!-- Celdas Ocultas (Para satisfacer validación de Odoo) -->
-                                            <td name="td_priceunit" t-if="False"></td>
-                                            <td name="td_product_discount" t-if="False"></td>
-                                            <td name="td_product_taxes" t-if="False"></td>
-                                            <td name="td_taxes" t-if="False"></td>
-                                            
-                                            <!-- Celda Visible -->
                                             <td name="td_subtotal" class="text-end">
                                                 <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                             </td>
                                         </tr>
                                     </t>
+                                    <!-- Mensaje si no hay materiales -->
+                                    <tr t-if="not material_summary">
+                                        <td colspan="4" class="text-center text-muted" style="font-style: italic;">No hay materiales físicos en esta orden.</td>
+                                    </tr>
                                 </tbody>
-                                <tfoot style="border-top: 2px solid #000;">
-                                    <tr style="font-weight: bold;">
-                                        <td colspan="3" class="text-end">SUBTOTAL</td>
-                                        <td class="text-end"><span t-field="doc.amount_untaxed" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="3" class="text-end">IMPUESTOS</td>
-                                        <td class="text-end"><span t-field="doc.amount_tax" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
-                                    </tr>
-                                    <tr style="font-weight: 900; font-size: 11px; border-top: 1px solid #ccc;">
-                                        <td colspan="3" class="text-end">TOTAL GENERAL</td>
-                                        <td class="text-end"><span t-field="doc.amount_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
-                                    </tr>
-                                </tfoot>
                             </table>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ======================================================= -->
+                <!-- TABLA 2: SERVICIOS ADICIONALES (SOLO SI EXISTEN)        -->
+                <!-- ======================================================= -->
+                <div class="row mb-3" t-if="service_summary">
+                    <div class="col-12">
+                        <div style="border: 1px solid #ccc; border-top: none; padding: 6px; background-color: #fff;">
+                            <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px; color: #555;">Servicios Adicionales:</strong>
+                            
+                            <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <th style="width: 50%;">Descripción</th>
+                                        <th class="text-center" style="width: 15%;"></th> <!-- Espacio vacío donde iría Placas -->
+                                        <th class="text-end" style="width: 15%;">Cantidad</th>
+                                        <th class="text-end" style="width: 20%;">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="service_summary.values()" t-as="data">
+                                        <tr>
+                                            <td><span t-esc="data['name']"/></td>
+                                            <td></td> <!-- Celda vacía para mantener alineación -->
+                                            <td class="text-end">
+                                                <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
+                                            </td>
+                                            <td class="text-end">
+                                                <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TOTALES -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <!-- Usamos una tabla simple para los totales, alineada a la derecha -->
+                        <table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; border-top: 2px solid #000;">
+                            <tfoot>
+                                <tr style="font-weight: bold;">
+                                    <td style="width: 65%;"></td>
+                                    <td class="text-end" style="width: 15%;">SUBTOTAL</td>
+                                    <td class="text-end" style="width: 20%;"><span t-field="doc.amount_untaxed" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td class="text-end">IMPUESTOS</td>
+                                    <td class="text-end"><span t-field="doc.amount_tax" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                </tr>
+                                <tr style="font-weight: 900; font-size: 11px; border-top: 1px solid #ccc;">
+                                    <td></td>
+                                    <td class="text-end">TOTAL GENERAL</td>
+                                    <td class="text-end"><span t-field="doc.amount_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
                     </div>
                 </div>
 
