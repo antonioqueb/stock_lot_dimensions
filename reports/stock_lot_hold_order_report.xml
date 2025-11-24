@@ -115,7 +115,7 @@
                         <t t-set="materials" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type != 'service').sorted(key=lambda l: l.product_id.display_name)"/>
                         <t t-set="services" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type == 'service')"/>
 
-                        <!-- TABLA DETALLADA DE MATERIALES (Lotes y Precios) -->
+                        <!-- TABLA DETALLADA DE MATERIALES (Con Lotes y Precios) -->
                         <div t-if="materials">
                             <div class="mt-3 mb-1">
                                 <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Materiales</strong>
@@ -200,7 +200,7 @@
                             </table>
                         </div>
 
-                        <!-- TABLA DETALLADA DE SERVICIOS -->
+                        <!-- TABLA DETALLADA DE SERVICIOS (Con Precios y Formato Correcto) -->
                         <div t-if="services" style="margin-top: 20px;">
                             <div class="mb-1">
                                 <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Servicios Adicionales</strong>
@@ -240,7 +240,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <!-- TOTALES GENERALES (UNIFICADOS) -->
                         <table class="table table-sm table-borderless" style="font-size: 9px; margin-top: 15px; border-top: 2px solid #000;">
                             <tfoot>
@@ -274,7 +274,7 @@
                             </tfoot>
                         </table>
 
-                        <!-- SECCIÓN INFERIOR (FIRMAS Y TÉRMINOS) -->
+                        <!-- SECCIÓN INFERIOR (FIRMAS Y TÉRMINOS ACTUALIZADOS) -->
                         <div style="page-break-inside: avoid;">
                             
                             <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
