@@ -115,12 +115,7 @@
                                 <td class="p-0 pt-1"><strong>Plazos:</strong></td>
                                 <td class="p-0 pt-1 text-end"><span t-field="doc.payment_term_id.name"/></td>
                             </tr>
-                            <tr>
-                                <td class="p-0 pt-1"><strong>Estatus:</strong></td>
-                                <td class="p-0 pt-1 text-end">
-                                    <span style="font-weight: 900; text-transform: uppercase;" t-field="doc.state"/>
-                                </td>
-                            </tr>
+                           
                         </table>
                     </div>
                 </div>
@@ -156,10 +151,10 @@
                     <thead>
                         <!-- Estilo Negro del Diseño A -->
                         <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                            <th name="th_description" style="width: 50%; padding: 4px 8px;">Producto</th>
-                            <th class="text-center" style="width: 15%; padding: 4px 8px;">Placas (Lotes)</th>
-                            <th name="th_quantity" class="text-end" style="width: 15%; padding: 4px 8px;">Cantidad Total</th>
-                            
+                            <th name="th_description" style="color: #fff; width: 50%; padding: 4px 8px;">Producto</th>
+                            <th class="text-center" style="color: #fff;width: 15%; padding: 4px 8px;">Placas (Lotes)</th>
+                            <th name="th_quantity" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px;">Cantidad Total</th>
+                             
                             <!-- ✅ HEADER CAMPOS OCULTOS (OBLIGATORIO PARA EVITAR ERROR DE HERENCIA) -->
                             <th name="th_priceunit" t-if="False"></th>
                             <th name="th_discount" t-if="False"></th>
