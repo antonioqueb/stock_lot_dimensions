@@ -180,7 +180,7 @@
                 <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
                     <thead>
                         <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                            <th name="th_description" style="color: #fff; width: 35%; padding: 4px 8px; font-weight: bold;">Nombre</th>
+                            <th name="th_description" style="color: #fff; width: 35%; padding: 4px 8px; font-weight: bold;">Descripción</th>
                             <th class="text-center" style="color: #fff;width: 10%; padding: 4px 8px; font-weight: bold;">Placas</th>
                             <th name="th_quantity" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">Cant.</th>
                             <th name="th_priceunit" t-if="False"></th>
@@ -304,7 +304,7 @@
                      Usamos margin-top: 50px para separar.
                      page-break-inside: avoid se queda para no cortar el bloque.
                 -->
-                <div style="margin-top: 50px; width: 100%; page-break-inside: avoid;">
+                <div style="margin-top: 150px; width: 100%; page-break-inside: avoid;">
                     <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                         <div class="col-1"></div>
                         <div class="col-4 text-center">
