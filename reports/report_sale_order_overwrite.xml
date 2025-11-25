@@ -1,20 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Sobrescribir el documento base del reporte de ventas original -->
     <template id="report_sale_order_document_inherit_marmol" inherit_id="sale.report_saleorder_document">
         
-        <!-- 1. OCULTAR DIRECCIÓN Y BLOQUE DE INFORMACIÓN ESTÁNDAR -->
+        <!-- 1. OCULTAR DIRECCIÓN ESTÁNDAR -->
         <xpath expr="//t[@t-set='address']" position="replace">
             <t t-set="address" t-value="False"/>
         </xpath>
+
+        <!-- 2. OCULTAR INFORMACIÓN BLOCK -->
         <xpath expr="//t[@t-set='information_block']" position="replace">
             <t t-set="information_block" t-value="False"/>
         </xpath>
 
-        <!-- 2. REEMPLAZO TOTAL DE LA PÁGINA -->
+        <!-- 3. CONTENIDO PERSONALIZADO (DISEÑO NUEVO + LÓGICA SEGURA) -->
         <xpath expr="//div[hasclass('page')]" position="replace">
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                 
-                <!-- ================= ENCABEZADO ESTILO "DISEÑO A" ================= -->
+                <!-- ================= ENCABEZADO (DISEÑO A) ================= -->
                 <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                     <div class="col-8">
                         <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
@@ -30,7 +33,7 @@
                     </div>
                 </div>
 
-                <!-- ALERTA DE VENCIMIENTO (Estilo Rojo del Diseño A) -->
+                <!-- ALERTA DE VENCIMIENTO (DISEÑO A) -->
                 <div class="row mb-4" t-if="doc.validity_date and doc.state in ['draft', 'sent']">
                     <div class="col-12">
                         <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
@@ -44,8 +47,7 @@
                     </div>
                 </div>
 
-                <!-- ================= INFORMACIÓN GENERAL (GRID 3 COLUMNAS) ================= -->
-                <!-- Mantenemos el ID informations para compatibilidad -->
+                <!-- ================= INFORMACIÓN GENERAL (GRID 3 COLUMNAS DEL DISEÑO A) ================= -->
                 <div class="row mb-2" id="informations">
                     <!-- Columna 1: Cliente -->
                     <div class="col-4">
@@ -64,7 +66,7 @@
                         </div>
                     </div>
 
-                    <!-- Columna 2: Referencias Técnicas (Tus Campos Personalizados) -->
+                    <!-- Columna 2: Referencias (Tus datos personalizados) -->
                     <div class="col-4">
                         <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                             <strong style="font-size: 10px; text-transform: uppercase;">Detalles del Proyecto</strong>
@@ -123,7 +125,7 @@
                     </div>
                 </div>
 
-                <!-- ================= LÓGICA DE PROCESAMIENTO (INTACTA) ================= -->
+                <!-- ================= LÓGICA DE PROCESAMIENTO (INTACTA DE TU CÓDIGO) ================= -->
                 <t t-set="material_summary" t-value="{}"/>
                 <t t-set="service_summary" t-value="{}"/>
                 <t t-foreach="doc.order_line" t-as="line">
@@ -145,20 +147,20 @@
                     </t>
                 </t>
 
-                <!-- ================= TABLA 1: MATERIALES (RESUMEN CON ESTILO NUEVO) ================= -->
+                <!-- ================= TABLA 1: MATERIALES (ESTILO DISEÑO A) ================= -->
                 <div class="mt-3 mb-1">
-                    <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Suministro de Materiales (Resumen)</strong>
+                    <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Suministro de Materiales</strong>
                 </div>
                 
                 <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
                     <thead>
-                        <!-- Header Estilo Negro del Diseño A -->
+                        <!-- Estilo Negro del Diseño A -->
                         <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
                             <th name="th_description" style="width: 50%; padding: 4px 8px;">Producto</th>
-                            <th class="text-center" style="width: 15%; padding: 4px 8px;">Total Placas</th>
+                            <th class="text-center" style="width: 15%; padding: 4px 8px;">Placas (Lotes)</th>
                             <th name="th_quantity" class="text-end" style="width: 15%; padding: 4px 8px;">Cantidad Total</th>
                             
-                            <!-- CAMPOS OCULTOS OBLIGATORIOS (Para compatibilidad) -->
+                            <!-- ✅ HEADER CAMPOS OCULTOS (OBLIGATORIO PARA EVITAR ERROR DE HERENCIA) -->
                             <th name="th_priceunit" t-if="False"></th>
                             <th name="th_discount" t-if="False"></th>
                             <th name="th_taxes" t-if="False"></th>
@@ -180,11 +182,12 @@
                                     <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
                                 </td>
                                 
-                                <!-- CELDAS OCULTAS OBLIGATORIAS -->
+                                <!-- ✅ BODY CAMPOS OCULTOS (AQUÍ ESTABA EL ERROR, AHORA ESTÁN COMPLETOS) -->
                                 <td name="td_priceunit" t-if="False"></td>
                                 <td name="td_discount" t-if="False"></td>
                                 <td name="td_taxes" t-if="False"></td>
-                                <td name="td_product_quantity" t-if="False"></td>
+                                <td name="td_product_quantity" t-if="False"></td> <!-- Heredado -->
+                                <td name="td_product_discount" t-if="False"></td> <!-- Heredado -->
                                 
                                 <td name="td_subtotal" class="text-end align-middle" style="font-weight: bold;">
                                     <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
@@ -197,7 +200,7 @@
                     </tbody>
                 </table>
 
-                <!-- ================= TABLA 2: SERVICIOS (ESTILO NUEVO) ================= -->
+                <!-- ================= TABLA 2: SERVICIOS (ESTILO DISEÑO A) ================= -->
                 <div t-if="service_summary" style="margin-top: 15px;">
                     <div class="mb-1">
                         <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Servicios Adicionales</strong>
@@ -253,9 +256,11 @@
                     </div>
                 </div>
 
-                <!-- BLOQUE DE TOTALES OCULTO (CRÍTICO PARA FUNCIONAMIENTO) -->
+                <!-- ✅ BLOQUE OCULTO DE TOTALES (PRESERVA COMPATIBILIDAD) -->
                 <div class="clearfix" name="so_total_summary" t-if="False">
-                    <div id="total" class="row" name="total"></div>
+                    <div id="total" class="row" name="total">
+                        <div class="col-6"></div>
+                    </div>
                 </div>
 
                 <!-- ================= FOOTER / FIRMAS (DISEÑO A) ================= -->
@@ -270,7 +275,7 @@
                         <div class="col-2"></div>
                         <div class="col-4 text-center">
                             <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                <strong style="font-size: 9px; text-transform: uppercase;">FIRMA DEL CLIENTE / ACEPTACIÓN</strong>
+                                <strong style="font-size: 9px; text-transform: uppercase;">FIRMA DEL CLIENTE</strong>
                             </div>
                         </div>
                         <div class="col-1"></div>
@@ -280,12 +285,13 @@
                         <div class="col-12">
                             <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
                                 <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
-                                    Notas y Condiciones
+                                    Términos y Condiciones Comerciales
                                 </strong>
                                 <div class="mb-1" style="font-size: 8px; text-align: justify; color: #555;">
-                                    <span t-field="doc.note"/>
-                                    <!-- Puedes agregar tus términos fijos aquí si lo deseas -->
-                                    <p class="mt-1 mb-0">La piedra natural es un producto de la naturaleza sujeto a variación en tono y veta.</p>
+                                    <!-- Texto fijo + Nota de Odoo -->
+                                    <p class="mb-1"><strong>1. NATURALEZA DEL PRODUCTO:</strong> La piedra natural (mármol, granito, cuarcita, ónix, etc.) es un producto de la naturaleza y está sujeta a variaciones de tono, color y veta. Las muestras son indicativas.</p>
+                                    <p class="mb-0"><strong>2. ACEPTACIÓN:</strong> La firma de remisión o salida del almacén constituye aceptación total de la calidad. No se aceptan reclamaciones tras el corte o instalación.</p>
+                                    <span t-field="doc.note" style="display: block; margin-top: 5px; font-style: italic;"/>
                                 </div>
                             </div>
                         </div>
