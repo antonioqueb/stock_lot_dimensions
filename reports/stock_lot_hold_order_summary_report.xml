@@ -138,8 +138,8 @@
                         <!-- ================= RESUMEN DE MATERIALES (ACTUALIZADO) ================= -->
                         <div class="row mt-2 mb-3" t-if="materials">
                             <div class="col-12">
-                                <div style="border: 1px solid #ddd; padding: 5px; background-color: #f9f9f9;">
-                                    <strong style="font-size: 9px; text-transform: uppercase; color: #555; display: block; margin-bottom: 5px;">Resumen Financiero por Material</strong>
+                                <div style="border: 1px solid #ddd; padding: 0; background-color: #f9f9f9;">
+                                    <strong style="font-size: 9px; text-transform: uppercase; color: #555; display: block; margin: 5px 5px 5px 5px;">Resumen Financiero por Material</strong>
                                     
                                     <!-- Cálculo de Agrupación -->
                                     <t t-set="product_summary" t-value="{}"/>
@@ -166,13 +166,13 @@
                                         <!-- Cabecera -->
                                         <thead>
                                             <tr style="border-bottom: 1px solid #000; background-color: #000; color: #fff;">
-                                                <th style="width: 30%; color: #fff; font-weight: bold;">DESCRIPCIÓN</th>
-                                                <th class="text-center" style="width: 10%; color: #fff; font-weight: bold;">PLACAS</th>
-                                                <th class="text-end" style="width: 10%; color: #fff; font-weight: bold;">CANT (m²)</th>
-                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold;">PRECIO UNIT.</th>
-                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold;">SUBTOTAL</th>
-                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold;">IVA (16%)</th>
-                                                <th class="text-end" style="width: 14%; color: #fff; font-weight: bold;">TOTAL</th>
+                                                <th style="width: 30%; color: #fff; font-weight: bold; padding: 4px;">DESCRIPCIÓN</th>
+                                                <th class="text-center" style="width: 10%; color: #fff; font-weight: bold; padding: 4px;">PLACAS</th>
+                                                <th class="text-end" style="width: 10%; color: #fff; font-weight: bold; padding: 4px;">CANT (m²)</th>
+                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold; padding: 4px;">PRECIO UNIT.</th>
+                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold; padding: 4px;">SUBTOTAL</th>
+                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold; padding: 4px;">IVA (16%)</th>
+                                                <th class="text-end" style="width: 14%; color: #fff; font-weight: bold; padding: 4px;">TOTAL</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -184,25 +184,25 @@
 
                                                 <tr>
                                                     <!-- Nombre en Mayúsculas -->
-                                                    <td style="padding: 2px 0; text-transform: uppercase;">
+                                                    <td style="padding: 2px 5px; text-transform: uppercase;">
                                                         <strong t-esc="data['name']"/>
                                                     </td>
-                                                    <td class="text-center" style="padding: 2px 0;">
+                                                    <td class="text-center" style="padding: 2px 5px;">
                                                         <span t-esc="data['placas']"/>
                                                     </td>
-                                                    <td class="text-end" style="padding: 2px 0;">
+                                                    <td class="text-end" style="padding: 2px 5px;">
                                                         <span t-esc="'%.2f' % data['m2']"/>
                                                     </td>
-                                                    <td class="text-end" style="padding: 2px 0;">
+                                                    <td class="text-end" style="padding: 2px 5px;">
                                                         <span t-esc="avg_price" t-options='{"widget": "monetary", "display_currency": data["currency"]}'/>
                                                     </td>
-                                                    <td class="text-end" style="padding: 2px 0;">
+                                                    <td class="text-end" style="padding: 2px 5px;">
                                                         <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": data["currency"]}'/>
                                                     </td>
-                                                    <td class="text-end" style="padding: 2px 0;">
+                                                    <td class="text-end" style="padding: 2px 5px;">
                                                         <span t-esc="tax_val" t-options='{"widget": "monetary", "display_currency": data["currency"]}'/>
                                                     </td>
-                                                    <td class="text-end" style="font-weight: bold; padding: 2px 0;">
+                                                    <td class="text-end" style="font-weight: bold; padding: 2px 5px;">
                                                         <span t-esc="total_val" t-options='{"widget": "monetary", "display_currency": data["currency"]}'/>
                                                     </td>
                                                 </tr>
@@ -211,19 +211,19 @@
                                         <!-- Footer Materiales -->
                                         <tfoot style="border-top: 1px solid #000; font-weight: bold;">
                                             <tr>
-                                                <td class="pt-1">TOTAL MATERIALES</td>
-                                                <td class="text-center pt-1"><span t-esc="o.total_placas"/></td>
-                                                <td class="text-end pt-1">
+                                                <td class="pt-1" style="padding: 4px 5px;">TOTAL MATERIALES</td>
+                                                <td class="text-center pt-1" style="padding: 4px 5px;"><span t-esc="o.total_placas"/></td>
+                                                <td class="text-end pt-1" style="padding: 4px 5px;">
                                                     <span t-esc="'%.2f' % sum(materials.mapped('cantidad_m2'))"/>
                                                 </td>
-                                                <td></td>
-                                                <td class="text-end pt-1">
+                                                <td style="padding: 4px 5px;"></td>
+                                                <td class="text-end pt-1" style="padding: 4px 5px;">
                                                     <span t-esc="sum(materials.mapped('precio_total'))" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                                 </td>
-                                                <td class="text-end pt-1">
+                                                <td class="text-end pt-1" style="padding: 4px 5px;">
                                                     <span t-esc="sum(materials.mapped('precio_total')) * 0.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                                 </td>
-                                                <td class="text-end pt-1">
+                                                <td class="text-end pt-1" style="padding: 4px 5px;">
                                                     <span t-esc="sum(materials.mapped('precio_total')) * 1.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                                 </td>
                                             </tr>
@@ -236,8 +236,8 @@
                         <!-- ================= RESUMEN DE SERVICIOS (ACTUALIZADO) ================= -->
                         <div class="row mb-3" t-if="services">
                             <div class="col-12">
-                                <div style="border: 1px solid #ccc; border-top: none; padding: 6px; background-color: #fff;">
-                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px; color: #555;">Resumen de Servicios:</strong>
+                                <div style="border: 1px solid #ccc; border-top: none; padding: 0; background-color: #fff;">
+                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin: 5px 5px 4px 5px; color: #555;">Resumen de Servicios:</strong>
                                     
                                     <!-- Cálculo de Agrupación Servicios -->
                                     <t t-set="service_summary" t-value="{}"/>
@@ -260,30 +260,30 @@
                                     <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
                                         <thead>
                                             <tr style="border-bottom: 1px solid #eee; background-color: #000; color: #fff;">
-                                                <th style="width: 40%; color: #fff; font-weight: bold;">DESCRIPCIÓN</th>
-                                                <th class="text-end" style="width: 10%; color: #fff; font-weight: bold;">CANTIDAD</th>
-                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold;">PRECIO UNIT.</th>
-                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold;">SUBTOTAL</th>
-                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold;">IVA (16%)</th>
-                                                <th class="text-end" style="width: 14%; color: #fff; font-weight: bold;">TOTAL</th>
+                                                <th style="width: 40%; color: #fff; font-weight: bold; padding: 4px;">DESCRIPCIÓN</th>
+                                                <th class="text-end" style="width: 10%; color: #fff; font-weight: bold; padding: 4px;">CANTIDAD</th>
+                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold; padding: 4px;">PRECIO UNIT.</th>
+                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold; padding: 4px;">SUBTOTAL</th>
+                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold; padding: 4px;">IVA (16%)</th>
+                                                <th class="text-end" style="width: 14%; color: #fff; font-weight: bold; padding: 4px;">TOTAL</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <t t-foreach="service_summary.values()" t-as="data">
                                                 <t t-set="avg_price_svc" t-value="data['subtotal'] / data['qty'] if data['qty'] else 0.0"/>
                                                 <tr>
-                                                    <td><span t-esc="data['name']"/></td>
-                                                    <td class="text-end"><span t-esc="'%.2f' % data['qty']"/></td>
-                                                    <td class="text-end">
+                                                    <td style="padding: 2px 5px;"><span t-esc="data['name']"/></td>
+                                                    <td class="text-end" style="padding: 2px 5px;"><span t-esc="'%.2f' % data['qty']"/></td>
+                                                    <td class="text-end" style="padding: 2px 5px;">
                                                         <span t-esc="avg_price_svc" t-options='{"widget": "monetary", "display_currency": data["currency"]}'/>
                                                     </td>
-                                                    <td class="text-end">
+                                                    <td class="text-end" style="padding: 2px 5px;">
                                                         <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": data["currency"]}'/>
                                                     </td>
-                                                    <td class="text-end">
+                                                    <td class="text-end" style="padding: 2px 5px;">
                                                         <span t-esc="data['subtotal'] * 0.16" t-options='{"widget": "monetary", "display_currency": data["currency"]}'/>
                                                     </td>
-                                                    <td class="text-end" style="font-weight: bold;">
+                                                    <td class="text-end" style="font-weight: bold; padding: 2px 5px;">
                                                         <span t-esc="data['subtotal'] * 1.16" t-options='{"widget": "monetary", "display_currency": data["currency"]}'/>
                                                     </td>
                                                 </tr>

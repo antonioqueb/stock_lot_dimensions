@@ -223,19 +223,19 @@
                                 <thead>
                                     <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
                                         <th class="text-center" style="color: #fff; width: 3%; font-weight: bold;">#</th>
-                                        <th style="color: #fff; width: 12%; font-weight: bold;">Lote</th>
-                                        <th style="color: #fff; width: 8%; font-weight: bold;">Bloque</th>
-                                        <th style="color: #fff; width: 8%; font-weight: bold;">Atado</th>
-                                        <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Grosor</th>
-                                        <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Alto</th>
-                                        <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Ancho</th>
+                                        <th style="color: #fff; width: 12%; font-weight: bold;">LOTE</th>
+                                        <th style="color: #fff; width: 8%; font-weight: bold;">BLOQUE</th>
+                                        <th style="color: #fff; width: 8%; font-weight: bold;">ATADO</th>
+                                        <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">GROSOR</th>
+                                        <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">ALTO</th>
+                                        <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">ANCHO</th>
                                         <th class="text-end" style="color: #fff; width: 8%; font-weight: bold;">m²</th>
                                         
                                         <!-- COLUMNAS FINANCIERAS -->
-                                        <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">P. Unitario</th>
-                                        <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">Subtotal</th>
+                                        <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">PRECIO UNIT.</th>
+                                        <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">SUBTOTAL</th>
                                         <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">IVA (16%)</th>
-                                        <th class="text-end" style="color: #fff; width: 11%; font-weight: bold;">Total</th>
+                                        <th class="text-end" style="color: #fff; width: 11%; font-weight: bold;">TOTAL</th>
                                     </tr>
                                 </thead>
                                 <tbody style="border-bottom: 1px solid #000;">
