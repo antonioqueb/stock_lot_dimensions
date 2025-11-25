@@ -114,8 +114,8 @@
                         <!-- RESUMEN POR PRODUCTO (MATERIALES) -->
                         <div class="row mt-2 mb-3" t-if="materials">
                             <div class="col-12">
-                                <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
-                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Resumen de Materiales:</strong>
+                                <div style="border: 1px solid #000; padding: 0; background-color: #f8f9fa;">
+                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin: 5px 5px 4px 5px;">Resumen de Materiales:</strong>
                                     
                                     <t t-set="product_summary" t-value="{}"/>
                                     <t t-foreach="materials" t-as="line">
@@ -135,10 +135,10 @@
                                     
                                     <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
                                         <thead>
-                                            <tr style="border-bottom: 1px solid #ccc;">
-                                                <th style="width: 70%;">Nombre</th>
-                                                <th class="text-center" style="width: 15%;">Placas</th>
-                                                <th class="text-end" style="width: 15%;">m²</th>
+                                            <tr style="border-bottom: 1px solid #ccc; background-color: #000; color: #fff;">
+                                                <th style="width: 70%; color: #fff; font-weight: bold; padding: 4px;">NOMBRE</th>
+                                                <th class="text-center" style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">PLACAS</th>
+                                                <th class="text-end" style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">m²</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -146,17 +146,17 @@
                                                 <t t-set="pid" t-value="item[0]"/>
                                                 <t t-set="data" t-value="item[1]"/>
                                                 <tr>
-                                                    <td><span t-esc="data['name']"/></td>
-                                                    <td class="text-center"><span t-esc="data['placas']"/></td>
-                                                    <td class="text-end"><span t-esc="'%.2f' % data['m2']"/></td>
+                                                    <td style="padding: 2px 5px;"><span t-esc="data['name']"/></td>
+                                                    <td class="text-center" style="padding: 2px 5px;"><span t-esc="data['placas']"/></td>
+                                                    <td class="text-end" style="padding: 2px 5px;"><span t-esc="'%.2f' % data['m2']"/></td>
                                                 </tr>
                                             </t>
                                         </tbody>
                                         <tfoot style="border-top: 2px solid #000;">
                                             <tr style="font-weight: bold;">
-                                                <td>TOTAL MATERIALES</td>
-                                                <td class="text-center"><span t-esc="o.total_placas"/></td>
-                                                <td class="text-end">
+                                                <td style="padding: 4px 5px;">TOTAL MATERIALES</td>
+                                                <td class="text-center" style="padding: 4px 5px;"><span t-esc="o.total_placas"/></td>
+                                                <td class="text-end" style="padding: 4px 5px;">
                                                     <!-- Suma solo de materiales para coincidir con la tabla -->
                                                     <span t-esc="'%.2f' % sum(materials.mapped('cantidad_m2'))"/>
                                                 </td>
@@ -170,8 +170,8 @@
                         <!-- RESUMEN DE SERVICIOS ADICIONALES -->
                         <div class="row mb-3" t-if="services">
                             <div class="col-12">
-                                <div style="border: 1px solid #ccc; border-top: none; padding: 6px; background-color: #fff;">
-                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px; color: #555;">Servicios Adicionales:</strong>
+                                <div style="border: 1px solid #ccc; border-top: none; padding: 0; background-color: #fff;">
+                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin: 5px 5px 4px 5px; color: #555;">Servicios Adicionales:</strong>
                                     
                                     <t t-set="service_summary" t-value="{}"/>
                                     <t t-foreach="services" t-as="line">
@@ -189,16 +189,16 @@
 
                                     <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
                                         <thead>
-                                            <tr style="border-bottom: 1px solid #eee;">
-                                                <th style="width: 85%;">Descripción</th>
-                                                <th class="text-end" style="width: 15%;">Cantidad</th>
+                                            <tr style="border-bottom: 1px solid #eee; background-color: #000; color: #fff;">
+                                                <th style="width: 85%; color: #fff; font-weight: bold; padding: 4px;">DESCRIPCIÓN</th>
+                                                <th class="text-end" style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">CANTIDAD</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <t t-foreach="service_summary.values()" t-as="data">
                                                 <tr>
-                                                    <td><span t-esc="data['name']"/></td>
-                                                    <td class="text-end"><span t-esc="'%.2f' % data['qty']"/></td>
+                                                    <td style="padding: 2px 5px;"><span t-esc="data['name']"/></td>
+                                                    <td class="text-end" style="padding: 2px 5px;"><span t-esc="'%.2f' % data['qty']"/></td>
                                                 </tr>
                                             </t>
                                         </tbody>
