@@ -16,12 +16,10 @@
         <!-- 3. CONTENIDO PERSONALIZADO -->
         <xpath expr="//div[hasclass('page')]" position="replace">
             <!-- 
-                CAMBIO CLAVE AQUÍ:
-                - min-height: 950px -> Obliga a la hoja a ser alta aunque haya poco contenido.
-                - position: relative -> Permite usar 'absolute' adentro.
-                - padding-bottom: 230px -> Reserva espacio para que el texto no tape las firmas.
+                VUELTA A LA NORMALIDAD: 
+                Quitamos min-height y absolute. Ahora el diseño fluye naturalmente.
             -->
-            <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; position: relative; min-height: 950px; padding-bottom: 230px;">
+            <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                 
                 <!-- ================= ENCABEZADO (DISEÑO A) ================= -->
                 <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
@@ -301,12 +299,13 @@
 
                 <!-- ================= FOOTER / FIRMAS (DISEÑO A) ================= -->
                 <!-- 
-                     CAMBIO CLAVE:
-                     position: absolute; bottom: 0; -> Se ancla al fondo del contenedor padre de 950px.
-                     page-break-inside: avoid; -> Evita que se parta a la mitad.
+                     CAMBIO SOLICITADO:
+                     Quitamos absolute y bottom:0.
+                     Usamos margin-top: 50px para separar.
+                     page-break-inside: avoid se queda para no cortar el bloque.
                 -->
-                <div style="position: absolute; bottom: 0; left: 0; width: 100%; page-break-inside: avoid;">
-                    <div class="row" style="margin-top: 10px; margin-bottom: 10px;">
+                <div style="margin-top: 50px; width: 100%; page-break-inside: avoid;">
+                    <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                         <div class="col-1"></div>
                         <div class="col-4 text-center">
                             <div style="border-top: 1px solid #000; padding-top: 5px;">
