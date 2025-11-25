@@ -166,7 +166,7 @@
                                     <t t-foreach="materials" t-as="line">
                                         <!-- Sub-encabezado del Producto -->
                                         <tr style="background-color: #3b3b3bff; color: #fff;">
-                                            <td colspan="12" style="padding: 2px 8px; font-weight: bold; color: #fff; font-size: 9px; text-transform: uppercase;">
+                                            <td colspan="12" style="background-color: #3b3b3bff; padding: 2px 8px; font-weight: bold; color: #fff; font-size: 9px; text-transform: uppercase;">
                                                 <span t-field="line.product_id.display_name"/>
                                             </td>
                                         </tr>
