@@ -178,9 +178,9 @@
                             <th name="th_taxes" t-if="False"></th>
                             
                             <!-- COLUMNAS DE IMPORTES -->
-                            <th name="th_subtotal" class="text-end" style="width: 15%; padding: 4px 8px;">Subtotal</th>
-                            <th name="th_iva_custom" class="text-end" style="width: 15%; padding: 4px 8px;">IVA</th>
-                            <th name="th_total_custom" class="text-end" style="width: 15%; padding: 4px 8px;">Total</th>
+                            <th name="th_subtotal" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px; font-weight: bold;">Subtotal</th>
+                            <th name="th_iva_custom" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px; font-weight: bold;">IVA</th>
+                            <th name="th_total_custom" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px; font-weight: bold;">Total</th>
                         </tr>
                     </thead>
                     <tbody style="border-bottom: 1px solid #000;">
@@ -231,10 +231,10 @@
                     </div>
                     <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
                         <thead>
-                            <tr style="border-bottom: 1px solid #ccc; color: #555;">
-                                <th style="width: 65%;">Descripción</th>
-                                <th class="text-end" style="width: 15%;">Cantidad</th>
-                                <th class="text-end" style="width: 20%;">Importe</th>
+                            <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
+                                <th style="width: 65%; font-weight: bold; color: #fff;">Descripción</th>
+                                <th class="text-end" style="width: 15%; font-weight: bold; color: #fff;">Cantidad</th>
+                                <th class="text-end" style="width: 20%; font-weight: bold; color: #fff;">Importe</th>
                             </tr>
                         </thead>
                         <tbody>
