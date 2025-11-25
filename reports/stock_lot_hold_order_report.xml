@@ -165,14 +165,14 @@
                                     <table class="table table-sm table-borderless mb-0 p-0" style="font-size: 8px; width: 100%;">
                                         <!-- Cabecera del Resumen -->
                                         <thead>
-                                            <tr style="border-bottom: 1px solid #ccc; color: #777;">
+                                            <tr style="border-bottom: 1px solid #000; color: #fff; background-color: #000;">
                                                 <th style="width: 30%;">DESCRIPCIÓN</th>
-                                                <th class="text-center" style="width: 10%;">PLACAS</th>
-                                                <th class="text-end" style="width: 10%;">CANT (m²)</th>
-                                                <th class="text-end" style="width: 12%;">PRECIO UNIT.</th>
-                                                <th class="text-end" style="width: 12%;">SUBTOTAL</th>
-                                                <th class="text-end" style="width: 12%;">IVA (16%)</th>
-                                                <th class="text-end" style="width: 14%;">TOTAL</th>
+                                                <th class="text-center" style="width: 10%; color: #fff;">PLACAS</th>
+                                                <th class="text-end" style="width: 10%; color: #fff;">CANT (m²)</th>
+                                                <th class="text-end" style="width: 12%; color: #fff;">PRECIO UNIT.</th>
+                                                <th class="text-end" style="width: 12%; color: #fff;">SUBTOTAL</th>
+                                                <th class="text-end" style="width: 12%; color: #fff;">IVA (16%)</th>
+                                                <th class="text-end" style="width: 14%; color: #fff;">TOTAL</th>
                                             </tr>
                                         </thead>
                                         <tbody>
