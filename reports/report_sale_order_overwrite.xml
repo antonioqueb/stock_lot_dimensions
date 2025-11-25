@@ -189,13 +189,13 @@
                             <th class="text-center" style="color: #fff;width: 10%; padding: 4px 8px; font-weight: bold;">Placas</th>
                             <th name="th_quantity" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">Cantidad</th>
                             <!-- Columna Nueva: Precio Unitario -->
-                            <th name="th_price_unit_display" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">Precio Unitario</th>
+                            <th name="th_price_unit_display" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px; font-weight: bold;">Precio Unitario</th>
                             
                             <th name="th_priceunit" t-if="False"></th>
                             <th name="th_discount" t-if="False"></th>
                             <th name="th_taxes" t-if="False"></th>
                             <th name="th_subtotal" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px; font-weight: bold;">Subtotal</th>
-                            <th name="th_iva_custom" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px; font-weight: bold;">IVA</th>
+                            <th name="th_iva_custom" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">IVA</th>
                             <th name="th_total_custom" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px; font-weight: bold;">Total</th>
                         </tr>
                     </thead>
