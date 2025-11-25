@@ -165,14 +165,14 @@
                                     <table class="table table-sm table-borderless mb-0 p-0" style="font-size: 8px; width: 100%;">
                                         <!-- Cabecera del Resumen -->
                                         <thead>
-                                            <tr style="border-bottom: 1px solid #000; color: #fff; background-color: #000;">
-                                                <th style="width: 30%;">DESCRIPCIÓN</th>
-                                                <th class="text-center" style="width: 10%; color: #fff;">PLACAS</th>
-                                                <th class="text-end" style="width: 10%; color: #fff;">CANT (m²)</th>
-                                                <th class="text-end" style="width: 12%; color: #fff;">PRECIO UNIT.</th>
-                                                <th class="text-end" style="width: 12%; color: #fff;">SUBTOTAL</th>
-                                                <th class="text-end" style="width: 12%; color: #fff;">IVA (16%)</th>
-                                                <th class="text-end" style="width: 14%; color: #fff;">TOTAL</th>
+                                            <tr style="border-bottom: 1px solid #000; color: #fff; background-color: #000; width: 100%;">
+                                                <th style="width: 30%; color: #fff; font-weight: bold;">DESCRIPCIÓN</th>
+                                                <th class="text-center" style="width: 10%; color: #fff; font-weight: bold;">PLACAS</th>
+                                                <th class="text-end" style="width: 10%; color: #fff; font-weight: bold;">CANT (m²)</th>
+                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold;">PRECIO UNIT.</th>
+                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold;">SUBTOTAL</th>
+                                                <th class="text-end" style="width: 12%; color: #fff; font-weight: bold;">IVA (16%)</th>
+                                                <th class="text-end" style="width: 14%; color: #fff; font-weight: bold;">TOTAL</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -296,12 +296,12 @@
                             <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
                                 <thead>
                                     <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                                        <th style="width: 35%; font-weight: bold; color: #fff;">Descripción</th>
-                                        <th class="text-end" style="width: 10%; font-weight: bold; color: #fff;">Cantidad</th>
-                                        <th class="text-end" style="width: 15%; font-weight: bold; color: #fff;">Precio Unitario</th>
-                                        <th class="text-end" style="width: 15%; font-weight: bold; color: #fff;">Subtotal</th>
-                                        <th class="text-end" style="width: 10%; font-weight: bold; color: #fff;">IVA (16%)</th>
-                                        <th class="text-end" style="width: 15%; font-weight: bold; color: #fff;">Total</th>
+                                        <th style="width: 35%; font-weight: bold; color: #fff; font-weight: bold;">Descripción</th>
+                                        <th class="text-end" style="width: 10%; font-weight: bold; color: #fff; font-weight: bold;">Cantidad</th>
+                                        <th class="text-end" style="width: 15%; font-weight: bold; color: #fff; font-weight: bold;">Precio Unitario</th>
+                                        <th class="text-end" style="width: 15%; font-weight: bold; color: #fff; font-weight: bold;">Subtotal</th>
+                                        <th class="text-end" style="width: 10%; font-weight: bold; color: #fff; font-weight: bold;">IVA (16%)</th>
+                                        <th class="text-end" style="width: 15%; font-weight: bold; color: #fff; font-weight: bold;">Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>
