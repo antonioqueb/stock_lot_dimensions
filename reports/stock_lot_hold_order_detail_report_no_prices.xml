@@ -118,15 +118,15 @@
                             </div>
                             <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
                                 <thead>
-                                    <tr style="border-bottom: 2px solid #000; color: #000;">
-                                        <th class="text-center" style="width: 5%;">#</th>
-                                        <th style="width: 20%;">Lote</th>
-                                        <th style="width: 12%;">Bloque</th>
-                                        <th style="width: 12%;">Atado</th>
-                                        <th class="text-center" style="width: 10%;">Grosor</th>
-                                        <th class="text-center" style="width: 10%;">Alto</th>
-                                        <th class="text-center" style="width: 10%;">Ancho</th>
-                                        <th class="text-end" style="width: 10%;">m²</th>
+                                    <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
+                                        <th class="text-center" style="width: 5%; color: #fff; font-weight: bold; padding: 4px;">#</th>
+                                        <th style="width: 20%; color: #fff; font-weight: bold; padding: 4px;">LOTE</th>
+                                        <th style="width: 12%; color: #fff; font-weight: bold; padding: 4px;">BLOQUE</th>
+                                        <th style="width: 12%; color: #fff; font-weight: bold; padding: 4px;">ATADO</th>
+                                        <th class="text-center" style="width: 10%; color: #fff; font-weight: bold; padding: 4px;">GROSOR</th>
+                                        <th class="text-center" style="width: 10%; color: #fff; font-weight: bold; padding: 4px;">ALTO</th>
+                                        <th class="text-center" style="width: 10%; color: #fff; font-weight: bold; padding: 4px;">ANCHO</th>
+                                        <th class="text-end" style="width: 10%; color: #fff; font-weight: bold; padding: 4px;">m²</th>
                                     </tr>
                                 </thead>
                                 <tbody style="border-bottom: 1px solid #000;">
@@ -144,29 +144,29 @@
                                         </t>
                                         
                                         <tr>
-                                            <td class="text-center align-middle">
+                                            <td class="text-center align-middle" style="padding: 2px 5px;">
                                                 <span t-esc="seq"/>
                                                 <t t-set="seq" t-value="seq + 1"/>
                                             </td>
-                                            <td class="align-middle">
+                                            <td class="align-middle" style="padding: 2px 5px;">
                                                 <strong t-field="line.lot_id.name"/>
                                             </td>
-                                            <td class="align-middle">
+                                            <td class="align-middle" style="padding: 2px 5px;">
                                                 <span t-field="line.lot_id.x_bloque"/>
                                             </td>
-                                            <td class="align-middle">
+                                            <td class="align-middle" style="padding: 2px 5px;">
                                                 <span t-field="line.lot_id.x_atado"/>
                                             </td>
-                                            <td class="text-center align-middle">
+                                            <td class="text-center align-middle" style="padding: 2px 5px;">
                                                 <span t-field="line.x_grosor" t-options='{"precision": 2}'/>
                                             </td>
-                                            <td class="text-center align-middle">
+                                            <td class="text-center align-middle" style="padding: 2px 5px;">
                                                 <span t-field="line.x_alto" t-options='{"precision": 3}'/>
                                             </td>
-                                            <td class="text-center align-middle">
+                                            <td class="text-center align-middle" style="padding: 2px 5px;">
                                                 <span t-field="line.x_ancho" t-options='{"precision": 3}'/>
                                             </td>
-                                            <td class="text-end align-middle">
+                                            <td class="text-end align-middle" style="padding: 2px 5px;">
                                                 <strong t-field="line.cantidad_m2" t-options='{"precision": 2}'/>
                                             </td>
                                         </tr>
@@ -175,10 +175,10 @@
                                 
                                 <tfoot style="border-top: 2px solid #000;">
                                     <tr>
-                                        <td colspan="7" class="text-end" style="padding-top: 5px;">
+                                        <td colspan="7" class="text-end" style="padding: 5px 5px;">
                                             <span style="text-transform: uppercase; font-weight: bold;">Total m² Material:</span>
                                         </td>
-                                        <td class="text-end" style="padding-top: 5px;">
+                                        <td class="text-end" style="padding: 5px 5px;">
                                             <strong style="font-size: 10px;">
                                                 <span t-field="o.total_m2" t-options='{"precision": 2}'/>
                                             </strong>
@@ -195,17 +195,17 @@
                             </div>
                             <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
                                 <thead>
-                                    <tr style="border-bottom: 1px solid #ccc; color: #555;">
-                                        <th style="width: 80%;">Descripción</th>
-                                        <th class="text-end" style="width: 20%;">Cantidad</th>
+                                    <tr style="border-bottom: 1px solid #ccc; background-color: #000; color: #fff;">
+                                        <th style="width: 80%; color: #fff; font-weight: bold; padding: 4px;">DESCRIPCIÓN</th>
+                                        <th class="text-end" style="width: 20%; color: #fff; font-weight: bold; padding: 4px;">CANTIDAD</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr t-foreach="services" t-as="line">
-                                        <td class="align-middle">
+                                        <td class="align-middle" style="padding: 2px 5px;">
                                             <span t-field="line.product_id.display_name"/>
                                         </td>
-                                        <td class="text-end align-middle">
+                                        <td class="text-end align-middle" style="padding: 2px 5px;">
                                             <span t-field="line.cantidad_m2" t-options='{"precision": 2}'/> <span t-field="line.product_id.uom_id"/>
                                         </td>
                                     </tr>
