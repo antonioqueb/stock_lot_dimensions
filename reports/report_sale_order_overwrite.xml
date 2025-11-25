@@ -15,7 +15,8 @@
 
         <!-- 3. CONTENIDO PERSONALIZADO (DISEÑO NUEVO + LÓGICA SEGURA) -->
         <xpath expr="//div[hasclass('page')]" position="replace">
-            <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
+            <!-- MODIFICACIÓN ESTRUCTURAL: Se añade position relative, altura mínima y padding inferior para forzar el footer abajo -->
+            <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; position: relative; min-height: 1000px; padding-bottom: 200px;">
                 
                 <!-- ================= ENCABEZADO (DISEÑO A) ================= -->
                 <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
@@ -313,7 +314,8 @@
                 </div>
 
                 <!-- ================= FOOTER / FIRMAS (DISEÑO A) ================= -->
-                <div style="page-break-inside: avoid;">
+                <!-- MODIFICACIÓN ESTRUCTURAL: position absolute bottom para anclarlo al final de la hoja -->
+                <div style="page-break-inside: avoid; position: absolute; bottom: 0; left: 0; width: 100%;">
                     <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                         <div class="col-1"></div>
                         <div class="col-4 text-center">
