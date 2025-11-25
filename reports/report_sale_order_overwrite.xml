@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Sobrescribir el documento base del reporte de ventas original -->
     <template id="report_sale_order_document_inherit_marmol" inherit_id="sale.report_saleorder_document">
         
         <!-- 1. OCULTAR DIRECCIÓN ESTÁNDAR -->
@@ -43,9 +44,11 @@
 
                 <!-- =================================================================== -->
                 <!-- SECCIÓN INTEGRADA: CLIENTE (IZQ) + TABLA DE REFERENCIAS (DER)       -->
+                <!-- AQUI AGREGUÉ id="informations" PARA CORREGIR EL ERROR               -->
                 <!-- =================================================================== -->
-                <div class="row mb-4">
-                    <!-- ENCABEZADOS VISUALES (Como en la imagen) -->
+                <div class="row mb-4" id="informations">
+                    
+                    <!-- ENCABEZADOS VISUALES -->
                     <div class="col-12 mb-1">
                         <div style="border-bottom: 2px solid #ccc; padding-bottom: 4px; margin-bottom: 4px; display: flex;">
                             <div style="width: 45%; padding-left: 5px;">
