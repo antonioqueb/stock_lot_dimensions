@@ -42,97 +42,85 @@
                     </div>
                 </div>
 
-                <!-- SECCIÓN INTEGRADA: CLIENTE + TABLA DE REFERENCIAS Y ESTADO -->
-                <div class="row" style="font-family: 'Helvetica', Arial, sans-serif; color: #000;">
+                <!-- BLOQUE INTEGRADO: CLIENTE + FICHA TÉCNICA -->
+                <div class="row mb-4" style="font-size: 10px; color: #000; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
                     
-                    <!-- ENCABEZADOS DE SECCIÓN (Para imitar la imagen) -->
-                    <div class="col-12 mb-1">
-                        <table style="width: 100%; border-bottom: 2px solid #ccc;">
-                            <tr>
-                                <td style="width: 40%; padding-bottom: 5px;">
-                                    <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Cliente</strong>
-                                </td>
-                                <td style="width: 35%; padding-bottom: 5px;">
-                                    <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Referencia</strong>
-                                </td>
-                                <td style="width: 25%; padding-bottom: 5px;">
-                                    <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Estado</strong>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-
-                    <!-- CONTENIDO PRINCIPAL -->
-                    <!-- COLUMNA IZQUIERDA: DATOS DEL CLIENTE (Limpio, sin caja) -->
-                    <div class="col-5" style="padding-right: 20px;">
-                        <!-- Nombre del Cliente -->
-                        <div style="margin-bottom: 10px;">
-                            <span t-field="doc.partner_id.name" style="font-weight: 900; font-size: 13px; display: block; margin-bottom: 2px;"/>
-                            <span t-if="doc.partner_id.vat" style="font-size: 10px; color: #555;">RFC: <span t-field="doc.partner_id.vat"/></span>
+                    <!-- COLUMNA IZQUIERDA: DATOS DEL CLIENTE (Limpio, sin recuadro) -->
+                    <div class="col-5">
+                        <div style="border-bottom: 2px solid #ccc; margin-bottom: 5px; padding-bottom: 2px;">
+                            <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Cliente</strong>
                         </div>
                         
-                        <!-- Dirección de Entrega -->
+                        <!-- Nombre Grande -->
+                        <div style="margin-bottom: 8px;">
+                            <span t-field="doc.partner_id.name" style="font-weight: 900; font-size: 13px; display: block;"/>
+                            <span t-if="doc.partner_id.vat" style="font-size: 10px; color: #444;">RFC: <span t-field="doc.partner_id.vat"/></span>
+                        </div>
+                        
+                        <!-- Dirección -->
                         <div>
-                            <strong style="font-size: 10px; color: #666; text-transform: uppercase;">Dirección de Entrega:</strong>
-                            <div style="font-size: 10px; margin-top: 2px; line-height: 1.3;">
+                            <strong style="font-size: 9px; color: #666; text-transform: uppercase;">Dirección de Entrega:</strong>
+                            <div style="margin-top: 2px;">
                                 <span t-field="doc.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
                             </div>
                         </div>
                     </div>
 
-                    <!-- COLUMNA DERECHA: TABLA UNIFICADA (Bordes visibles, sin fondo) -->
+                    <!-- COLUMNA DERECHA: TABLA TIPO REJILLA (Sin fondos, bordes negros) -->
                     <div class="col-7">
-                        <table class="table table-sm" style="width: 100%; border: 1px solid #333; font-size: 10px; margin-bottom: 0;">
-                            <!-- FILA 1: Proyecto + Fecha -->
+                        <div style="border-bottom: 2px solid #ccc; margin-bottom: 5px; padding-bottom: 2px;">
+                            <div class="row">
+                                <div class="col-8"><strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Referencia</strong></div>
+                                <div class="col-4 text-end"><strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Estado</strong></div>
+                            </div>
+                        </div>
+
+                        <table class="table table-sm" style="width: 100%; border: 1px solid #000; margin-bottom: 0;">
+                            <!-- FILA 1: Proyecto y Fecha -->
                             <tr>
-                                <td style="width: 18%; font-weight: bold; border-right: 1px solid #333; border-bottom: 1px solid #333; vertical-align: middle;">
+                                <td style="width: 18%; font-weight: bold; border-right: 1px solid #000; border-bottom: 1px solid #000; vertical-align: middle;">
                                     Proyecto:
                                 </td>
-                                <td style="width: 42%; border-right: 2px solid #333; border-bottom: 1px solid #333; vertical-align: middle;">
+                                <td style="width: 42%; border-right: 2px solid #000; border-bottom: 1px solid #000; vertical-align: middle;">
                                     <span t-if="doc.x_project_id" t-field="doc.x_project_id.name"/>
-                                    <span t-else="">-</span>
                                 </td>
-                                <td style="width: 18%; font-weight: bold; border-right: 1px solid #333; border-bottom: 1px solid #333; vertical-align: middle;">
-                                    Fecha Emisión:
+                                <td style="width: 20%; font-weight: bold; border-right: 1px solid #000; border-bottom: 1px solid #000; padding-left: 8px; vertical-align: middle;">
+                                    Fecha:
                                 </td>
-                                <td style="width: 22%; font-weight: bold; text-align: right; border-bottom: 1px solid #333; vertical-align: middle;">
+                                <td style="width: 20%; text-align: right; border-bottom: 1px solid #000; vertical-align: middle;">
                                     <span t-field="doc.date_order" t-options='{"widget": "date"}'/>
                                 </td>
                             </tr>
                             
-                            <!-- FILA 2: Arquitecto + Estatus -->
+                            <!-- FILA 2: Arquitecto y Estado -->
                             <tr>
-                                <td style="font-weight: bold; border-right: 1px solid #333; border-bottom: 1px solid #333; vertical-align: middle;">
+                                <td style="font-weight: bold; border-right: 1px solid #000; border-bottom: 1px solid #000; vertical-align: middle;">
                                     Arquitecto:
                                 </td>
-                                <td style="border-right: 2px solid #333; border-bottom: 1px solid #333; vertical-align: middle;">
+                                <td style="border-right: 2px solid #000; border-bottom: 1px solid #000; vertical-align: middle;">
                                     <span t-if="doc.x_architect_id" t-field="doc.x_architect_id.name"/>
-                                    <span t-else="">-</span>
                                 </td>
-                                <td style="font-weight: bold; border-right: 1px solid #333; border-bottom: 1px solid #333; vertical-align: middle;">
+                                <td style="font-weight: bold; border-right: 1px solid #000; border-bottom: 1px solid #000; padding-left: 8px; vertical-align: middle;">
                                     Estatus:
                                 </td>
-                                <td style="font-weight: 900; text-align: right; text-transform: uppercase; border-bottom: 1px solid #333; vertical-align: middle;">
+                                <td style="font-weight: 900; text-align: right; text-transform: uppercase; border-bottom: 1px solid #000; vertical-align: middle;">
                                     <span t-field="doc.state"/>
                                 </td>
                             </tr>
 
-                            <!-- FILA 3: Vendedor (Ocupa espacio restante o celda vacía a la derecha) -->
+                            <!-- FILA 3: Vendedor (Celda restante vacía) -->
                             <tr>
-                                <td style="font-weight: bold; border-right: 1px solid #333; vertical-align: middle;">
+                                <td style="font-weight: bold; border-right: 1px solid #000; vertical-align: middle;">
                                     Vendedor:
                                 </td>
-                                <td style="border-right: 2px solid #333; vertical-align: middle;">
+                                <td style="border-right: 2px solid #000; vertical-align: middle;">
                                     <span t-field="doc.user_id.name"/>
                                 </td>
-                                <td colspan="2" style="background-color: #fff;">
-                                    <!-- Espacio vacío intencional para completar la cuadrícula -->
-                                </td>
+                                <td colspan="2"></td> <!-- Espacio vacío para cerrar la tabla limpiamente -->
                             </tr>
                         </table>
                     </div>
                 </div>
-                <div class="mb-4"></div> <!-- Separador inferior -->
 
                 <!-- ======================================================= -->
                 <!-- LÓGICA DE PROCESAMIENTO (MATERIALES VS SERVICIOS)       -->
@@ -192,8 +180,8 @@
                             <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
                                 <thead>
                                     <tr style="border-bottom: 1px solid #ccc;">
-                                        <th name="th_description" style="width: 50%;">Producto</th>
-                                        <th class="text-center" style="width: 15%;">Placas (Lotes)</th>
+                                        <th name="th_description" style="width: 50%;">Nombres</th>
+                                        <th class="text-center" style="width: 15%;">Placas</th>
                                         <th name="th_quantity" class="text-end" style="width: 15%;">Cantidad</th>
                                         
                                         <!-- ✅ COLUMNAS OCULTAS REQUERIDAS POR ODOO (HEADER) -->
