@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Sobrescribir el documento base del reporte de ventas original -->
     <template id="report_sale_order_document_inherit_marmol" inherit_id="sale.report_saleorder_document">
         
         <!-- 1. OCULTAR DIRECCIÓN ESTÁNDAR -->
@@ -18,7 +17,7 @@
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                 
                 <!-- ENCABEZADO -->
-                <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
+                <div class="row border-bottom pb-2 mb-4" style="border-color: #000 !important; align-items: center;">
                     <div class="col-12">
                         <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
                             <span t-if="doc.state in ['draft','sent']">Cotización</span>
@@ -42,110 +41,86 @@
                     </div>
                 </div>
 
-            <!-- TABLA PRINCIPAL: CLIENTE Y DATOS DE ORDEN -->
-                <div class="row mb-2" id="informations">
-                    <div class="col-12">
-                        <table class="table table-bordered table-sm" style="width: 100%; border: 1px solid #000; border-collapse: collapse; font-size: 10px; margin-bottom: 0px;">
-                            <tbody>
-                                <tr>
-                                    <!-- ============================================== -->
-                                    <!-- LADO IZQUIERDO: INFORMACIÓN DEL CLIENTE        -->
-                                    <!-- ============================================== -->
-                                    <td style="width: 50%; vertical-align: top; padding: 0; border-right: 1px solid #000;">
-                                        <!-- SECCIÓN 1: TÍTULO Y NOMBRE DEL CLIENTE (Destacado) -->
-                                        <div style="padding: 5px; border-bottom: 1px solid #ccc;">
-                                            <strong style="font-size: 9px; text-transform: uppercase; color: #555;">Cliente:</strong><br/>
-                                            <span style="font-weight: bold; font-size: 12px; display: block; margin-top: 2px;" t-field="doc.partner_id.name"/>
-                                        </div>
-
-                                        <!-- SECCIÓN 2: DATOS ESPECÍFICOS EN CELDAS (RFC y Dirección) -->
-                                        <table style="width: 100%; border-collapse: collapse;">
-                                            <tr t-if="doc.partner_id.vat">
-                                                <td style="width: 25%; background-color: #f0f0f0; padding: 3px 5px; border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; font-weight: bold;">
-                                                    RFC
-                                                </td>
-                                                <td style="padding: 3px 5px; border-bottom: 1px solid #ddd;">
-                                                    <span t-field="doc.partner_id.vat"/>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="width: 25%; background-color: #f0f0f0; padding: 3px 5px; border-right: 1px solid #ddd; font-weight: bold; vertical-align: top;">
-                                                    Dirección
-                                                </td>
-                                                <td style="padding: 3px 5px; vertical-align: top;">
-                                                    <span t-field="doc.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-
-                                    <!-- ============================================== -->
-                                    <!-- LADO DERECHO: DETALLES DE LA ORDEN             -->
-                                    <!-- ============================================== -->
-                                    <td style="width: 50%; vertical-align: top; padding: 0;">
-                                        <table style="width: 100%; border-collapse: collapse;">
-                                            <!-- Fila: Estado -->
-                                            <tr>
-                                                <td style="width: 30%; background-color: #f0f0f0; padding: 4px 5px; border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; font-weight: bold;">
-                                                    Estado
-                                                </td>
-                                                <td style="padding: 4px 5px; border-bottom: 1px solid #ddd;">
-                                                    <span t-field="doc.state"/>
-                                                </td>
-                                            </tr>
-                                            <!-- Fila: Fecha -->
-                                            <tr>
-                                                <td style="background-color: #f0f0f0; padding: 4px 5px; border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; font-weight: bold;">
-                                                    Fecha
-                                                </td>
-                                                <td style="padding: 4px 5px; border-bottom: 1px solid #ddd;">
-                                                    <span t-field="doc.date_order" t-options='{"widget": "date"}'/>
-                                                </td>
-                                            </tr>
-                                            <!-- Fila: Vendedor -->
-                                            <tr>
-                                                <td style="background-color: #f0f0f0; padding: 4px 5px; border-right: 1px solid #ddd; font-weight: bold;">
-                                                    Vendedor
-                                                </td>
-                                                <td style="padding: 4px 5px;">
-                                                    <span t-field="doc.user_id.name"/>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <!-- =================================================================== -->
+                <!-- SECCIÓN INTEGRADA: CLIENTE (IZQ) + TABLA DE REFERENCIAS (DER)       -->
+                <!-- =================================================================== -->
+                <div class="row mb-4">
+                    <!-- ENCABEZADOS VISUALES (Como en la imagen) -->
+                    <div class="col-12 mb-1">
+                        <div style="border-bottom: 2px solid #ccc; padding-bottom: 4px; margin-bottom: 4px; display: flex;">
+                            <div style="width: 45%; padding-left: 5px;">
+                                <strong style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">CLIENTE</strong>
+                            </div>
+                            <div style="width: 55%; padding-left: 5px;">
+                                <strong style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">REFERENCIA Y ESTADO</strong>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <!-- TABLA SECUNDARIA: PROYECTO Y ARQUITECTO (Estilo Formal Grid) -->
-                <div class="row mb-2" t-if="doc.x_project_id or doc.x_architect_id">
-                    <div class="col-12">
-                        <table class="table table-bordered table-sm" style="width: 100%; border: 1px solid #000; border-collapse: collapse; font-size: 10px; margin-top: -1px;">
-                            <tbody>
-                                <tr>
-                                    <!-- Proyecto -->
-                                    <t t-if="doc.x_project_id">
-                                        <td style="width: 15%; background-color: #f0f0f0; padding: 4px 5px; border-right: 1px solid #ccc; font-weight: bold;">
-                                            PROYECTO
-                                        </td>
-                                        <td style="width: 35%; padding: 4px 5px; border-right: 1px solid #000;">
-                                            <span t-field="doc.x_project_id.name"/>
-                                        </td>
-                                    </t>
-                                    
-                                    <!-- Arquitecto -->
-                                    <t t-if="doc.x_architect_id">
-                                        <td style="width: 15%; background-color: #f0f0f0; padding: 4px 5px; border-right: 1px solid #ccc; font-weight: bold;">
-                                            ARQUITECTO
-                                        </td>
-                                        <td style="width: 35%; padding: 4px 5px;">
-                                            <span t-field="doc.x_architect_id.name"/>
-                                        </td>
-                                    </t>
-                                </tr>
-                            </tbody>
+                    <!-- COLUMNA IZQUIERDA: INFORMACIÓN DEL CLIENTE (Limpia) -->
+                    <div class="col-5" style="padding-right: 15px;">
+                        <!-- Nombre del Cliente -->
+                        <div style="margin-bottom: 10px;">
+                            <span t-field="doc.partner_id.name" style="font-weight: 900; font-size: 13px; display: block; margin-bottom: 2px;"/>
+                            <span t-if="doc.partner_id.vat" style="font-size: 10px; color: #555;">RFC: <span t-field="doc.partner_id.vat"/></span>
+                        </div>
+                        
+                        <!-- Dirección -->
+                        <div>
+                            <strong style="font-size: 9px; color: #666; text-transform: uppercase;">DIRECCIÓN DE ENTREGA:</strong>
+                            <div style="font-size: 10px; margin-top: 2px; line-height: 1.3;">
+                                <span t-field="doc.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COLUMNA DERECHA: TABLA UNIFICADA (Bordes negros, sin fondo) -->
+                    <div class="col-7">
+                        <table class="table table-sm" style="width: 100%; border: 1px solid #333; margin-bottom: 0; font-size: 10px;">
+                            <!-- FILA 1: Proyecto y Fecha -->
+                            <tr>
+                                <td style="width: 18%; font-weight: bold; border-right: 1px solid #333; border-bottom: 1px solid #333; vertical-align: middle; padding: 4px;">
+                                    Proyecto:
+                                </td>
+                                <td style="width: 37%; border-right: 2px solid #333; border-bottom: 1px solid #333; vertical-align: middle; padding: 4px;">
+                                    <span t-if="doc.x_project_id" t-field="doc.x_project_id.name"/>
+                                    <span t-else="">-</span>
+                                </td>
+                                <td style="width: 20%; font-weight: bold; border-right: 1px solid #333; border-bottom: 1px solid #333; vertical-align: middle; padding: 4px;">
+                                    Fecha Emisión:
+                                </td>
+                                <td style="width: 25%; font-weight: bold; text-align: right; border-bottom: 1px solid #333; vertical-align: middle; padding: 4px;">
+                                    <span t-field="doc.date_order" t-options='{"widget": "date"}'/>
+                                </td>
+                            </tr>
+                            
+                            <!-- FILA 2: Arquitecto y Estatus -->
+                            <tr>
+                                <td style="font-weight: bold; border-right: 1px solid #333; border-bottom: 1px solid #333; vertical-align: middle; padding: 4px;">
+                                    Arquitecto:
+                                </td>
+                                <td style="border-right: 2px solid #333; border-bottom: 1px solid #333; vertical-align: middle; padding: 4px;">
+                                    <span t-if="doc.x_architect_id" t-field="doc.x_architect_id.name"/>
+                                    <span t-else="">-</span>
+                                </td>
+                                <td style="font-weight: bold; border-right: 1px solid #333; border-bottom: 1px solid #333; vertical-align: middle; padding: 4px;">
+                                    Estatus:
+                                </td>
+                                <td style="font-weight: 900; text-align: right; text-transform: uppercase; border-bottom: 1px solid #333; vertical-align: middle; padding: 4px;">
+                                    <span t-field="doc.state"/>
+                                </td>
+                            </tr>
+
+                            <!-- FILA 3: Vendedor -->
+                            <tr>
+                                <td style="font-weight: bold; border-right: 1px solid #333; vertical-align: middle; padding: 4px;">
+                                    Vendedor:
+                                </td>
+                                <td style="border-right: 2px solid #333; vertical-align: middle; padding: 4px;">
+                                    <span t-field="doc.user_id.name"/>
+                                </td>
+                                <td colspan="2" style="background-color: #fff;"></td>
+                            </tr>
                         </table>
                     </div>
                 </div>
@@ -160,7 +135,6 @@
                     <t t-if="not line.display_type">
                         <t t-set="key" t-value="line.product_id.id"/>
                         
-                        <!-- DETECTAR SI ES SERVICIO -->
                         <t t-if="line.product_id.type == 'service'">
                             <t t-if="key not in service_summary">
                                 <t t-set="dummy" t-value="service_summary.update({key: {
@@ -175,9 +149,7 @@
                                 'subtotal': service_summary[key]['subtotal'] + line.price_subtotal
                             })"/>
                         </t>
-                        
                         <t t-else="">
-                            <!-- ACUMULAR EN MATERIALES -->
                             <t t-if="key not in material_summary">
                                 <t t-set="dummy" t-value="material_summary.update({key: {
                                     'name': line.product_id.display_name,
@@ -204,19 +176,15 @@
                     <div class="col-12">
                         <div style="border: 1px solid #000; padding: 6px; background-color: #f8f9fa;">
                             <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px;">Materiales:</strong>
-                            
                             <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
                                 <thead>
                                     <tr style="border-bottom: 1px solid #ccc;">
                                         <th name="th_description" style="width: 50%;">Producto</th>
                                         <th class="text-center" style="width: 15%;">Placas (Lotes)</th>
                                         <th name="th_quantity" class="text-end" style="width: 15%;">Cantidad</th>
-                                        
-                                        <!-- ✅ COLUMNAS OCULTAS REQUERIDAS POR ODOO (HEADER) -->
                                         <th name="th_priceunit" t-if="False"></th>
                                         <th name="th_discount" t-if="False"></th>
                                         <th name="th_taxes" t-if="False"></th>
-                                        
                                         <th name="th_subtotal" class="text-end" style="width: 20%;">Subtotal</th>
                                     </tr>
                                 </thead>
@@ -231,16 +199,11 @@
                                             <td name="td_quantity" class="text-end">
                                                 <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
                                             </td>
-                                            
-                                            <!-- ✅ CELDAS OCULTAS REQUERIDAS POR ODOO (BODY) -->
                                             <td name="td_priceunit" t-if="False"></td>
                                             <td name="td_discount" t-if="False"></td>
                                             <td name="td_taxes" t-if="False"></td>
-                                            
-                                            <!-- ✅ SOPORTE PARA MÓDULOS LEGACY O LOCALIZACIONES -->
                                             <td name="td_product_quantity" t-if="False"></td>
                                             <td name="td_product_discount" t-if="False"></td>
-                                            
                                             <td name="td_subtotal" class="text-end">
                                                 <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                             </td>
@@ -256,13 +219,12 @@
                 </div>
 
                 <!-- ======================================================= -->
-                <!-- TABLA 2: SERVICIOS ADICIONALES (AL FINAL)               -->
+                <!-- TABLA 2: SERVICIOS ADICIONALES                          -->
                 <!-- ======================================================= -->
                 <div class="row mb-3" t-if="service_summary">
                     <div class="col-12">
                         <div style="border: 1px solid #ccc; border-top: none; padding: 6px; background-color: #fff;">
                             <strong style="font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px; color: #555;">Servicios Adicionales:</strong>
-                            
                             <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
                                 <thead>
                                     <tr style="border-bottom: 1px solid #eee;">
@@ -316,14 +278,14 @@
                     </div>
                 </div>
 
-                <!-- TOTALES DE IMPUESTOS ORIGINALES (Oculto para compatibilidad) -->
+                <!-- TOTALES DE IMPUESTOS OCULTOS -->
                 <div class="clearfix" name="so_total_summary" t-if="False">
                     <div id="total" class="row" name="total">
                         <div class="col-6"></div>
                     </div>
                 </div>
 
-                <!-- FIRMAS Y NOTAS -->
+                <!-- FIRMAS Y TERMINOS -->
                 <div style="page-break-inside: avoid;">
                     <div class="row mt-4">
                         <div class="col-12">
@@ -332,8 +294,8 @@
                                     Términos y Condiciones Comerciales (Especializados en Piedra Natural)
                                 </strong>
                                 <div style="font-size: 8px; text-align: justify; color: #555;">
-                                    <p class="mb-1"><strong>1. NATURALEZA DEL PRODUCTO:</strong> La piedra natural (mármol, granito, cuarcita, ónix, etc.) es un producto de la naturaleza. Por lo tanto, está sujeta a variaciones de tono, color, veta, textura y estructura geológica. Las muestras presentadas son únicamente indicativas y no garantizan una identidad exacta con el lote entregado. La presencia de "poros", "cristalizaciones", "venas abiertas" o "fissures" son características propias del material y no se consideran defectos de calidad.</p>
-                                    <p class="mb-1"><strong>2. INSPECCIÓN Y ACEPTACIÓN:</strong> El cliente o su representante tiene la responsabilidad de inspeccionar el material físicamente antes de su transformación. La firma de la remisión de entrega o la salida del material de nuestro almacén constituye la aceptación total de la calidad. <strong>No se aceptan reclamaciones una vez que el material ha sido cortado.</strong></p>
+                                    <p class="mb-1"><strong>1. NATURALEZA DEL PRODUCTO:</strong> La piedra natural (mármol, granito, cuarcita, ónix, etc.) es un producto de la naturaleza...</p>
+                                    <p class="mb-1"><strong>2. INSPECCIÓN Y ACEPTACIÓN:</strong> El cliente o su representante tiene la responsabilidad de inspeccionar...</p>
                                 </div>
                             </div>
                         </div>
