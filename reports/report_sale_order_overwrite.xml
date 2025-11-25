@@ -135,7 +135,8 @@
                                 <t t-set="dummy" t-value="service_summary.update({key: {
                                     'name': line.product_id.display_name, 
                                     'qty_total': 0.0, 
-                                    'uom': line.product_id.uom_id.name, 
+                                    'uom': line.product_id.uom_id.name,
+                                    'price_unit': line.price_unit,
                                     'subtotal': 0.0,
                                     'tax': 0.0,
                                     'total': 0.0
@@ -143,6 +144,7 @@
                             </t>
                             <t t-set="dummy" t-value="service_summary[key].update({
                                 'qty_total': service_summary[key]['qty_total'] + line.product_uom_qty, 
+                                'price_unit': line.price_unit,
                                 'subtotal': service_summary[key]['subtotal'] + line.price_subtotal,
                                 'tax': service_summary[key]['tax'] + line.price_tax,
                                 'total': service_summary[key]['total'] + line.price_total
@@ -154,7 +156,8 @@
                                     'name': line.product_id.display_name, 
                                     'qty_lot': 0, 
                                     'qty_total': 0.0, 
-                                    'uom': line.product_id.uom_id.name, 
+                                    'uom': line.product_id.uom_id.name,
+                                    'price_unit': line.price_unit,
                                     'subtotal': 0.0,
                                     'tax': 0.0,
                                     'total': 0.0
@@ -163,7 +166,8 @@
                             <t t-set="current_plates" t-value="len(line.x_selected_lots) if line.x_selected_lots else 0"/>
                             <t t-set="dummy" t-value="material_summary[key].update({
                                 'qty_lot': material_summary[key]['qty_lot'] + current_plates, 
-                                'qty_total': material_summary[key]['qty_total'] + line.product_uom_qty, 
+                                'qty_total': material_summary[key]['qty_total'] + line.product_uom_qty,
+                                'price_unit': line.price_unit,
                                 'subtotal': material_summary[key]['subtotal'] + line.price_subtotal,
                                 'tax': material_summary[key]['tax'] + line.price_tax,
                                 'total': material_summary[key]['total'] + line.price_total
@@ -180,9 +184,13 @@
                 <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
                     <thead>
                         <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                            <th name="th_description" style="color: #fff; width: 35%; padding: 4px 8px; font-weight: bold;">Descripción</th>
+                            <!-- Ajustado ancho de 35% a 25% para dar espacio al precio unitario -->
+                            <th name="th_description" style="color: #fff; width: 25%; padding: 4px 8px; font-weight: bold;">Descripción</th>
                             <th class="text-center" style="color: #fff;width: 10%; padding: 4px 8px; font-weight: bold;">Placas</th>
                             <th name="th_quantity" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">Cant.</th>
+                            <!-- Columna Nueva: Precio Unitario -->
+                            <th name="th_price_unit_display" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">P. Unitario</th>
+                            
                             <th name="th_priceunit" t-if="False"></th>
                             <th name="th_discount" t-if="False"></th>
                             <th name="th_taxes" t-if="False"></th>
@@ -204,6 +212,11 @@
                                 <td name="td_quantity" class="text-end align-middle">
                                     <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
                                 </td>
+                                <!-- Dato Nuevo: Precio Unitario -->
+                                <td name="td_price_unit_display" class="text-end align-middle">
+                                    <span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                </td>
+
                                 <td name="td_priceunit" t-if="False"></td>
                                 <td name="td_discount" t-if="False"></td>
                                 <td name="td_taxes" t-if="False"></td>
@@ -221,7 +234,7 @@
                             </tr>
                         </t>
                         <tr t-if="not material_summary">
-                            <td colspan="6" class="text-center" style="font-style: italic; color: #777;">Sin materiales físicos seleccionados.</td>
+                            <td colspan="7" class="text-center" style="font-style: italic; color: #777;">Sin materiales físicos seleccionados.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -234,8 +247,11 @@
                     <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
                         <thead>
                             <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                                <th style="width: 40%; font-weight: bold; color: #fff;">Descripción</th>
+                                <!-- Ajustado ancho de 40% a 30% -->
+                                <th style="width: 30%; font-weight: bold; color: #fff;">Descripción</th>
                                 <th class="text-end" style="width: 10%; font-weight: bold; color: #fff;">Cantidad</th>
+                                <!-- Columna Nueva: Precio Unitario (10%) -->
+                                <th class="text-end" style="width: 10%; font-weight: bold; color: #fff;">P. Unitario</th>
                                 <th class="text-end" style="width: 15%; font-weight: bold; color: #fff;">Subtotal</th>
                                 <th class="text-end" style="width: 15%; font-weight: bold; color: #fff;">IVA</th>
                                 <th class="text-end" style="width: 20%; font-weight: bold; color: #fff;">Total</th>
@@ -247,6 +263,10 @@
                                     <td class="align-middle"><span t-esc="data['name']"/></td>
                                     <td class="text-end align-middle">
                                         <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
+                                    </td>
+                                    <!-- Dato Nuevo: Precio Unitario -->
+                                    <td class="text-end align-middle">
+                                        <span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                     </td>
                                     <td class="text-end align-middle">
                                         <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
