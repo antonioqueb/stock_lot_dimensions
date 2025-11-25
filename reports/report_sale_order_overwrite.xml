@@ -129,9 +129,23 @@
                         <t t-set="key" t-value="line.product_id.id"/>
                         <t t-if="line.product_id.type == 'service'">
                             <t t-if="key not in service_summary">
-                                <t t-set="dummy" t-value="service_summary.update({key: {'name': line.product_id.display_name, 'qty_total': 0.0, 'uom': line.product_id.uom_id.name, 'subtotal': 0.0}})"/>
+                                <!-- ACTUALIZADO: Inicializar tax y total en 0.0 para servicios -->
+                                <t t-set="dummy" t-value="service_summary.update({key: {
+                                    'name': line.product_id.display_name, 
+                                    'qty_total': 0.0, 
+                                    'uom': line.product_id.uom_id.name, 
+                                    'subtotal': 0.0,
+                                    'tax': 0.0,
+                                    'total': 0.0
+                                }})"/>
                             </t>
-                            <t t-set="dummy" t-value="service_summary[key].update({'qty_total': service_summary[key]['qty_total'] + line.product_uom_qty, 'subtotal': service_summary[key]['subtotal'] + line.price_subtotal})"/>
+                            <!-- ACTUALIZADO: Sumar tax y total para servicios -->
+                            <t t-set="dummy" t-value="service_summary[key].update({
+                                'qty_total': service_summary[key]['qty_total'] + line.product_uom_qty, 
+                                'subtotal': service_summary[key]['subtotal'] + line.price_subtotal,
+                                'tax': service_summary[key]['tax'] + line.price_tax,
+                                'total': service_summary[key]['total'] + line.price_total
+                            })"/>
                         </t>
                         <t t-else="">
                             <t t-if="key not in material_summary">
@@ -225,6 +239,7 @@
                 </table>
 
                 <!-- ================= TABLA 2: SERVICIOS (ESTILO DISEÑO A) ================= -->
+                <!-- ACTUALIZADO: Tabla de Servicios con columnas IVA y Total -->
                 <div t-if="service_summary" style="margin-top: 15px;">
                     <div class="mb-1">
                         <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Servicios Adicionales</strong>
@@ -232,9 +247,11 @@
                     <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
                         <thead>
                             <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                                <th style="width: 65%; font-weight: bold; color: #fff;">Descripción</th>
-                                <th class="text-end" style="width: 15%; font-weight: bold; color: #fff;">Cantidad</th>
-                                <th class="text-end" style="width: 20%; font-weight: bold; color: #fff;">Importe</th>
+                                <th style="width: 40%; font-weight: bold; color: #fff;">Descripción</th>
+                                <th class="text-end" style="width: 10%; font-weight: bold; color: #fff;">Cantidad</th>
+                                <th class="text-end" style="width: 15%; font-weight: bold; color: #fff;">Subtotal</th>
+                                <th class="text-end" style="width: 15%; font-weight: bold; color: #fff;">IVA</th>
+                                <th class="text-end" style="width: 20%; font-weight: bold; color: #fff;">Total</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -246,6 +263,14 @@
                                     </td>
                                     <td class="text-end align-middle">
                                         <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                    </td>
+                                    <!-- NUEVA COLUMNA SERVICIOS: IVA -->
+                                    <td class="text-end align-middle">
+                                        <span t-esc="data['tax']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                    </td>
+                                    <!-- NUEVA COLUMNA SERVICIOS: TOTAL -->
+                                    <td class="text-end align-middle" style="font-weight: bold;">
+                                        <span t-esc="data['total']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                     </td>
                                 </tr>
                             </t>
