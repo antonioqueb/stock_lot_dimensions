@@ -45,7 +45,7 @@
                                 ⚠️ OFERTA VÁLIDA HASTA: <span t-field="doc.validity_date" t-options='{"widget": "date"}'/>
                             </div>
                             <div style="color: #333; font-size: 10px; margin-top: 3px; font-style: italic;">
-                                A partir de esa fecha, los precios y la disponibilidad de los lotes pueden cambiar sin previo aviso.
+                                A partir de esa fecha, los precios y la disponibilidad de los materiales pueden cambiar sin previo aviso.
                             </div>
                         </div>
                     </div>
