@@ -14,6 +14,10 @@ class SaleOrderLine(models.Model):
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
+
+
+    x_project_id = fields.Many2one('project.project', string='Proyecto')
+    x_architect_id = fields.Many2one('res.partner', string='Arquitecto')
     
     @api.model
     def create_from_shopping_cart(self, partner_id=None, products=None, services=None, notes=None, pricelist_id=None, apply_tax=True, project_id=None, architect_id=None):
