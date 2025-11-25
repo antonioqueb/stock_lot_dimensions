@@ -4,7 +4,7 @@
     <!-- ACCIÓN: REPORTE DETALLADO (Con Lotes Individuales) -->
     <!-- ======================================================= -->
     <record id="action_report_sale_order_custom_detail" model="ir.actions.report">
-        <field name="name">Orden de Venta - Detalle de Placas</field>
+        <field name="name">Orden de Venta - Detalle</field>
         <field name="model">sale.order</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">stock_lot_dimensions.report_sale_order_custom_detail</field>
@@ -32,8 +32,8 @@
                         <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                             <div class="col-8">
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
-                                    <span t-if="o.state in ['draft','sent']">Cotización Detallada</span>
-                                    <span t-else="">Orden de Venta Detallada</span>
+                                    <span t-if="o.state in ['draft','sent']">Cotización</span>
+                                    <span t-else="">Orden de Venta</span>
                                     <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
                                 </h4>
                             </div>
@@ -137,7 +137,7 @@
                         <!-- ================= TABLA 1: MATERIALES DETALLADOS (ESTILO A + COLUMNAS NUEVAS) ================= -->
                         <div t-if="materials">
                             <div class="mt-3 mb-1">
-                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Suministro de Materiales (Detalle de Lotes)</strong>
+                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Suministro de Materiales</strong>
                             </div>
                             
                             <!-- Tabla con Cabecera Negra (Estilo A) -->
