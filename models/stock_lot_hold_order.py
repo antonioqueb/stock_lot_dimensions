@@ -225,7 +225,11 @@ class StockLotHoldOrder(models.Model):
     def action_cancel(self):
         for order in self:
             # Solo cancelamos holds físicos
-            order.hold_line_ids.mapped('hold_id').filtered(lambda h: h.estado == 'activo').action_cancelar_hold()
+            # ✅ CORRECCIÓN: Iteramos para evitar error ensure_one() si hay 0 o >1 registros
+            active_holds = order.hold_line_ids.mapped('hold_id').filtered(lambda h: h.estado == 'activo')
+            for hold in active_holds:
+                hold.action_cancelar_hold()
+            
             order.state = 'cancel'
     
     def action_done(self):
