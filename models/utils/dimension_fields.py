@@ -33,6 +33,8 @@ class LotDimensionFields:
                 digits=(10, 4),
                 help='Ancho del producto en metros'
             ),
+
+
         }
     
     @staticmethod
@@ -62,6 +64,11 @@ class LotDimensionFields:
                 string='Grupo',
                 help='Etiquetas de grupo para clasificación'
             ),
+            'x_color': fields.Char(
+                string='Color',
+                help='Color predominante del material'
+            ),
+
         }
     
     @staticmethod

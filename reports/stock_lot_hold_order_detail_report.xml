@@ -127,6 +127,7 @@
                                         <th style="width: 12%; color: #fff; font-weight: bold; padding: 4px;">LOTE</th>
                                         <th style="width: 8%; color: #fff; font-weight: bold; padding: 4px;">BLOQUE</th>
                                         <th style="width: 8%; color: #fff; font-weight: bold; padding: 4px;">ATADO</th>
+                                        <th style="width: 8%; color: #fff; font-weight: bold; padding: 4px;">COLOR</th>
                                         <th class="text-center" style="width: 5%; color: #fff; font-weight: bold; padding: 4px;">GROSOR</th>
                                         <th class="text-center" style="width: 5%; color: #fff; font-weight: bold; padding: 4px;">ALTO</th>
                                         <th class="text-center" style="width: 5%; color: #fff; font-weight: bold; padding: 4px;">ANCHO</th>
@@ -164,6 +165,9 @@
                                             </td>
                                             <td class="align-middle" style="padding: 2px 5px;">
                                                 <span t-field="line.lot_id.x_atado"/>
+                                            </td>
+                                            <td class="align-middle" style="padding: 2px 5px;">
+                                                <span t-field="line.lot_id.x_color"/>
                                             </td>
                                             <td class="text-center align-middle" style="padding: 2px 5px;">
                                                 <span t-field="line.x_grosor" t-options='{"precision": 2}'/>

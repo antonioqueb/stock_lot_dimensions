@@ -16,6 +16,8 @@ class StockQuant(models.Model):
     _inherit = 'stock.quant'
     
     # ==================== CAMPOS RELACIONADOS DEL LOTE ====================
+
+    x_color = fields.Char(related='lot_id.x_color', string='Color', readonly=True)
     x_grosor = fields.Float(related='lot_id.x_grosor', string='Grosor', readonly=True)
     x_alto = fields.Float(related='lot_id.x_alto', string='Alto', readonly=True)
     x_ancho = fields.Float(related='lot_id.x_ancho', string='Ancho', readonly=True)
@@ -734,6 +736,7 @@ class StockQuant(models.Model):
             dict: Diccionario con todos los detalles del quant
         """
         # Campos básicos
+        color = getattr(quant, 'x_color', None) or ''
         grosor = getattr(quant, 'x_grosor', None) or ''
         alto = getattr(quant, 'x_alto', None) or ''
         ancho = getattr(quant, 'x_ancho', None) or ''
@@ -774,6 +777,7 @@ class StockQuant(models.Model):
             'total_plates': plates_info['total_plates'],
             'committed_plates': plates_info['committed_plates'],
             'available_plates': plates_info['available_plates'],
+            'color': color,
             'grosor': grosor,
             'alto': alto,
             'ancho': ancho,

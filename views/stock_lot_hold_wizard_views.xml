@@ -14,11 +14,13 @@
                     </group>
                     
                     <group string="Dimensiones">
+
                         <field name="x_grosor" readonly="1"/>
                         <field name="x_alto" readonly="1"/>
                         <field name="x_ancho" readonly="1"/>
                         <field name="x_bloque" readonly="1"/>
                         <field name="x_atado" readonly="1"/>
+                        <field name="x_color" readonly="1"/>
                     </group>
                 </group>
                 

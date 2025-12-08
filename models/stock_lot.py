@@ -18,6 +18,7 @@ class StockLot(models.Model):
     x_bloque = LotDimensionFields.get_classification_fields()['x_bloque']
     x_atado = LotDimensionFields.get_classification_fields()['x_atado']
     x_grupo = LotDimensionFields.get_classification_fields()['x_grupo']
+    x_color = LotDimensionFields.get_classification_fields()['x_color']
     
     # ==================== CAMPOS LOGÍSTICOS ====================
     x_pedimento = LotDimensionFields.get_logistics_fields()['x_pedimento']

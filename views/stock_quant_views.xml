@@ -12,6 +12,7 @@
                 <field name="x_ancho" optional="hide" string="Ancho (m)"/>
                 <field name="x_bloque" optional="show" string="Bloque"/>
                 <field name="x_tipo" optional="show" string="Tipo"/>
+                <field name="x_color" optional="show" string="Color"/>
                 <field name="x_atado" optional="show" string="Atado"/>
                 <field name="x_grupo" widget="many2many_tags" optional="show" string="Grupo"/>
                 <field name="x_pedimento" optional="show" string="Pedimento"/>
@@ -55,6 +56,7 @@
                 <field name="x_alto" optional="hide" string="Alto (m)" readonly="1"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)" readonly="1"/>
                 <field name="x_bloque" optional="show" string="Bloque" readonly="1"/>
+                <field name="x_color" optional="show" string="Color" readonly="1"/>
                 <field name="x_tipo" optional="show" string="Tipo" readonly="1"/>
                 <field name="x_atado" optional="show" string="Atado" readonly="1"/>
                 <field name="x_grupo" widget="many2many_tags" optional="show" string="Grupo" readonly="1"/>

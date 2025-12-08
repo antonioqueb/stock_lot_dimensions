@@ -13,6 +13,7 @@ class LotDimensionSync:
         'x_grosor_temp': 'x_grosor',
         'x_alto_temp': 'x_alto',
         'x_ancho_temp': 'x_ancho',
+        'x_color_temp': 'x_color',
         'x_bloque_temp': 'x_bloque',
         'x_atado_temp': 'x_atado',
         'x_tipo_temp': 'x_tipo',
@@ -33,6 +34,7 @@ class LotDimensionSync:
             return
         
         lot = move_line.lot_id
+        move_line.x_color_temp = lot.x_color
         move_line.x_grosor_temp = lot.x_grosor
         move_line.x_alto_temp = lot.x_alto
         move_line.x_ancho_temp = lot.x_ancho

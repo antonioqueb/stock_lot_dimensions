@@ -41,6 +41,8 @@
                             </group>
 
                             <group string="Características" name="characteristics_group">
+                                <field name="x_color" 
+                                       placeholder="Color del producto"/>
                                 <field name="x_tipo" 
                                        placeholder="Selecciona tipo..."/>
                                 <field name="x_bloque" 
@@ -129,6 +131,7 @@
                 <field name="x_grosor" optional="hide" string="Grosor (cm)"/>
                 <field name="x_alto" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)"/>
+                <field name="x_color" optional="show" string="Color"/>
                 <field name="x_tipo" optional="show" string="Tipo"/>
                 <field name="x_bloque" optional="show" string="Bloque"/>
                 <field name="x_atado" optional="show" string="Atado"/>

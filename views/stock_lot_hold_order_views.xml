@@ -20,6 +20,7 @@
                 <field name="x_grosor" string="Grosor" optional="show" readonly="1"/>
                 <field name="x_alto" string="Alto" optional="show" readonly="1"/>
                 <field name="x_ancho" string="Ancho" optional="show" readonly="1"/>
+                <field name="x_color" string="Color" optional="show" readonly="1"/>
                 <field name="x_tipo" string="Tipo" optional="show" readonly="1"/>
                 <field name="hold_id" string="Hold Creado" readonly="1" optional="hide"/>
             </list>

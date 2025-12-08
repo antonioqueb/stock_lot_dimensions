@@ -16,6 +16,11 @@ class StockMoveLine(models.Model):
     _inherit = 'stock.move.line'
     
     # ==================== CAMPOS TEMPORALES DE DIMENSIONES ====================
+    x_color_temp = fields.Char(
+        string='Color',
+        help='Color del producto (se guardará en el lote)'
+    )
+
     x_grosor_temp = fields.Float(
         string='Grosor (cm)',
         digits=(10, 2),
@@ -79,6 +84,13 @@ class StockMoveLine(models.Model):
     )
     
     # ==================== CAMPOS RELATED DEL LOTE ====================
+    x_color_lote = fields.Char(
+        related='lot_id.x_color',
+        string='Color Lote',
+        readonly=True,
+        store=False
+    )
+
     x_grosor_lote = fields.Float(
         related='lot_id.x_grosor',
         string='Grosor Lote (cm)',
