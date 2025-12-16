@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="stock_lot_dimensions.StatusIconsWidget" owl="1">
+    <t t-name="stock_lot_dimensions.StatusIconsWidget">
         <div class="d-flex" style="gap: 6px; align-items: center;">
             <t t-if="estados.reservado">
                 <span class="badge bg-success" title="Reservado" style="font-size: 0.75rem;">

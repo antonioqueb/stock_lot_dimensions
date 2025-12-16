@@ -32,7 +32,8 @@ class StockQuant(models.Model):
     x_cantidad_fotos = fields.Integer(related='lot_id.x_cantidad_fotos', readonly=True)
     x_detalles_placa = fields.Text(related='lot_id.x_detalles_placa', string='Detalles', readonly=True)
     
-    # ==================== CAMPOS DE ESTADO DE RESERVA ====================
+    # ==================== CAMPOS DE ESTADO DE RESERVA (SISTEMA) ====================
+    # Nota: Estos se mantienen store=True porque dependen de stock moves nativos, no de holds manuales
     x_esta_reservado = fields.Boolean(
         string='Reservado (Sistema)',
         compute='_compute_estado_reserva',
@@ -54,7 +55,7 @@ class StockQuant(models.Model):
         help='Indica si la placa tiene detalles especiales registrados'
     )
     
-    # ==================== CAMPOS DE HOLD MANUAL ====================
+    # ==================== CAMPOS DE HOLD MANUAL (OPTIMIZADOS) ====================
     x_hold_ids = fields.One2many(
         'stock.lot.hold',
         'quant_id',
@@ -62,10 +63,12 @@ class StockQuant(models.Model):
         help='Holds/Reservas manuales de este quant'
     )
     
+    # CORRECCIÓN: store=False + search method para evitar bloqueos y permitir filtros
     x_tiene_hold = fields.Boolean(
         string='Tiene Hold',
         compute='_compute_estado_hold',
-        store=True,
+        store=False, 
+        search='_search_tiene_hold', # Permite filtrar aunque no esté almacenado
         compute_sudo=True,
         help='Indica si el lote tiene una reserva manual activa'
     )
@@ -74,7 +77,8 @@ class StockQuant(models.Model):
         'stock.lot.hold',
         string='Hold Activo',
         compute='_compute_estado_hold',
-        store=True,
+        store=False,
+        search='_search_hold_activo', # Permite buscar por ID de hold
         compute_sudo=True,
         help='Hold activo actualmente en este quant'
     )
@@ -82,7 +86,7 @@ class StockQuant(models.Model):
     x_hold_para = fields.Char(
         string='Reservado Para',
         compute='_compute_estado_hold',
-        store=True,
+        store=False,
         compute_sudo=True,
         help='Cliente para quien está reservado'
     )
@@ -90,12 +94,11 @@ class StockQuant(models.Model):
     x_hold_expira = fields.Datetime(
         string='Expira',
         compute='_compute_estado_hold',
-        store=True,
+        store=False,
         compute_sudo=True,
         help='Fecha de expiración del hold'
     )
     
-    # CORRECCIÓN APLICADA: Usar un compute method separado para este campo NO almacenado
     x_hold_dias_restantes = fields.Integer(
         string='Días Restantes',
         compute='_compute_hold_dias_restantes',
@@ -110,6 +113,39 @@ class StockQuant(models.Model):
         help='Estado visual de la placa (JSON para widget)'
     )
     
+    # ==================== MÉTODOS DE BÚSQUEDA (SEARCH) ====================
+    
+    def _search_tiene_hold(self, operator, value):
+        """
+        Permite filtrar por 'Tiene Hold' sin necesidad de almacenar el campo en BD.
+        Busca directamente en la tabla de holds activos.
+        """
+        if operator not in ['=', '!=']:
+            raise UserError('Operación no soportada para el filtro de Hold.')
+
+        # Buscar todos los holds activos
+        holds_activos = self.env['stock.lot.hold'].sudo().search([
+            ('estado', '=', 'activo')
+        ])
+        
+        # Obtener IDs de los quants afectados
+        quants_con_hold_ids = holds_activos.mapped('quant_id').ids
+
+        if (operator == '=' and value) or (operator == '!=' and not value):
+            # El usuario busca Verdadero: Retornar quants que ESTÁN en la lista
+            return [('id', 'in', quants_con_hold_ids)]
+        else:
+            # El usuario busca Falso: Retornar quants que NO ESTÁN en la lista
+            return [('id', 'not in', quants_con_hold_ids)]
+
+    def _search_hold_activo(self, operator, value):
+        """Permite búsquedas relacionadas con el objeto Hold"""
+        holds = self.env['stock.lot.hold'].search([
+            ('id', operator, value),
+            ('estado', '=', 'activo')
+        ])
+        return [('id', 'in', holds.mapped('quant_id').ids)]
+
     # ==================== MÉTODOS COMPUTADOS ====================
     @api.depends('lot_id.x_detalles_placa')
     def _compute_tiene_detalles(self):
@@ -120,41 +156,76 @@ class StockQuant(models.Model):
                 quant.x_detalles_placa.strip()
             )
     
-    # CORRECCIÓN APLICADA: Solo campos STORE=TRUE aquí
-    @api.depends('x_hold_ids.estado', 'x_hold_ids.fecha_expiracion', 'x_hold_ids.company_id', 'company_id')
+    # ==================== MÉTODOS COMPUTADOS OPTIMIZADOS ====================
+    
+    @api.depends('x_hold_ids.estado', 'company_id')
     def _compute_estado_hold(self):
-        """Computar el estado del hold manual de la compañía actual (Campos Almacenados)"""
+        """
+        Computar el estado del hold manual de forma vectorizada (Batch).
+        Evita el problema N+1 y reduce bloqueos de lectura.
+        """
+        # 1. Preparar estructuras de datos
+        quants_with_hold = {}
+        
+        # Filtramos quants que tienen lotes para no perder tiempo
+        quants_to_process = self.filtered(lambda q: q.lot_id)
+        
+        if not quants_to_process:
+            self.x_tiene_hold = False
+            self.x_hold_activo_id = False
+            self.x_hold_para = False
+            self.x_hold_expira = False
+            return
+
+        # 2. Buscar Holds Activos en UNA sola consulta para todos los quants
+        # Agrupamos por compañía para respetar la lógica original
+        company_ids = quants_to_process.mapped('company_id').ids
+        if not company_ids:
+            company_ids = [self.env.company.id]
+
+        domain = [
+            ('quant_id', 'in', quants_to_process.ids),
+            ('estado', '=', 'activo'),
+            ('company_id', 'in', company_ids) # Ojo con lógica multi-company
+        ]
+        
+        # Obtenemos los holds activos relevantes
+        active_holds = self.env['stock.lot.hold'].search(domain, order='create_date desc')
+        
+        # 3. Mapear Holds a Quants en memoria
+        # Usamos un diccionario para acceso rápido: {quant_id: hold_record}
+        # Como ordenamos por create_date desc, el primero que procesemos será el más reciente
+        for hold in active_holds:
+            if hold.quant_id.id not in quants_with_hold:
+                # Verificar coincidencia de compañía específica del quant
+                quant_company = hold.quant_id.company_id.id or self.env.company.id
+                if hold.company_id.id == quant_company:
+                    quants_with_hold[hold.quant_id.id] = hold
+
+        # 4. Asignar valores (en memoria)
         for quant in self:
-            # Obtener compañía del quant
-            company_id = quant.company_id.id if quant.company_id else self.env.company.id
-            
-            # Buscar hold activo de la misma compañía
-            hold_activo = quant.x_hold_ids.filtered(
-                lambda h: h.estado == 'activo' and h.company_id.id == company_id
-            )
-            
-            if hold_activo:
-                # Tomar el más reciente si hay múltiples
-                hold_activo = hold_activo[0]
+            hold = quants_with_hold.get(quant.id)
+            if hold:
                 quant.x_tiene_hold = True
-                quant.x_hold_activo_id = hold_activo.id
-                quant.x_hold_para = hold_activo.partner_id.name
-                quant.x_hold_expira = hold_activo.fecha_expiracion
+                quant.x_hold_activo_id = hold.id
+                quant.x_hold_para = hold.partner_id.name
+                quant.x_hold_expira = hold.fecha_expiracion
             else:
                 quant.x_tiene_hold = False
                 quant.x_hold_activo_id = False
                 quant.x_hold_para = False
                 quant.x_hold_expira = False
 
-    # CORRECCIÓN APLICADA: Nuevo método para campo STORE=FALSE
     @api.depends('x_hold_activo_id', 'x_hold_activo_id.dias_restantes')
     def _compute_hold_dias_restantes(self):
-        """Calcular días restantes (Campo NO Almacenado)"""
+        """Calcular días restantes optimizado"""
         for quant in self:
+            # Al acceder a x_hold_activo_id.dias_restantes, Odoo usa caché si es posible
             if quant.x_hold_activo_id:
                 quant.x_hold_dias_restantes = quant.x_hold_activo_id.dias_restantes
             else:
                 quant.x_hold_dias_restantes = 0
+
     
     @api.depends('reserved_quantity', 'quantity', 'lot_id')
     def _compute_estado_reserva(self):
@@ -362,29 +433,29 @@ class StockQuant(models.Model):
             product_prices=product_prices
         )
     
-    # ==================== OVERRIDE CRÍTICO - FILTRADO DE QUANTS ====================
+    # ==================== OVERRIDE CRÍTICO - FILTRADO DE QUANTS (OPTIMIZADO) ====================
     def _gather(self, product_id, location_id, lot_id=None, package_id=None, 
                 owner_id=None, strict=False, qty=None):
         """
-        Override para filtrar quants con holds antes de asignación FIFO/LIFO
-        
-        Solo incluye quants:
-        - Sin hold, o
-        - Con hold para el cliente permitido en contexto
-        - Considerando la compañía del contexto
+        Override para filtrar quants con holds antes de asignación FIFO/LIFO.
+        OPTIMIZADO: Usa filtrado por conjuntos (Sets) en lugar de bucles for.
         """
-        # Llamar al método original
+        # Llamar al método original para obtener candidatos
         quants = super(StockQuant, self)._gather(
             product_id, location_id, lot_id=lot_id, package_id=package_id,
             owner_id=owner_id, strict=strict, qty=qty
         )
         
-        # Filtrar por holds si hay cliente permitido en contexto
+        # Si no hay candidatos, retornar inmediatamente
+        if not quants:
+            return quants
+
+        # Filtrar por holds de manera eficiente
         return self._filter_quants_by_hold(quants)
     
     def _filter_quants_by_hold(self, quants):
         """
-        Filtra quants según holds del cliente permitido Y compañía
+        Filtra quants según holds del cliente permitido Y compañía usando Set Operations.
         
         Args:
             quants: recordset de stock.quant
@@ -392,33 +463,50 @@ class StockQuant(models.Model):
         Returns:
             recordset: Quants filtrados
         """
-        # CORREGIDO PARA ODOO 19: Usar self.env.context
         cliente_permitido_id = self.env.context.get('allowed_partner_id')
         company_id = self.env.context.get('company_id') or self.env.company.id
         
-        # Sin cliente en contexto → retornar todos
-        if not cliente_permitido_id:
+        # Estrategia: Encontrar los "Blockers" (Quants que NO podemos usar)
+        # y restarlos del conjunto original. Esto es mucho más rápido que verificar uno por uno.
+        
+        # 1. Definir dominio para buscar holds ACTIVOS que afecten a estos quants y esta compañía
+        domain_blockers = [
+            ('quant_id', 'in', quants.ids),
+            ('estado', '=', 'activo'),
+            ('company_id', '=', company_id) # Solo holds de esta compañía bloquean stock
+        ]
+        
+        # 2. Refinar lógica según cliente
+        if cliente_permitido_id:
+            # Si hay un cliente permitido, el hold SOLO es un bloqueo si es para OTRO cliente.
+            # Si el hold es para 'cliente_permitido_id', entonces NO es bloqueo (está reservado para él).
+            domain_blockers.append(('partner_id', '!=', cliente_permitido_id))
+        else:
+            # Si no hay cliente permitido (reserva general/anónima), 
+            # CUALQUIER hold activo es un bloqueo.
+            pass
+            
+        # 3. Ejecutar búsqueda vectorizada (1 sola Query SQL)
+        # Usamos sudo() para asegurar lectura de todos los bloqueos
+        active_holds = self.env['stock.lot.hold'].sudo().search(domain_blockers)
+        
+        # 4. Obtener IDs de quants bloqueados
+        blocked_quant_ids = set(active_holds.mapped('quant_id').ids)
+        
+        # 5. Si no hay bloqueos, retornar todo el set original (rápido)
+        if not blocked_quant_ids:
             return quants
-        
-        quants_validos = self.env['stock.quant']
-        
-        for quant in quants:
-            if self._is_quant_available_for_customer(quant, cliente_permitido_id, company_id):
-                quants_validos |= quant
+            
+        # 6. Restar los bloqueados del set original
+        # Odoo mantiene el orden del recordset izquierdo (quants) preservando FIFO/LIFO
+        quants_validos = quants - quants.browse(blocked_quant_ids)
         
         return quants_validos
     
     def _is_quant_available_for_customer(self, quant, customer_id, company_id):
         """
-        Verifica si un quant está disponible para un cliente considerando compañía
-        
-        Args:
-            quant: stock.quant record
-            customer_id: int - ID del cliente
-            company_id: int - ID de la compañía
-            
-        Returns:
-            bool: True si está disponible
+        Mantenido por compatibilidad con UI u otros métodos que verifiquen 1 a 1.
+        Ya no es utilizado por _gather para evitar loops.
         """
         # Sin hold → disponible para todos
         if not quant.x_tiene_hold:
@@ -428,7 +516,7 @@ class StockQuant(models.Model):
         if quant.x_hold_activo_id:
             # Verificar que el hold sea de la misma compañía
             if quant.x_hold_activo_id.company_id.id != company_id:
-                return True  # Hold de otra compañía no aplica, el lote está disponible
+                return True  # Hold de otra compañía no aplica
             
             # Hold de la misma compañía → verificar cliente
             hold_partner_id = quant.x_hold_activo_id.partner_id.id

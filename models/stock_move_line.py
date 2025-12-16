@@ -2,8 +2,6 @@
 # models/stock_move_line.py
 from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
-from .utils.dimension_fields import LotDimensionFields
-from .utils.hold_validator import HoldValidator
 from .utils.lot_dimension_sync import LotDimensionSync
 from .utils.notification_builder import NotificationBuilder
 from .utils.photo_helpers import PhotoHelper
@@ -455,50 +453,4 @@ class StockMoveLine(models.Model):
         return PhotoHelper.build_photo_gallery_action(
             self.lot_id.id,
             self.lot_id.name
-        )
-
-class StockLot(models.Model):
-    _inherit = 'stock.lot'
-    
-    @api.model
-    def name_search(self, name='', args=None, operator='ilike', limit=100):
-        """Filtrado adicional de lotes en búsqueda considerando holds y multi-compañía"""
-        move_line_id = self.env.context.get('move_line_id')
-        
-        if move_line_id:
-            move_line = self.env['stock.move.line'].browse(move_line_id)
-            
-            # Solo filtrar en pickings de salida
-            if move_line.picking_id and move_line.picking_id.picking_type_code == 'outgoing':
-                validator = HoldValidator(self.env)
-                partner = validator.get_customer_from_picking(move_line)
-                
-                if partner:
-                    # Obtener compañía del picking
-                    company_id = (
-                        move_line.picking_id.company_id.id 
-                        if move_line.picking_id.company_id 
-                        else self.env.company.id
-                    )
-                    
-                    # Obtener lotes disponibles considerando compañía
-                    available_lots = validator.get_available_lots(
-                        move_line.product_id.id,
-                        move_line.location_id.id,
-                        partner.id,
-                        company_id
-                    )
-                    
-                    # Actualizar args
-                    if args is None:
-                        args = []
-                    args = list(args) + [('id', 'in', available_lots)]
-        
-        # --- CORRECCIÓN AQUÍ ---
-        # Se cambia el parámetro clave 'args' por 'domain' para compatibilidad con Odoo 19
-        return super(StockLot, self).name_search(
-            name=name,
-            domain=args,  # Se pasa 'args' al parámetro 'domain'
-            operator=operator,
-            limit=limit
         )

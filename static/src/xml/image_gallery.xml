@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="stock_lot_dimensions.ImageGalleryWidget" owl="1">
+    <t t-name="stock_lot_dimensions.ImageGalleryWidget">
         <div class="image-gallery-container">
             <div class="image-gallery-thumbnails">
                 <t t-foreach="state.images" t-as="image" t-key="image.id">
