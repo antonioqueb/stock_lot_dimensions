@@ -415,23 +415,7 @@ class StockQuant(models.Model):
         
         return {'success': True}
     
-    @api.model
-    def create_holds_from_cart(self, partner_id=None, project_id=None, 
-                               architect_id=None, selected_lots=None, 
-                               notes=None, currency_code='USD', 
-                               product_prices=None):
-        """Crear holds múltiples desde el carrito con información de precios"""
-        creator = BulkHoldCreator(self.env)
-        
-        return creator.create_holds_from_cart(
-            partner_id=partner_id,
-            project_id=project_id,
-            architect_id=architect_id,
-            selected_lots=selected_lots,
-            notes=notes,
-            currency_code=currency_code,
-            product_prices=product_prices
-        )
+    # AQUÍ ESTABA LA DUPLICACIÓN (ELIMINADA)
     
     # ==================== OVERRIDE CRÍTICO - FILTRADO DE QUANTS (OPTIMIZADO) ====================
     def _gather(self, product_id, location_id, lot_id=None, package_id=None, 
@@ -456,20 +440,14 @@ class StockQuant(models.Model):
     def _filter_quants_by_hold(self, quants):
         """
         Filtra quants según holds del cliente permitido Y compañía usando Set Operations.
-        
-        Args:
-            quants: recordset de stock.quant
-            
-        Returns:
-            recordset: Quants filtrados
+        Performance: O(1) queries vs O(N) queries.
         """
         cliente_permitido_id = self.env.context.get('allowed_partner_id')
         company_id = self.env.context.get('company_id') or self.env.company.id
         
-        # Estrategia: Encontrar los "Blockers" (Quants que NO podemos usar)
-        # y restarlos del conjunto original. Esto es mucho más rápido que verificar uno por uno.
+        # Estrategia: Encontrar los "Blockers" (IDs que NO podemos usar) y restarlos.
         
-        # 1. Definir dominio para buscar holds ACTIVOS que afecten a estos quants y esta compañía
+        # 1. Definir dominio para buscar holds ACTIVOS
         domain_blockers = [
             ('quant_id', 'in', quants.ids),
             ('estado', '=', 'activo'),
@@ -479,26 +457,22 @@ class StockQuant(models.Model):
         # 2. Refinar lógica según cliente
         if cliente_permitido_id:
             # Si hay un cliente permitido, el hold SOLO es un bloqueo si es para OTRO cliente.
-            # Si el hold es para 'cliente_permitido_id', entonces NO es bloqueo (está reservado para él).
             domain_blockers.append(('partner_id', '!=', cliente_permitido_id))
         else:
-            # Si no hay cliente permitido (reserva general/anónima), 
-            # CUALQUIER hold activo es un bloqueo.
+            # Si no hay cliente permitido, CUALQUIER hold activo es un bloqueo.
             pass
             
         # 3. Ejecutar búsqueda vectorizada (1 sola Query SQL)
-        # Usamos sudo() para asegurar lectura de todos los bloqueos
         active_holds = self.env['stock.lot.hold'].sudo().search(domain_blockers)
         
         # 4. Obtener IDs de quants bloqueados
         blocked_quant_ids = set(active_holds.mapped('quant_id').ids)
         
-        # 5. Si no hay bloqueos, retornar todo el set original (rápido)
+        # 5. Si no hay bloqueos, retornar todo el set original
         if not blocked_quant_ids:
             return quants
             
-        # 6. Restar los bloqueados del set original
-        # Odoo mantiene el orden del recordset izquierdo (quants) preservando FIFO/LIFO
+        # 6. Restar los bloqueados del set original (Odoo mantiene orden FIFO/LIFO)
         quants_validos = quants - quants.browse(blocked_quant_ids)
         
         return quants_validos
