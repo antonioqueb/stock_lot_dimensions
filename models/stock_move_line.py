@@ -5,6 +5,8 @@ from odoo.exceptions import UserError, ValidationError
 from .utils.lot_dimension_sync import LotDimensionSync
 from .utils.notification_builder import NotificationBuilder
 from .utils.photo_helpers import PhotoHelper
+# ✅ IMPORTACIÓN AGREGADA AQUÍ ABAJO
+from .utils.hold_validator import HoldValidator 
 import logging
 
 _logger = logging.getLogger(__name__)
