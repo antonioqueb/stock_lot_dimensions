@@ -457,7 +457,6 @@ class StockMoveLine(models.Model):
             self.lot_id.name
         )
 
-
 class StockLot(models.Model):
     _inherit = 'stock.lot'
     
@@ -495,9 +494,11 @@ class StockLot(models.Model):
                         args = []
                     args = list(args) + [('id', 'in', available_lots)]
         
+        # --- CORRECCIÓN AQUÍ ---
+        # Se cambia el parámetro clave 'args' por 'domain' para compatibilidad con Odoo 19
         return super(StockLot, self).name_search(
             name=name,
-            args=args,
+            domain=args,  # Se pasa 'args' al parámetro 'domain'
             operator=operator,
             limit=limit
         )
