@@ -1,229 +1,414 @@
 # -*- coding: utf-8 -*-
-# models/stock_picking.py
-from odoo import models, api
+from odoo import models, fields, _, api
 from odoo.exceptions import UserError
-from .utils.picking_cleaner import PickingLotCleaner
-from .utils.hold_validator import HoldValidator
+import base64
+import io
+import json
 import logging
+import re
 
 _logger = logging.getLogger(__name__)
 
 
-class StockPicking(models.Model):
-    _inherit = 'stock.picking'
+class _PLCellsIndex:
+    """Clase para normalizar el acceso a celdas de Odoo Spreadsheet"""
     
-    def action_assign(self):
-        """
-        Override para filtrar quants con hold al reservar
-        Añade el contexto de cliente permitido para filtrado FIFO/LIFO
-        Considera multi-compañía
-        """
-        for picking in self:
-            if self._should_filter_by_hold(picking):
-                context = self._build_hold_context(picking)
-                self = self.with_context(**context)
-        
-        return super(StockPicking, self).action_assign()
+    def __init__(self):
+        self._cells = {}
     
-    def _action_assign(self):
-        """
-        Override para limpiar lotes automáticos después de la asignación
-        Solo limpia lotes de pickings que vienen de órdenes de venta
-        """
-        # Ejecutar asignación normal
-        result = super(StockPicking, self)._action_assign()
-        
-        # Limpiar lotes automáticos de pickings de sale orders
-        self._clear_auto_assigned_lots_from_sales()
-        
-        return result
+    def put(self, col, row, content):
+        """Almacena contenido en coordenadas (col, row) base 0"""
+        if col is not None and row is not None:
+            self._cells[(int(col), int(row))] = content
     
-    def button_validate(self):
-        """
-        Validar holds antes de validar el picking
-        Verifica que los lotes asignados no tengan holds de otros clientes
-        Considera multi-compañía
-        """
-        self._validate_holds_before_transfer()
-        
-        return super(StockPicking, self).button_validate()
+    def ingest_cells(self, raw_cells):
+        """Procesa el dict de celdas del JSON de Odoo"""
+        if not raw_cells or not isinstance(raw_cells, dict):
+            return
+        for key, cell_data in raw_cells.items():
+            col, row = self._parse_cell_key(key)
+            if col is not None and row is not None:
+                content = self._extract_content(cell_data)
+                self.put(col, row, content)
     
-    # ==================== MÉTODOS AUXILIARES ====================
+    def _parse_cell_key(self, key):
+        """Convierte 'A1', '0,3', etc. a (col, row) base 0"""
+        if isinstance(key, str) and key and key[0].isalpha():
+            match = re.match(r'^([A-Z]+)(\d+)$', key.upper())
+            if match:
+                col_str, row_str = match.groups()
+                col = 0
+                for char in col_str:
+                    col = col * 26 + (ord(char) - ord('A') + 1)
+                return col - 1, int(row_str) - 1
+        if isinstance(key, str) and ',' in key:
+            parts = key.split(',')
+            if len(parts) == 2:
+                try:
+                    return int(parts[0]), int(parts[1])
+                except ValueError:
+                    pass
+        return None, None
     
-    def _should_filter_by_hold(self, picking):
-        """
-        Determina si se debe filtrar por holds
+    def _extract_content(self, cell_data):
+        """Extrae el contenido de una celda"""
+        if isinstance(cell_data, dict):
+            return cell_data.get('content') or cell_data.get('value') or cell_data.get('text')
+        return cell_data
+    
+    def apply_revision_commands(self, commands):
+        """Aplica comandos de revisión sobre las celdas"""
+        if not commands:
+            return 0
+        applied = 0
+        for cmd in commands:
+            cmd_type = cmd.get('type', '')
+            if cmd_type == 'UPDATE_CELL':
+                col = cmd.get('col')
+                row = cmd.get('row')
+                content = cmd.get('content')
+                if col is not None and row is not None:
+                    self.put(col, row, content)
+                    applied += 1
+        return applied
+    
+    def value(self, col, row):
+        """Obtiene el valor de una celda"""
+        return self._cells.get((int(col), int(row)))
+    
+    def debug_dump(self, max_rows=25):
+        """Imprime las celdas para debug"""
+        for (c, r), v in sorted(self._cells.items()):
+            if r < max_rows:
+                _logger.info(f"  Celda ({c},{r}): {v}")
+
+
+class PackingListImportWizard(models.TransientModel):
+    _name = 'packing.list.import.wizard'
+    _description = 'Importar Packing List'
+
+    picking_id = fields.Many2one('stock.picking', string='Recepción', required=True, readonly=True)
+    # CAMBIADO: de related a compute para evitar error de carga de módulos
+    spreadsheet_id = fields.Many2one('documents.document', string='Spreadsheet', compute='_compute_spreadsheet_id')
+    excel_file = fields.Binary(string='Archivo Excel', required=False, attachment=False)
+    excel_filename = fields.Char(string='Nombre del archivo')
+
+    @api.depends('picking_id')
+    def _compute_spreadsheet_id(self):
+        for rec in self:
+            rec.spreadsheet_id = rec.picking_id.spreadsheet_id if rec.picking_id else False
+
+    def _get_next_global_prefix(self):
+        self.env.cr.execute("""
+            SELECT CAST(SUBSTRING(sl.name FROM '^([0-9]+)-') AS INTEGER) as prefix_num
+            FROM stock_lot sl
+            INNER JOIN stock_move_line sml ON sml.lot_id = sl.id
+            INNER JOIN stock_picking sp ON sp.id = sml.picking_id
+            WHERE sl.name ~ '^[0-9]+-[0-9]+$' AND sp.state = 'done' AND sp.company_id = %s
+            ORDER BY prefix_num DESC LIMIT 1
+        """, (self.picking_id.company_id.id,))
+        res = self.env.cr.fetchone()
+        return (res[0] + 1) if res and res[0] else 1
+
+    def _get_next_lot_number_for_prefix(self, prefix):
+        self.env.cr.execute("""
+            SELECT sl.name FROM stock_lot sl
+            INNER JOIN stock_move_line sml ON sml.lot_id = sl.id
+            INNER JOIN stock_picking sp ON sp.id = sml.picking_id
+            WHERE sl.name LIKE %s AND sp.state = 'done' AND sp.company_id = %s
+            ORDER BY CAST(SUBSTRING(sl.name FROM '-([0-9]+)$') AS INTEGER) DESC LIMIT 1
+        """, (f'{prefix}-%', self.picking_id.company_id.id))
+        res = self.env.cr.fetchone()
+        return int(res[0].split('-')[1]) + 1 if res else 1
+
+    def action_import_excel(self):
+        self.ensure_one()
+        _logger.info("=== [PL_IMPORT] INICIO PROCESO ===")
         
-        Args:
-            picking: stock.picking record
+        rows = []
+        # Obtener spreadsheet_id directamente del picking
+        spreadsheet = self.picking_id.spreadsheet_id
+        
+        if self.excel_file:
+            rows = self._get_data_from_excel_file()
+        elif spreadsheet:
+            rows = self._get_data_from_spreadsheet(spreadsheet)
+        
+        if not rows:
+            raise UserError(
+                "No se encontraron datos.\n\n"
+                "Posibles causas:\n"
+                "• No llenó las filas a partir de la fila 4\n"
+                "• El spreadsheet no se guardó (ciérrelo y vuelva a intentar)\n"
+                "• La columna A (Grosor) está vacía en todas las filas"
+            )
+        
+        self.picking_id.move_line_ids.unlink()
+        
+        move_lines_created = 0
+        next_prefix = self._get_next_global_prefix()
+        containers = {}
+        
+        for data in rows:
+            product = data['product']
+            move = self.picking_id.move_ids.filtered(lambda m: m.product_id == product)[:1]
+            if not move:
+                continue
             
-        Returns:
-            bool: True si se debe filtrar
-        """
-        return (
-            picking.picking_type_code == 'outgoing' and 
-            picking.partner_id
-        )
-    
-    def _build_hold_context(self, picking):
-        """
-        Construye contexto con información de cliente y empresa
-        
-        Args:
-            picking: stock.picking record
+            cont = data['contenedor'] or 'SN'
+            if cont not in containers:
+                containers[cont] = {
+                    'pre': str(next_prefix),
+                    'num': self._get_next_lot_number_for_prefix(str(next_prefix))
+                }
+                next_prefix += 1
             
-        Returns:
-            dict: Contexto actualizado con allowed_partner_id y company_id
-        """
-        company_id = picking.company_id.id if picking.company_id else self.env.company.id
+            l_name = f"{containers[cont]['pre']}-{containers[cont]['num']:02d}"
+            
+            # Crear el lote con todos los campos
+            lot = self.env['stock.lot'].create({
+                'name': l_name,
+                'product_id': product.id,
+                'company_id': self.picking_id.company_id.id,
+                'x_grosor': data['grosor'],
+                'x_alto': data['alto'],
+                'x_ancho': data['ancho'],
+                'x_bloque': data['bloque'],
+                'x_atado': data['atado'],
+                'x_tipo': data['tipo'],
+                'x_pedimento': data['pedimento'],
+                'x_contenedor': cont,
+                'x_referencia_proveedor': data['ref_proveedor'],
+            })
+            
+            # Crear el move line CON los campos temporales para visualización
+            self.env['stock.move.line'].create({
+                'move_id': move.id,
+                'product_id': product.id,
+                'lot_id': lot.id,
+                'qty_done': data['alto'] * data['ancho'] or 1.0,
+                'location_id': self.picking_id.location_id.id,
+                'location_dest_id': self.picking_id.location_dest_id.id,
+                'picking_id': self.picking_id.id,
+                # === CAMPOS TEMPORALES PARA VISUALIZACIÓN EN VISTA ===
+                'x_grosor_temp': data['grosor'],
+                'x_alto_temp': data['alto'],
+                'x_ancho_temp': data['ancho'],
+                'x_tipo_temp': data['tipo'],
+                'x_bloque_temp': data['bloque'],
+                'x_atado_temp': data['atado'],
+                'x_pedimento_temp': data['pedimento'],
+                'x_contenedor_temp': cont,
+                'x_referencia_proveedor_temp': data['ref_proveedor'],
+            })
+            
+            containers[cont]['num'] += 1
+            move_lines_created += 1
         
-        context = {
-            'allowed_partner_id': picking.partner_id.id,
-            'company_id': company_id
+        self.picking_id.write({'packing_list_imported': True})
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Éxito',
+                'message': f'Importados {move_lines_created} lotes.',
+                'type': 'success',
+                'next': {'type': 'ir.actions.act_window_close'}
+            }
         }
+
+    def _get_data_from_spreadsheet(self, doc):
+        """Extrae datos del spreadsheet nativo de Odoo 19"""
+        _logger.info(f"[PL_IMPORT] Documento ID: {doc.id}")
         
-        _logger.debug(
-            "Contexto de holds para picking %s: Cliente=%s, Compañía=%s",
-            picking.name,
-            picking.partner_id.name,
-            company_id
-        )
+        # PASO 1: Cargar JSON base desde attachment
+        spreadsheet_json = self._load_spreadsheet_json(doc)
+        if not spreadsheet_json:
+            _logger.warning("[PL_IMPORT] No se pudo cargar el JSON del spreadsheet")
+            return []
         
-        return context
-    
-    def _clear_auto_assigned_lots_from_sales(self):
-        """Limpia lotes automáticos solo de pickings que vienen de sale orders"""
-        cleaner = PickingLotCleaner(self.env)
+        sheets = spreadsheet_json.get('sheets', [])
+        if not sheets:
+            _logger.warning("[PL_IMPORT] El spreadsheet no tiene hojas")
+            return []
         
-        # Filtrar solo pickings de sale orders
-        sale_pickings = self.filtered(lambda p: p.sale_id)
+        first_sheet = sheets[0]
+        cells_data = first_sheet.get('cells', {})
+        _logger.info(f"[PL_IMPORT] Hoja: {first_sheet.get('name')}, Celdas base: {len(cells_data)}")
         
-        if sale_pickings:
-            _logger.info(
-                "Limpiando lotes automáticos de %d pickings de sale orders: %s",
-                len(sale_pickings),
-                sale_pickings.mapped('name')
-            )
-            cleaner.clear_pickings_lots(sale_pickings)
-    
-    def _validate_holds_before_transfer(self):
+        # PASO 2: Indexar celdas base
+        idx = _PLCellsIndex()
+        idx.ingest_cells(cells_data)
+        
+        # PASO 3: Aplicar TODAS las revisiones
+        self._apply_all_revisions(doc, idx)
+        
+        # Debug
+        _logger.info("[PL_IMPORT] Contenido final del índice:")
+        idx.debug_dump(max_rows=25)
+        
+        # PASO 4: Extraer filas
+        return self._extract_rows_from_index(idx)
+
+    def _load_spreadsheet_json(self, doc):
+        """Carga el JSON del spreadsheet"""
+        # Desde attachment_id.datas
+        if doc.attachment_id and doc.attachment_id.datas:
+            try:
+                raw_bytes = base64.b64decode(doc.attachment_id.datas)
+                json_data = json.loads(raw_bytes.decode('utf-8'))
+                _logger.info(f"[PL_IMPORT] JSON cargado desde attachment ({len(raw_bytes)} bytes)")
+                return json_data
+            except Exception as e:
+                _logger.warning(f"[PL_IMPORT] Error leyendo attachment: {e}")
+        
+        # Fallback: spreadsheet_data
+        if doc.spreadsheet_data:
+            try:
+                raw = doc.spreadsheet_data
+                if isinstance(raw, bytes):
+                    raw = raw.decode('utf-8')
+                return json.loads(raw)
+            except Exception as e:
+                _logger.warning(f"[PL_IMPORT] Error leyendo spreadsheet_data: {e}")
+        
+        return None
+
+    def _apply_all_revisions(self, doc, idx):
         """
-        Valida que todos los lotes asignados no tengan holds de otros clientes
-        Considera multi-compañía: solo valida holds de la misma compañía
+        Aplica TODAS las revisiones del documento.
         
-        Raises:
-            UserError: Si algún lote está reservado para otro cliente en la misma compañía
+        ESTRUCTURA ODOO 19:
+        - commands es un STRING JSON con formato:
+          {"type": "REMOTE_REVISION", "version": 1, "commands": [{...}, {...}]}
+        - Los UPDATE_CELL reales están en el array 'commands' interno
+        
+        IMPORTANTE: Las revisiones tienen active=False después de consolidarse,
+        por eso usamos with_context(active_test=False)
         """
-        validator = HoldValidator(self.env)
+        revisions = self.env['spreadsheet.revision'].sudo().with_context(active_test=False).search([
+            ('res_model', '=', 'documents.document'),
+            ('res_id', '=', doc.id)
+        ], order='id asc')
         
-        for picking in self:
-            # Solo validar pickings de salida
-            if picking.picking_type_code != 'outgoing':
+        _logger.info(f"[PL_IMPORT] Total revisiones encontradas: {len(revisions)}")
+        
+        total_cells_updated = 0
+        
+        for rev in revisions:
+            try:
+                # Parsear el JSON del campo commands
+                raw_commands = rev.commands
+                if not raw_commands:
+                    continue
+                
+                parsed = json.loads(raw_commands) if isinstance(raw_commands, str) else raw_commands
+                revision_type = parsed.get('type', '')
+                _logger.info(f"[PL_IMPORT] Revisión {rev.id}: tipo={revision_type}")
+                
+                # Solo procesar REMOTE_REVISION que contienen comandos de celdas
+                if revision_type == 'REMOTE_REVISION':
+                    # Los comandos reales están en parsed['commands']
+                    actual_commands = parsed.get('commands', [])
+                    if actual_commands and isinstance(actual_commands, list):
+                        applied = idx.apply_revision_commands(actual_commands)
+                        total_cells_updated += applied
+                        _logger.info(f"[PL_IMPORT]   -> Aplicados {applied} UPDATE_CELL")
+                
+            except json.JSONDecodeError as e:
+                _logger.warning(f"[PL_IMPORT] Error JSON en revisión {rev.id}: {e}")
+            except Exception as e:
+                _logger.warning(f"[PL_IMPORT] Error procesando revisión {rev.id}: {e}")
+        
+        _logger.info(f"[PL_IMPORT] Total celdas actualizadas desde revisiones: {total_cells_updated}")
+
+    def _extract_rows_from_index(self, idx):
+        """Extrae las filas de datos del índice de celdas"""
+        rows = []
+        prod = self.picking_id.move_ids.mapped('product_id')[:1]
+        
+        if not prod:
+            _logger.warning("[PL_IMPORT] No hay producto en los movimientos")
+            return []
+        
+        # Filas 4 a 103 (índices 3 a 102)
+        for row_idx in range(3, 103):
+            grosor_val = idx.value(0, row_idx)  # Columna A = 0
+            if not grosor_val:
                 continue
             
-            company_id = picking.company_id.id if picking.company_id else self.env.company.id
+            _logger.info(f"[PL_IMPORT] Fila {row_idx + 1}: G={grosor_val}, A={idx.value(1, row_idx)}, An={idx.value(2, row_idx)}")
             
-            _logger.debug(
-                "Validando holds para picking %s en compañía %s",
-                picking.name,
-                company_id
-            )
-            
-            self._validate_picking_move_lines(picking, validator, company_id)
-    
-    def _validate_picking_move_lines(self, picking, validator, company_id):
-        """
-        Valida las move lines de un picking específico
-        Solo considera holds de la misma compañía
+            try:
+                row_data = {
+                    'product': prod,
+                    'grosor': self._to_float(grosor_val),
+                    'alto': self._to_float(idx.value(1, row_idx)),
+                    'ancho': self._to_float(idx.value(2, row_idx)),
+                    'bloque': str(idx.value(3, row_idx) or '').strip(),
+                    'atado': str(idx.value(4, row_idx) or '').strip(),
+                    'tipo': self._parse_tipo(idx.value(5, row_idx)),
+                    'pedimento': str(idx.value(6, row_idx) or '').strip(),
+                    'contenedor': str(idx.value(7, row_idx) or 'SN').strip(),
+                    'ref_proveedor': str(idx.value(8, row_idx) or '').strip(),
+                }
+                rows.append(row_data)
+            except Exception as e:
+                _logger.warning(f"[PL_IMPORT] Error en fila {row_idx + 1}: {e}")
+                continue
         
-        Args:
-            picking: stock.picking record
-            validator: HoldValidator instance
-            company_id: int - ID de la empresa
+        _logger.info(f"[PL_IMPORT] Total filas extraídas: {len(rows)}")
+        return rows
+
+    def _to_float(self, val):
+        """Convierte un valor a float de forma segura"""
+        if val is None:
+            return 0.0
+        try:
+            return float(str(val).replace(',', '.'))
+        except (ValueError, TypeError):
+            return 0.0
+
+    def _parse_tipo(self, val):
+        """Parsea el campo tipo"""
+        if not val:
+            return 'placa'
+        return 'formato' if str(val).lower().strip() == 'formato' else 'placa'
+
+    def _get_data_from_excel_file(self):
+        """Extrae datos desde archivo Excel"""
+        from openpyxl import load_workbook
+        
+        wb = load_workbook(io.BytesIO(base64.b64decode(self.excel_file)), data_only=True)
+        rows = []
+        
+        for sheet in wb.worksheets:
+            p_info = sheet['B1'].value
+            p_code = str(p_info).split('(')[1].split(')')[0].strip() if '(' in str(p_info) else ''
+            product = self.env['product.product'].search([
+                '|',
+                ('default_code', '=', p_code),
+                ('name', '=', str(p_info).split('(')[0].strip())
+            ], limit=1)
             
-        Raises:
-            UserError: Si algún lote tiene hold de otro cliente en la misma compañía
-        """
-        for move_line in picking.move_line_ids:
-            if not move_line.lot_id:
+            if not product:
                 continue
             
-            # Buscar quant con hold activo en la misma compañía
-            quant = self._find_quant_with_hold(
-                move_line.lot_id.id,
-                move_line.location_id.id,
-                company_id
-            )
-            
-            if quant and quant.x_hold_activo_id:
-                # Verificar que el hold sea de la misma compañía
-                if quant.x_hold_activo_id.company_id.id == company_id:
-                    self._check_hold_customer_match(picking, move_line, quant, company_id)
-    
-    def _find_quant_with_hold(self, lot_id, location_id, company_id):
-        """
-        Busca quant con hold activo en la compañía especificada
+            for r in range(4, sheet.max_row + 1):
+                if not sheet.cell(r, 1).value:
+                    continue
+                rows.append({
+                    'product': product,
+                    'grosor': float(sheet.cell(r, 1).value or 0),
+                    'alto': float(sheet.cell(r, 2).value or 0),
+                    'ancho': float(sheet.cell(r, 3).value or 0),
+                    'bloque': str(sheet.cell(r, 4).value or ''),
+                    'atado': str(sheet.cell(r, 5).value or ''),
+                    'tipo': 'formato' if str(sheet.cell(r, 6).value or '').lower() == 'formato' else 'placa',
+                    'pedimento': str(sheet.cell(r, 7).value or ''),
+                    'contenedor': str(sheet.cell(r, 8).value or 'SN').strip(),
+                    'ref_proveedor': str(sheet.cell(r, 9).value or ''),
+                })
         
-        Args:
-            lot_id: int - ID del lote
-            location_id: int - ID de la ubicación
-            company_id: int - ID de la empresa
-            
-        Returns:
-            stock.quant: Quant con hold o None
-        """
-        quant = self.env['stock.quant'].search([
-            ('lot_id', '=', lot_id),
-            ('location_id', '=', location_id),
-            ('company_id', '=', company_id),
-            ('x_tiene_hold', '=', True),
-        ], limit=1)
-        
-        if quant:
-            _logger.debug(
-                "Encontrado quant con hold: Lote=%s, Cliente=%s, Compañía=%s",
-                quant.lot_id.name,
-                quant.x_hold_para,
-                quant.x_hold_activo_id.company_id.name if quant.x_hold_activo_id else 'N/A'
-            )
-        
-        return quant
-    
-    def _check_hold_customer_match(self, picking, move_line, quant, company_id):
-        """
-        Verifica que el hold sea para el cliente correcto en la compañía correcta
-        
-        Args:
-            picking: stock.picking record
-            move_line: stock.move.line record
-            quant: stock.quant record con hold
-            company_id: int - ID de la empresa
-            
-        Raises:
-            UserError: Si el hold es para otro cliente en la misma compañía
-        """
-        # Verificar que el partner coincida
-        if picking.partner_id != quant.x_hold_activo_id.partner_id:
-            company_name = self.env['res.company'].browse(company_id).name
-            
-            error_msg = (
-                f"🔒 NO PUEDE VALIDAR ESTA ENTREGA\n\n"
-                f"El lote '{move_line.lot_id.name}' está RESERVADO para:\n"
-                f"👤 {quant.x_hold_para}\n"
-                f"📅 Hasta: {quant.x_hold_expira.strftime('%d/%m/%Y %H:%M')}\n"
-                f"⏱️ Días restantes: {quant.x_hold_dias_restantes}\n"
-                f"🏢 Compañía: {company_name}\n\n"
-                f"❌ Esta entrega es para '{picking.partner_id.name}'"
-            )
-            
-            _logger.warning(
-                "Intento de validar picking %s con lote reservado: "
-                "Lote=%s, Hold para=%s, Picking para=%s, Compañía=%s",
-                picking.name,
-                move_line.lot_id.name,
-                quant.x_hold_para,
-                picking.partner_id.name,
-                company_name
-            )
-            
-            raise UserError(error_msg)
+        return rows
