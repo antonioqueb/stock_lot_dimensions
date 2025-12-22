@@ -22,14 +22,10 @@ class LotDimensionSync:
         'x_referencia_proveedor_temp': 'x_referencia_proveedor',
     }
     
+
     @staticmethod
     def load_dimensions_from_lot(move_line):
-        """
-        Carga dimensiones del lote a campos temporales
-        
-        Args:
-            move_line: stock.move.line record
-        """
+        """Carga dimensiones del lote a campos temporales (TODOS los campos)"""
         if not move_line.lot_id:
             return
         
@@ -41,6 +37,12 @@ class LotDimensionSync:
         move_line.x_bloque_temp = lot.x_bloque
         move_line.x_atado_temp = lot.x_atado
         move_line.x_tipo_temp = lot.x_tipo
+        # --- AGREGAR ESTOS CAMPOS FALTANTES ---
+        move_line.x_pedimento_temp = lot.x_pedimento
+        move_line.x_contenedor_temp = lot.x_contenedor
+        move_line.x_referencia_proveedor_temp = lot.x_referencia_proveedor
+        if lot.x_grupo:
+            move_line.x_grupo_temp = [(6, 0, lot.x_grupo.ids)]
     
     @staticmethod
     def sync_dimensions_to_lot(move_line):
