@@ -47,7 +47,7 @@ class LotDimensionFields:
         """
         return {
             'x_tipo': fields.Selection(
-                [('placa', 'Placa'), ('formato', 'Formato')],
+                [('placa', 'Placa'), ('formato', 'Formato'), ('pieza', 'Pieza')],
                 string='Tipo',
                 help='Tipo de producto: Placa o Formato'
             ),

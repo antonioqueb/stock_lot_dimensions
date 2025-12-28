@@ -40,7 +40,7 @@ class StockMoveLine(models.Model):
     )
     
     x_tipo_temp = fields.Selection(
-        [('placa', 'Placa'), ('formato', 'Formato')],
+        [('placa', 'Placa'), ('formato', 'Formato'), ('pieza', 'Pieza')],
         string='Tipo',
         help='Tipo de producto (se guardará en el lote)'
     )

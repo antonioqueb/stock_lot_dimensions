@@ -371,10 +371,20 @@ class PackingListImportWizard(models.TransientModel):
             return 0.0
 
     def _parse_tipo(self, val):
-        """Parsea el campo tipo"""
+        """Parsea el campo tipo: Placa, Formato o Pieza"""
         if not val:
             return 'placa'
-        return 'formato' if str(val).lower().strip() == 'formato' else 'placa'
+        
+        # Limpiamos el valor para evitar errores por espacios o mayúsculas
+        val_clean = str(val).lower().strip()
+        
+        if val_clean == 'formato':
+            return 'formato'
+        elif val_clean == 'pieza':
+            return 'pieza'
+        
+        # Por defecto, si no coincide con los anteriores o es "placa"
+        return 'placa'
 
     def _get_data_from_excel_file(self):
         """Extrae datos desde archivo Excel"""
@@ -405,7 +415,7 @@ class PackingListImportWizard(models.TransientModel):
                     'ancho': float(sheet.cell(r, 3).value or 0),
                     'bloque': str(sheet.cell(r, 4).value or ''),
                     'atado': str(sheet.cell(r, 5).value or ''),
-                    'tipo': 'formato' if str(sheet.cell(r, 6).value or '').lower() == 'formato' else 'placa',
+                    'tipo': 'formato' if str(sheet.cell(r, 6).value or '').lower().strip() == 'formato' else 'pieza' if str(sheet.cell(r, 6).value or '').lower().strip() == 'pieza' else 'placa',
                     'pedimento': str(sheet.cell(r, 7).value or ''),
                     'contenedor': str(sheet.cell(r, 8).value or 'SN').strip(),
                     'ref_proveedor': str(sheet.cell(r, 9).value or ''),
