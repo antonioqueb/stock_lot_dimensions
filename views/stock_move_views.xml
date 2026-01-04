@@ -56,11 +56,12 @@
                     string="Contenedor"
                     readonly="not x_is_incoming"/>
                 <field name="x_referencia_proveedor_temp" 
-                <field name="x_proveedor_temp" optional="show" string="Proveedor" readonly="not x_is_incoming"/>
-                <field name="x_origen_temp" optional="show" string="Origen" readonly="not x_is_incoming"/>
+               
                     optional="show" 
                     string="Ref. Proveedor"
                     readonly="not x_is_incoming"/>
+                 <field name="x_proveedor_temp" optional="show" string="Proveedor" readonly="not x_is_incoming"/>
+                <field name="x_origen_temp" optional="show" string="Origen" readonly="not x_is_incoming"/>
             </xpath>
         </field>
     </record>
