@@ -33,8 +33,6 @@ class LotDimensionFields:
                 digits=(10, 4),
                 help='Ancho del producto en metros'
             ),
-
-
         }
     
     @staticmethod
@@ -68,7 +66,6 @@ class LotDimensionFields:
                 string='Color',
                 help='Color predominante del material'
             ),
-
         }
     
     @staticmethod
@@ -89,10 +86,16 @@ class LotDimensionFields:
                 help='Número de contenedor'
             ),
             'x_referencia_proveedor': fields.Char(
-            'x_proveedor': fields.Char(string='Proveedor', help='Nombre del proveedor'),
-            'x_origen': fields.Char(string='Origen', help='País o cantera de origen'),
                 string='Referencia Proveedor',
                 help='Referencia del proveedor'
+            ),
+            'x_proveedor': fields.Char(
+                string='Proveedor', 
+                help='Nombre del proveedor'
+            ),
+            'x_origen': fields.Char(
+                string='Origen', 
+                help='País o cantera de origen'
             ),
         }
     
