@@ -11,3 +11,4 @@ from . import stock_lot_group
 from . import project_project
 from . import res_partner
 from . import stock_lot_hold_order
+from . import product_template

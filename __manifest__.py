@@ -40,6 +40,7 @@
         'views/res_partner_views.xml',
         'views/project_project_views.xml',
         'views/sale_order_views.xml',
+        'views/product_template_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
