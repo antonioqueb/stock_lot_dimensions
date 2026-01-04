@@ -58,6 +58,8 @@
                                 <field name="x_contenedor" 
                                     placeholder="Número de contenedor"/>
                                 <field name="x_referencia_proveedor" 
+                                <field name="x_proveedor" placeholder="Nombre del proveedor"/>
+                                <field name="x_origen" placeholder="País de origen"/>
                                     placeholder="Referencia del proveedor"/>
                             </group>
                         </group>

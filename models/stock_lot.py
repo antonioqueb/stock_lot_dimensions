@@ -25,6 +25,8 @@ class StockLot(models.Model):
     x_pedimento = LotDimensionFields.get_logistics_fields()['x_pedimento']
     x_contenedor = LotDimensionFields.get_logistics_fields()['x_contenedor']
     x_referencia_proveedor = LotDimensionFields.get_logistics_fields()['x_referencia_proveedor']
+    x_proveedor = LotDimensionFields.get_logistics_fields()['x_proveedor']
+    x_origen = LotDimensionFields.get_logistics_fields()['x_origen']
     
     # ==================== CAMPOS DE FOTOGRAFÍAS ====================
     x_fotografia_ids = PhotoHelper.get_photo_fields()['x_fotografia_ids']

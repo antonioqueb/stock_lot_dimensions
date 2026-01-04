@@ -20,6 +20,8 @@ class LotDimensionSync:
         'x_pedimento_temp': 'x_pedimento',
         'x_contenedor_temp': 'x_contenedor',
         'x_referencia_proveedor_temp': 'x_referencia_proveedor',
+        'x_proveedor_temp': 'x_proveedor',
+        'x_origen_temp': 'x_origen',
     }
     
 
@@ -41,6 +43,8 @@ class LotDimensionSync:
         move_line.x_pedimento_temp = lot.x_pedimento
         move_line.x_contenedor_temp = lot.x_contenedor
         move_line.x_referencia_proveedor_temp = lot.x_referencia_proveedor
+        move_line.x_proveedor_temp = lot.x_proveedor
+        move_line.x_origen_temp = lot.x_origen
         if lot.x_grupo:
             move_line.x_grupo_temp = [(6, 0, lot.x_grupo.ids)]
     

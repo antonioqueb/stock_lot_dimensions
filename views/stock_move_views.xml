@@ -56,6 +56,8 @@
                     string="Contenedor"
                     readonly="not x_is_incoming"/>
                 <field name="x_referencia_proveedor_temp" 
+                <field name="x_proveedor_temp" optional="show" string="Proveedor" readonly="not x_is_incoming"/>
+                <field name="x_origen_temp" optional="show" string="Origen" readonly="not x_is_incoming"/>
                     optional="show" 
                     string="Ref. Proveedor"
                     readonly="not x_is_incoming"/>
@@ -83,6 +85,8 @@
                 <field name="x_pedimento_lote" optional="show" string="Pedimento"/>
                 <field name="x_contenedor_lote" optional="show" string="Contenedor"/>
                 <field name="x_referencia_proveedor_lote" optional="show" string="Ref. Proveedor"/>
+                <field name="x_proveedor_lote" optional="show" string="Proveedor"/>
+                <field name="x_origen_lote" optional="show" string="Origen"/>
                 <field name="x_fotografia_principal_lote" widget="image_preview" options="{'size': [60, 60]}" optional="hide"/>
                 <field name="x_cantidad_fotos_lote" optional="show" string="Fotos"/>
             </xpath>

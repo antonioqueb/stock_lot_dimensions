@@ -72,6 +72,8 @@ class StockMoveLine(models.Model):
     )
     
     x_referencia_proveedor_temp = fields.Char(
+    x_proveedor_temp = fields.Char(string='Proveedor')
+    x_origen_temp = fields.Char(string='Origen')
         string='Referencia Proveedor',
         help='Referencia del proveedor (se guardará en el lote)'
     )
@@ -155,6 +157,8 @@ class StockMoveLine(models.Model):
     )
     
     x_referencia_proveedor_lote = fields.Char(
+    x_proveedor_lote = fields.Char(related='lot_id.x_proveedor', string='Proveedor Lote', readonly=True)
+    x_origen_lote = fields.Char(related='lot_id.x_origen', string='Origen Lote', readonly=True)
         related='lot_id.x_referencia_proveedor',
         string='Ref. Proveedor Lote',
         readonly=True,

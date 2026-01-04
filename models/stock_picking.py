@@ -179,6 +179,8 @@ class PackingListImportWizard(models.TransientModel):
                 'x_pedimento': data['pedimento'],
                 'x_contenedor': cont,
                 'x_referencia_proveedor': data['ref_proveedor'],
+                'x_proveedor': data['proveedor'],
+                'x_origen': data['origen'],
             })
             
             # Crear el move line CON los campos temporales para visualización
@@ -352,6 +354,8 @@ class PackingListImportWizard(models.TransientModel):
                     'pedimento': str(idx.value(6, row_idx) or '').strip(),
                     'contenedor': str(idx.value(7, row_idx) or 'SN').strip(),
                     'ref_proveedor': str(idx.value(8, row_idx) or '').strip(),
+                    'proveedor': str(idx.value(9, row_idx) or '').strip(),
+                    'origen': str(idx.value(10, row_idx) or '').strip(),
                 }
                 rows.append(row_data)
             except Exception as e:

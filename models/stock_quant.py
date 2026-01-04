@@ -28,6 +28,8 @@ class StockQuant(models.Model):
     x_pedimento = fields.Char(related='lot_id.x_pedimento', string='Pedimento', readonly=True)
     x_contenedor = fields.Char(related='lot_id.x_contenedor', string='Contenedor', readonly=True)
     x_referencia_proveedor = fields.Char(related='lot_id.x_referencia_proveedor', string='Ref. Proveedor', readonly=True)
+    x_proveedor = fields.Char(related='lot_id.x_proveedor', string='Proveedor', readonly=True)
+    x_origen = fields.Char(related='lot_id.x_origen', string='Origen', readonly=True)
     x_fotografia_principal = fields.Binary(related='lot_id.x_fotografia_principal', readonly=True)
     x_cantidad_fotos = fields.Integer(related='lot_id.x_cantidad_fotos', readonly=True)
     x_detalles_placa = fields.Text(related='lot_id.x_detalles_placa', string='Detalles', readonly=True)
