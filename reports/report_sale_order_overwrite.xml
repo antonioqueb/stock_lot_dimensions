@@ -32,7 +32,7 @@
                     </div>
                     <div class="col-4 text-end">
                         <div style="font-size: 8px; color: #999; margin-top: 4px;">
-                            Impreso: <span t-esc="doc.env['ir.qweb.field.datetime'].value_to_html(datetime.datetime.now(), {'format': 'dd/MM/yyyy HH:mm', 'tz_name': doc.env.user.tz})"/>
+                            Impreso: <span t-esc="context_timestamp(time.strftime('%Y-%m-%d %H:%M:%S')).strftime('%d/%m/%Y %H:%M')"/>
                         </div>
                     </div>
                 </div>
