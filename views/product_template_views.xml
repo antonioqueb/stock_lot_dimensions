@@ -11,6 +11,7 @@
                         <group>
                             <field name="x_color"/>
                             <field name="x_grosor"/>
+                            <field name="x_acabado"/>
                         </group>
                     </group>
                 </page>

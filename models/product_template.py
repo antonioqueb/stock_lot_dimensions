@@ -8,8 +8,13 @@ class ProductTemplate(models.Model):
         string='Color Estándar',
         help='Color base definido para este producto'
     )
-    x_grosor = fields.Float(
+    x_grosor = fields.Char(
         string='Grosor Nominal (cm)',
         digits=(10, 2),
         help='Grosor estándar definido para este producto'
+    )
+
+    x_acabado = fields.Char(
+        string='Acabado Superficial',
+        help='Tipo de acabado superficial del producto'
     )
