@@ -28,7 +28,6 @@
                     </div>
                     <div class="col-4 text-end">
                         <div style="font-size: 12px; color: #999; margin-top: 4px;">
-                            <!-- CORREGIDO: Uso de datetime.datetime.now() -->
                             Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
                         </div>
                     </div>
@@ -148,7 +147,6 @@
                         </t>
                         <t t-else="">
                             <t t-if="key not in material_summary">
-                                <!-- CORREGIDO: Usar line.name para mostrar la descripción completa de la cotización -->
                                 <t t-set="dummy" t-value="material_summary.update({key: {
                                     'name': line.name, 
                                     'qty_lot': 0, 
@@ -185,6 +183,12 @@
                             <th class="text-center" style="color: #fff;width: 10%; padding: 4px 8px; font-weight: bold;">Placas</th>
                             <th name="th_quantity" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">Cantidad</th>
                             <th name="th_price_unit_display" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px; font-weight: bold;">Precio Unitario</th>
+                            
+                            <!-- COLUMNAS OCULTAS (HOOKS) PARA EVITAR ERROR RPC -->
+                            <th name="th_priceunit" t-if="False"></th>
+                            <th name="th_discount" t-if="False"></th>
+                            <th name="th_taxes" t-if="False"></th>
+                            
                             <th name="th_subtotal" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px; font-weight: bold;">Subtotal</th>
                             <th name="th_iva_custom" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">IVA</th>
                             <th name="th_total_custom" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px; font-weight: bold;">Total</th>
@@ -206,6 +210,18 @@
                                 <td name="td_price_unit_display" class="text-end align-middle">
                                     <span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                 </td>
+
+                                <!-- 
+                                    ⚡⚡⚡ CORRECCIÓN CRÍTICA AQUÍ ⚡⚡⚡
+                                    Restauramos estos TDs ocultos para que otros módulos de Odoo 
+                                    encuentren los campos que buscan y no lancen error.
+                                -->
+                                <td name="td_priceunit" t-if="False"></td>
+                                <td name="td_discount" t-if="False"></td>
+                                <td name="td_taxes" t-if="False"></td>
+                                <td name="td_product_quantity" t-if="False"></td> <!-- ESTE ERA EL QUE FALTABA -->
+                                <td name="td_product_discount" t-if="False"></td>
+
                                 <td name="td_subtotal" class="text-end align-middle">
                                     <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                 </td>
@@ -267,7 +283,6 @@
                 <!-- ================= TOTALES ================= -->
                 <div class="row mt-2">
                     <div class="col-6">
-                        <!-- MOSTRAR NOTAS AQUÍ PARA QUE SEAN VISIBLES -->
                         <div t-if="doc.note" style="border: 1px dashed #ccc; padding: 10px; margin-top: 5px;">
                             <strong style="font-size: 9px; text-transform: uppercase; color: #555;">Notas de la Orden:</strong>
                             <div style="font-size: 9px; white-space: pre-wrap;" t-field="doc.note"/>
@@ -297,7 +312,7 @@
                     </div>
                 </div>
 
-                <!-- ✅ BLOQUE OCULTO DE TOTALES -->
+                <!-- ✅ BLOQUE OCULTO DE TOTALES (NO BORRAR) -->
                 <div class="clearfix" name="so_total_summary" t-if="False">
                     <div id="total" class="row" name="total">
                         <div class="col-6"></div>
