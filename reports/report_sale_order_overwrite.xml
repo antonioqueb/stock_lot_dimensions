@@ -31,7 +31,7 @@
                         </h4>
                     </div>
                     <div class="col-4 text-end">
-                        <div style="font-size: 8px; color: #999; margin-top: 4px;">
+                        <div style="font-size: 12px; color: #999; margin-top: 4px;">
                             Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
                         </div>
                     </div>
@@ -352,6 +352,24 @@
                                     <p class="mb-0"><strong>2. ACEPTACIÓN:</strong> La firma de remisión o salida del almacén constituye aceptación total de la calidad. No se aceptan reclamaciones tras el corte o instalación.</p>
                                     <span t-field="doc.note" style="display: block; margin-top: 5px; font-style: italic;"/>
                                 </div>
+
+                                
+                            </div>
+
+                            <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
+                                <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
+                                    Cuentas Bancarias
+                                </strong>
+                                <div class="mb-1" style="font-size: 8px; text-align: justify; color: #555;">
+                                    <p class="mb-1"><strong>CLABE INTERBANCARIA:</strong> 000000000000000</p>
+                                    <p class="mb-0"><strong>NÚMERO DE CUENTA:</strong> 00000000000.</p>
+                                    <p class="mb-0"><strong>SUCURSAL:</strong> Ciudad de México.</p>
+                                    < class="mb-0"><strong>INSTRUCCIONES:</strong> Por favor, enviar comprobante de pago a
+                                    cobranza@somgroup.mx o vía WhatsApp al +52 1 55 0000 0000 para agilizar la liberación de mercancía.</p>
+                                    <span t-field="doc.note" style="display: block; margin-top: 5px; font-style: italic;"/>
+                                </div>
+
+                                
                             </div>
                         </div>
                     </div>
