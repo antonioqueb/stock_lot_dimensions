@@ -15,13 +15,9 @@
 
         <!-- 3. CONTENIDO PERSONALIZADO -->
         <xpath expr="//div[hasclass('page')]" position="replace">
-            <!-- 
-                VUELTA A LA NORMALIDAD: 
-                Quitamos min-height y absolute. Ahora el diseño fluye naturalmente.
-            -->
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                 
-                <!-- ================= ENCABEZADO (DISEÑO A) ================= -->
+                <!-- ================= ENCABEZADO ================= -->
                 <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                     <div class="col-8">
                         <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
@@ -37,7 +33,7 @@
                     </div>
                 </div>
 
-                <!-- ALERTA DE VENCIMIENTO (DISEÑO A) -->
+                <!-- ALERTA DE VENCIMIENTO -->
                 <div class="row mb-4" t-if="doc.validity_date and doc.state in ['draft', 'sent']">
                     <div class="col-12">
                         <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
@@ -133,7 +129,7 @@
                         <t t-if="line.product_id.type == 'service'">
                             <t t-if="key not in service_summary">
                                 <t t-set="dummy" t-value="service_summary.update({key: {
-                                    'name': line.product_id.display_name, 
+                                    'name': line.name, 
                                     'qty_total': 0.0, 
                                     'uom': line.product_id.uom_id.name,
                                     'price_unit': line.price_unit,
@@ -153,7 +149,7 @@
                         <t t-else="">
                             <t t-if="key not in material_summary">
                                 <t t-set="dummy" t-value="material_summary.update({key: {
-                                    'name': line.product_id.display_name, 
+                                    'name': line.name, 
                                     'qty_lot': 0, 
                                     'qty_total': 0.0, 
                                     'uom': line.product_id.uom_id.name,
@@ -184,16 +180,10 @@
                 <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
                     <thead>
                         <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                            <!-- Ajustado ancho de 35% a 25% para dar espacio al precio unitario -->
                             <th name="th_description" style="color: #fff; width: 25%; padding: 4px 8px; font-weight: bold;">Descripción</th>
                             <th class="text-center" style="color: #fff;width: 10%; padding: 4px 8px; font-weight: bold;">Placas</th>
                             <th name="th_quantity" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">Cantidad</th>
-                            <!-- Columna Nueva: Precio Unitario -->
                             <th name="th_price_unit_display" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px; font-weight: bold;">Precio Unitario</th>
-                            
-                            <th name="th_priceunit" t-if="False"></th>
-                            <th name="th_discount" t-if="False"></th>
-                            <th name="th_taxes" t-if="False"></th>
                             <th name="th_subtotal" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px; font-weight: bold;">Subtotal</th>
                             <th name="th_iva_custom" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">IVA</th>
                             <th name="th_total_custom" class="text-end" style="color: #fff; width: 15%; padding: 4px 8px; font-weight: bold;">Total</th>
@@ -203,7 +193,7 @@
                         <t t-foreach="material_summary.values()" t-as="data">
                             <tr>
                                 <td name="td_name" class="align-middle" style="padding: 4px 8px;">
-                                    <strong t-esc="data['name']"/>
+                                    <span t-esc="data['name']"/>
                                 </td>
                                 <td class="text-center align-middle">
                                     <span t-if="data['qty_lot'] > 0" t-esc="data['qty_lot']" style="font-weight: bold;"/>
@@ -212,16 +202,9 @@
                                 <td name="td_quantity" class="text-end align-middle">
                                     <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
                                 </td>
-                                <!-- Dato Nuevo: Precio Unitario -->
                                 <td name="td_price_unit_display" class="text-end align-middle">
                                     <span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                 </td>
-
-                                <td name="td_priceunit" t-if="False"></td>
-                                <td name="td_discount" t-if="False"></td>
-                                <td name="td_taxes" t-if="False"></td>
-                                <td name="td_product_quantity" t-if="False"></td>
-                                <td name="td_product_discount" t-if="False"></td>
                                 <td name="td_subtotal" class="text-end align-middle">
                                     <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                 </td>
@@ -247,10 +230,8 @@
                     <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
                         <thead>
                             <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                                <!-- Ajustado ancho de 40% a 30% -->
                                 <th style="width: 30%; font-weight: bold; color: #fff;">Descripción</th>
                                 <th class="text-end" style="width: 10%; font-weight: bold; color: #fff;">Cantidad</th>
-                                <!-- Columna Nueva: Precio Unitario (10%) -->
                                 <th class="text-end" style="width: 10%; font-weight: bold; color: #fff;">Precio Unitario</th>
                                 <th class="text-end" style="width: 15%; font-weight: bold; color: #fff;">Subtotal</th>
                                 <th class="text-end" style="width: 15%; font-weight: bold; color: #fff;">IVA</th>
@@ -264,7 +245,6 @@
                                     <td class="text-end align-middle">
                                         <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
                                     </td>
-                                    <!-- Dato Nuevo: Precio Unitario -->
                                     <td class="text-end align-middle">
                                         <span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                     </td>
@@ -285,7 +265,12 @@
 
                 <!-- ================= TOTALES ================= -->
                 <div class="row mt-2">
-                    <div class="col-6"></div>
+                    <div class="col-6">
+                        <div t-if="doc.note" style="border: 1px dashed #ccc; padding: 10px; margin-top: 5px;">
+                            <strong style="font-size: 9px; text-transform: uppercase; color: #555;">Notas de la Orden:</strong>
+                            <div style="font-size: 9px; white-space: pre-wrap;" t-field="doc.note"/>
+                        </div>
+                    </div>
                     <div class="col-6">
                         <table class="table table-sm table-borderless" style="font-size: 9px; border-top: 2px solid #000;">
                             <tr style="font-weight: bold;">
@@ -317,13 +302,7 @@
                     </div>
                 </div>
 
-                <!-- ================= FOOTER / FIRMAS (DISEÑO A) ================= -->
-                <!-- 
-                     CAMBIO SOLICITADO:
-                     Quitamos absolute y bottom:0.
-                     Usamos margin-top: 50px para separar.
-                     page-break-inside: avoid se queda para no cortar el bloque.
-                -->
+                <!-- ================= FOOTER / FIRMAS ================= -->
                 <div style="margin-top: 50px; width: 100%; page-break-inside: avoid;">
                     <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                         <div class="col-1"></div>
@@ -343,6 +322,7 @@
 
                     <div class="row mt-2">
                         <div class="col-12">
+                            <!-- Términos Comerciales -->
                             <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
                                 <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
                                     Términos y Condiciones Comerciales
@@ -350,26 +330,36 @@
                                 <div class="mb-1" style="font-size: 8px; text-align: justify; color: #555;">
                                     <p class="mb-1"><strong>1. NATURALEZA DEL PRODUCTO:</strong> La piedra natural (mármol, granito, cuarcita, ónix, etc.) es un producto de la naturaleza y está sujeta a variaciones de tono, color y veta. Las muestras son indicativas.</p>
                                     <p class="mb-0"><strong>2. ACEPTACIÓN:</strong> La firma de remisión o salida del almacén constituye aceptación total de la calidad. No se aceptan reclamaciones tras el corte o instalación.</p>
-                                    <span t-field="doc.note" style="display: block; margin-top: 5px; font-style: italic;"/>
                                 </div>
-
-                                
                             </div>
 
-                            <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
+                            <!-- Cuentas Bancarias (Diseño Nuevo) -->
+                            <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa; margin-top: 5px;">
                                 <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
-                                    Cuentas Bancarias
+                                    Recubrimientos STO SA de CV (RFC: RST191127ER6)
                                 </strong>
-                                <div class="mb-1" style="font-size: 8px; text-align: justify; color: #555;">
-                                    <p class="mb-1"><strong>CLABE INTERBANCARIA:</strong> 000000000000000</p>
-                                    <p class="mb-0"><strong>NÚMERO DE CUENTA:</strong> 00000000000.</p>
-                                    <p class="mb-0"><strong>SUCURSAL:</strong> Ciudad de México.</p>
-                                    < class="mb-0"><strong>INSTRUCCIONES:</strong> Por favor, enviar comprobante de pago a
-                                    cobranza@somgroup.mx o vía WhatsApp al +52 1 55 0000 0000 para agilizar la liberación de mercancía.</p>
-                                    <span t-field="doc.note" style="display: block; margin-top: 5px; font-style: italic;"/>
+                                <div class="row" style="font-size: 8px; color: #555; margin-top: 5px;">
+                                    <!-- Columna 1: Pesos -->
+                                    <div class="col-6">
+                                        <p class="mb-1" style="font-weight: bold; color: #000; text-transform: uppercase;">Banorte - Moneda Pesos (MXN)</p>
+                                        <p class="mb-0"><strong>Cuenta:</strong> 1060415841</p>
+                                        <p class="mb-0"><strong>Clabe:</strong> 072580010604158414</p>
+                                        <p class="mb-0"><strong>Sucursal:</strong> 1924 Paseo Santa Catarina</p>
+                                    </div>
+                                    
+                                    <!-- Columna 2: Dólares -->
+                                    <div class="col-6" style="border-left: 1px dotted #ccc;">
+                                        <p class="mb-1" style="font-weight: bold; color: #000; text-transform: uppercase;">Banorte - Moneda Dólares (USD)</p>
+                                        <p class="mb-0"><strong>Cuenta:</strong> 1097074150</p>
+                                        <p class="mb-0"><strong>Clabe:</strong> 072580010970741500</p>
+                                        <p class="mb-0"><strong>Swift:</strong> MENOMXMTXXX</p>
+                                        <p class="mb-0"><strong>Sucursal:</strong> 1924 Paseo Santa Catarina</p>
+                                    </div>
                                 </div>
-
                                 
+                                <div class="mt-2" style="font-size: 8px; color: #555; border-top: 1px solid #eee; padding-top: 4px;">
+                                    <strong>Correo de recepción de comprobantes:</strong> norma@stonia.com.mx y karen@stonia.com.mx
+                                </div>
                             </div>
                         </div>
                     </div>
