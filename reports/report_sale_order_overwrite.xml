@@ -205,7 +205,7 @@
                                     <span t-else="" style="color: #999;">-</span>
                                 </td>
                                 <td name="td_quantity" class="text-end align-middle">
-                                    <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
+                                    <span t-esc="'{:,.2f}'.format(data['qty_total'])"/> <span t-esc="data['uom']"/>
                                 </td>
                                 <td name="td_price_unit_display" class="text-end align-middle">
                                     <span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
@@ -260,7 +260,7 @@
                                 <tr>
                                     <td class="align-middle"><span t-esc="data['name']"/></td>
                                     <td class="text-end align-middle">
-                                        <span t-esc="'%.2f' % data['qty_total']"/> <span t-esc="data['uom']"/>
+                                        <span t-esc="'{:,.2f}'.format(data['qty_total'])"/> <span t-esc="data['uom']"/>
                                     </td>
                                     <td class="text-end align-middle">
                                         <span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
