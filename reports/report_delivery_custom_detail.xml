@@ -4,7 +4,7 @@
     <!-- ACCIÓN: REPORTE DE ENTREGA DETALLADO (Estilo Mármol) -->
     <!-- ======================================================= -->
     <record id="action_report_delivery_custom_detail" model="ir.actions.report">
-        <field name="name">Vale de Entrega - Detalle Placas</field>
+        <field name="name">Orden de Entrega - Detalle Placas</field>
         <field name="model">stock.picking</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">stock_lot_dimensions.report_delivery_custom_document</field>
@@ -32,7 +32,7 @@
                         <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                             <div class="col-8">
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
-                                    Vale de Entrega <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
+                                    Orden de Entrega <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
                                 </h4>
                             </div>
                             <div class="col-4 text-end">
@@ -134,9 +134,7 @@
                             </thead>
                             <tbody style="border-bottom: 1px solid #000;">
                                 <!-- 
-                                    CORRECCIÓN CRÍTICA:
-                                    Filtramos líneas que tengan qty_done > 0 (si ya se validó)
-                                    O que tengan quantity > 0 (si está reservado/ready pero no validado)
+                                    FILTRO: Muestra líneas validadas (qty_done > 0) O reservadas (quantity > 0)
                                 -->
                                 <t t-set="lines" t-value="o.move_line_ids.filtered(lambda l: l.qty_done > 0 or l.quantity > 0).sorted(key=lambda l: (l.product_id.display_name, l.lot_id.name))"/>
                                 <t t-set="current_product" t-value="None"/>
@@ -209,10 +207,10 @@
                         </table>
 
                         <!-- ================= FOOTER / FIRMAS ================= -->
-                        <div style="margin-top: 50px; width: 100%; page-break-inside: avoid;">
+                        <div style="margin-top: 30px; width: 100%; page-break-inside: avoid;">
                             <div class="row">
                                 <div class="col-12 mb-3">
-                                    <div style="border: 1px solid #ccc; padding: 10px;">
+                                    <div style="border: 1px solid #ccc; padding: 5px 10px;">
                                         <strong style="font-size: 9px; text-transform: uppercase;">Notas de Entrega:</strong>
                                         <div t-if="o.note" style="font-size: 9px; margin-top: 2px;">
                                             <span t-field="o.note"/>
@@ -224,18 +222,18 @@
                                 </div>
                             </div>
 
-                            <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
+                            <div class="row" style="margin-top: 30px; margin-bottom: 10px;">
                                 <div class="col-1"></div>
                                 <div class="col-4 text-center">
                                     <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                        <strong style="font-size: 9px; text-transform: uppercase;">ENTREGADO POR</strong><br/>
+                                        <strong style="font-size: 8px; text-transform: uppercase;">ENTREGADO POR</strong><br/>
                                         <span style="font-size: 8px;" t-if="o.user_id" t-field="o.user_id.name"/>
                                     </div>
                                 </div>
                                 <div class="col-2"></div>
                                 <div class="col-4 text-center">
                                     <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                        <strong style="font-size: 9px; text-transform: uppercase;">RECIBIDO POR (Nombre y Firma)</strong>
+                                        <strong style="font-size: 8px; text-transform: uppercase;">RECIBIDO POR (Nombre y Firma)</strong>
                                     </div>
                                 </div>
                                 <div class="col-1"></div>
@@ -243,19 +241,24 @@
 
                             <div class="row mt-2">
                                 <div class="col-12">
-                                    <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
-                                        <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
-                                            Condiciones de Entrega
+                                    <div style="border: 1px solid #ccc; padding: 5px; background-color: #fafafa;">
+                                        <strong style="font-size: 9px; display: block; border-bottom: 1px solid #eee; margin-bottom: 3px; text-transform: uppercase;">
+                                            Términos y Condiciones – Remisión de Entrega
                                         </strong>
-                                        <div class="mb-1" style="font-size: 8px; text-align: justify; color: #555;">
-                                            <p class="mb-1"><strong>1. REVISIÓN:</strong> El cliente declara haber revisado el material y lo recibe a su entera satisfacción, tanto en cantidad como en calidad (tono, veta, integridad).</p>
-                                            <p class="mb-0"><strong>2. RECLAMACIONES:</strong> No se aceptan cambios ni devoluciones una vez que el material ha sido cortado, instalado o transformado.</p>
-                                        </div>
+                                        <ul class="list-unstyled mb-0" style="font-size: 7px; text-align: justify; color: #555; padding-left: 0;">
+                                            <li class="mb-1">• Para la programación y realización de la entrega, el pedido deberá estar pagado al 100%.</li>
+                                            <li class="mb-1">• La entrega se realiza a pie de camión. No incluye maniobras especiales de descarga.</li>
+                                            <li class="mb-1">• Es indispensable que se encuentre presente el contacto autorizado para recibir el material. En caso contrario, el material será regresado a bodega y se generará un cargo adicional por reenvío.</li>
+                                            <li class="mb-1">• El tiempo máximo de descarga es de 2 horas a partir de la llegada de la unidad. El tiempo excedente podrá generar cargos adicionales.</li>
+                                            <li class="mb-1">• El cliente es responsable de revisar el material al momento de la entrega. Cualquier observación deberá anotarse en la remisión; una vez firmada, se considera el material recibido de conformidad.</li>
+                                            <li class="mb-1">• El mármol y granito son piedras naturales, por lo que pueden presentar variaciones en color, vetas, tono y dureza, propias del material.</li>
+                                            <li class="mb-0">• La empresa no se hace responsable por daños ocasionados después de la entrega, durante maniobras de descarga o traslado posterior.</li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="text-center text-muted mt-2" style="font-size: 7px;">
+                            <div class="text-center text-muted mt-2" style="font-size: 6px;">
                                 Documento Interno | Página <span class="page"/>
                             </div>
                         </div>
