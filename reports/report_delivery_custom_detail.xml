@@ -32,7 +32,7 @@
                         <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                             <div class="col-8">
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
-                                    Remisión de Entrega <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
+                                    Remisión <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
                                 </h4>
                             </div>
                             <div class="col-4 text-end">
