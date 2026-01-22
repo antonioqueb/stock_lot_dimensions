@@ -133,8 +133,12 @@
                                 </tr>
                             </thead>
                             <tbody style="border-bottom: 1px solid #000;">
-                                <!-- Agrupar líneas por Producto y ordenarlas -->
-                                <t t-set="lines" t-value="o.move_line_ids.filtered(lambda l: l.qty_done > 0).sorted(key=lambda l: (l.product_id.display_name, l.lot_id.name))"/>
+                                <!-- 
+                                    CORRECCIÓN CRÍTICA:
+                                    Filtramos líneas que tengan qty_done > 0 (si ya se validó)
+                                    O que tengan quantity > 0 (si está reservado/ready pero no validado)
+                                -->
+                                <t t-set="lines" t-value="o.move_line_ids.filtered(lambda l: l.qty_done > 0 or l.quantity > 0).sorted(key=lambda l: (l.product_id.display_name, l.lot_id.name))"/>
                                 <t t-set="current_product" t-value="None"/>
                                 <t t-set="seq" t-value="1"/>
 
@@ -148,6 +152,9 @@
                                             </td>
                                         </tr>
                                     </t>
+
+                                    <!-- Lógica para determinar qué cantidad mostrar -->
+                                    <t t-set="qty_to_show" t-value="line.qty_done if line.qty_done > 0 else line.quantity"/>
 
                                     <tr>
                                         <td class="text-center align-middle">
@@ -169,7 +176,7 @@
                                         <td class="align-middle">
                                             <span t-field="line.lot_id.x_atado"/>
                                         </td>
-                                        <!-- Dimensiones: Usamos t-field para que tome widget float por defecto -->
+                                        <!-- Dimensiones -->
                                         <td class="text-center align-middle">
                                             <span t-field="line.lot_id.x_grosor" t-options='{"widget": "float", "precision": 2}'/>
                                         </td>
@@ -181,7 +188,7 @@
                                         </td>
                                         <!-- Cantidad -->
                                         <td class="text-end align-middle">
-                                            <strong t-field="line.qty_done"/>
+                                            <strong t-esc="qty_to_show" t-options='{"widget": "float", "precision": 2}'/>
                                         </td>
                                         <td class="text-center align-middle">
                                             <span t-field="line.product_uom_id.name"/>
@@ -191,10 +198,10 @@
                             </tbody>
                             <tfoot style="border-top: 2px solid #000; background-color: #f9f9f9;">
                                 <tr>
-                                    <td colspan="7" class="text-end" style="padding: 5px; font-weight: bold;">TOTAL UNIDADES ENTREGADAS:</td>
+                                    <td colspan="7" class="text-end" style="padding: 5px; font-weight: bold;">TOTAL UNIDADES:</td>
                                     <td class="text-end" style="padding: 5px; font-weight: bold;">
-                                        <!-- CORRECCIÓN: Agregado widget: float para evitar KeyError -->
-                                        <span t-esc="sum(lines.mapped('qty_done'))" t-options='{"widget": "float", "precision": 2}'/>
+                                        <!-- Sumamos dinámicamente lo que se mostró en la tabla -->
+                                        <span t-esc="sum(lines.mapped(lambda l: l.qty_done if l.qty_done > 0 else l.quantity))" t-options='{"widget": "float", "precision": 2}'/>
                                     </td>
                                     <td></td>
                                 </tr>
