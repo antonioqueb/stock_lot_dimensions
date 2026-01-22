@@ -9,3 +9,4 @@ access_stock_lot_hold_order_user,stock.lot.hold.order.user,model_stock_lot_hold_
 access_stock_lot_hold_order_manager,stock.lot.hold.order.manager,model_stock_lot_hold_order,stock.group_stock_manager,1,1,1,1
 access_stock_lot_hold_order_line_user,stock.lot.hold.order.line.user,model_stock_lot_hold_order_line,stock.group_stock_user,1,1,1,0
 access_stock_lot_hold_order_line_manager,stock.lot.hold.order.line.manager,model_stock_lot_hold_order_line,stock.group_stock_manager,1,1,1,1
+access_stock_lot_image_delete_wizard,stock.lot.image.delete.wizard,model_stock_lot_image_delete_wizard,stock.group_stock_manager,1,1,1,1
