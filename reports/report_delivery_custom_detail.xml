@@ -4,7 +4,7 @@
     <!-- ACCIÓN: REPORTE DE ENTREGA DETALLADO (Estilo Mármol) -->
     <!-- ======================================================= -->
     <record id="action_report_delivery_custom_detail" model="ir.actions.report">
-        <field name="name">Orden de Entrega - Detalle Placas</field>
+        <field name="name">Remisión de Entrega - Detalle Placas</field>
         <field name="model">stock.picking</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">stock_lot_dimensions.report_delivery_custom_document</field>
@@ -32,7 +32,7 @@
                         <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                             <div class="col-8">
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
-                                    Orden de Entrega <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
+                                    Remisión de Entrega <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
                                 </h4>
                             </div>
                             <div class="col-4 text-end">
