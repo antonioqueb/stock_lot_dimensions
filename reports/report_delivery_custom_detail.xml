@@ -128,7 +128,6 @@
                                     <th class="text-center" style="width: 10%; color: #fff; font-weight: bold;">GROSOR</th>
                                     <th class="text-center" style="width: 10%; color: #fff; font-weight: bold;">ALTO</th>
                                     <th class="text-center" style="width: 10%; color: #fff; font-weight: bold;">ANCHO</th>
-                                    <!-- Si es entrega, usamos qty_done -->
                                     <th class="text-end" style="width: 10%; color: #fff; font-weight: bold;">CANTIDAD</th>
                                     <th class="text-center" style="width: 15%; color: #fff; font-weight: bold;">UDM</th>
                                 </tr>
@@ -170,15 +169,15 @@
                                         <td class="align-middle">
                                             <span t-field="line.lot_id.x_atado"/>
                                         </td>
-                                        <!-- Dimensiones -->
+                                        <!-- Dimensiones: Usamos t-field para que tome widget float por defecto -->
                                         <td class="text-center align-middle">
-                                            <span t-field="line.lot_id.x_grosor" t-options='{"precision": 2}'/>
+                                            <span t-field="line.lot_id.x_grosor" t-options='{"widget": "float", "precision": 2}'/>
                                         </td>
                                         <td class="text-center align-middle">
-                                            <span t-field="line.lot_id.x_alto" t-options='{"precision": 3}'/>
+                                            <span t-field="line.lot_id.x_alto" t-options='{"widget": "float", "precision": 3}'/>
                                         </td>
                                         <td class="text-center align-middle">
-                                            <span t-field="line.lot_id.x_ancho" t-options='{"precision": 3}'/>
+                                            <span t-field="line.lot_id.x_ancho" t-options='{"widget": "float", "precision": 3}'/>
                                         </td>
                                         <!-- Cantidad -->
                                         <td class="text-end align-middle">
@@ -194,7 +193,8 @@
                                 <tr>
                                     <td colspan="7" class="text-end" style="padding: 5px; font-weight: bold;">TOTAL UNIDADES ENTREGADAS:</td>
                                     <td class="text-end" style="padding: 5px; font-weight: bold;">
-                                        <span t-esc="sum(lines.mapped('qty_done'))" t-options='{"precision": 2}'/>
+                                        <!-- CORRECCIÓN: Agregado widget: float para evitar KeyError -->
+                                        <span t-esc="sum(lines.mapped('qty_done'))" t-options='{"widget": "float", "precision": 2}'/>
                                     </td>
                                     <td></td>
                                 </tr>
