@@ -49,6 +49,10 @@ class LotDimensionFields:
                 string='Tipo',
                 help='Tipo de producto: Placa o Formato'
             ),
+            'x_numero_placa': fields.Integer(
+                string='No. Placa',
+                help='Número consecutivo de la placa'
+            ),
             'x_bloque': fields.Char(
                 string='Bloque',
                 help='Identificación del bloque de origen'

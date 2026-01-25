@@ -16,6 +16,7 @@ class StockLot(models.Model):
     
     # ==================== CAMPOS DE CLASIFICACIÓN ====================
     x_tipo = LotDimensionFields.get_classification_fields()['x_tipo']
+    x_numero_placa = LotDimensionFields.get_classification_fields()['x_numero_placa']
     x_bloque = LotDimensionFields.get_classification_fields()['x_bloque']
     x_atado = LotDimensionFields.get_classification_fields()['x_atado']
     x_grupo = LotDimensionFields.get_classification_fields()['x_grupo']

@@ -14,6 +14,7 @@ class LotDimensionSync:
         'x_alto_temp': 'x_alto',
         'x_ancho_temp': 'x_ancho',
         'x_color_temp': 'x_color',
+        'x_numero_placa_temp': 'x_numero_placa',
         'x_bloque_temp': 'x_bloque',
         'x_atado_temp': 'x_atado',
         'x_tipo_temp': 'x_tipo',
@@ -36,6 +37,7 @@ class LotDimensionSync:
         move_line.x_grosor_temp = lot.x_grosor
         move_line.x_alto_temp = lot.x_alto
         move_line.x_ancho_temp = lot.x_ancho
+        move_line.x_numero_placa_temp = lot.x_numero_placa
         move_line.x_bloque_temp = lot.x_bloque
         move_line.x_atado_temp = lot.x_atado
         move_line.x_tipo_temp = lot.x_tipo

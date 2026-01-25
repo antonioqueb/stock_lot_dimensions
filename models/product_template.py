@@ -18,3 +18,33 @@ class ProductTemplate(models.Model):
         string='Acabado Superficial',
         help='Tipo de acabado superficial del producto'
     )
+
+    x_marcca = fields.Char(
+        string='Marca Comercial',
+        help='Marca comercial asociada al producto'
+    )
+
+    x_acabado_producto = fields.Char(
+        string='Tipo de Producto',
+        help='Categoría o tipo específico del producto'
+    )
+
+    x_uso_recomendado = fields.Char(
+        string='Uso Recomendado',
+        help='Uso sugerido para este producto'
+    )
+
+    x_dureza = fields.Char(
+        string='Dureza (Shore A)',
+        help='Valor de dureza del material según la escala Shore A'
+    )
+
+    x_calidad_material = fields.Char(
+        string='Calidad del Material',
+        help='Descripción de la calidad del material del producto'
+    )
+
+
+
+
+

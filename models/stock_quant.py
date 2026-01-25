@@ -21,6 +21,7 @@ class StockQuant(models.Model):
     x_grosor = fields.Float(related='lot_id.x_grosor', string='Grosor', readonly=True)
     x_alto = fields.Float(related='lot_id.x_alto', string='Alto', readonly=True)
     x_ancho = fields.Float(related='lot_id.x_ancho', string='Ancho', readonly=True)
+    x_numero_placa = fields.Integer(related='lot_id.x_numero_placa', string='No. Placa', readonly=True)
     x_bloque = fields.Char(related='lot_id.x_bloque', string='Bloque', readonly=True)
     x_tipo = fields.Selection(related='lot_id.x_tipo', string='Tipo', readonly=True)
     x_atado = fields.Char(related='lot_id.x_atado', string='Atado', readonly=True)
@@ -804,6 +805,7 @@ class StockQuant(models.Model):
         grosor = getattr(quant, 'x_grosor', None) or ''
         alto = getattr(quant, 'x_alto', None) or ''
         ancho = getattr(quant, 'x_ancho', None) or ''
+        numero_placa = getattr(quant, 'x_numero_placa', 0) or 0
         bloque = getattr(quant, 'x_bloque', None) or ''
         atado = getattr(quant, 'x_atado', None) or ''
         
@@ -845,6 +847,7 @@ class StockQuant(models.Model):
             'grosor': grosor,
             'alto': alto,
             'ancho': ancho,
+            'numero_placa': numero_placa,
             'bloque': bloque,
             'atado': atado,
             'tipo': tipo,

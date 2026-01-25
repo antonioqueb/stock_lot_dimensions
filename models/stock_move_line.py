@@ -45,6 +45,10 @@ class StockMoveLine(models.Model):
         help='Tipo de producto (se guardará en el lote)'
     )
     
+    x_numero_placa_temp = fields.Integer(
+        string='No. Placa',
+        help='Número de placa (se guardará en el lote)'
+    ),
     x_bloque_temp = fields.Char(
         string='Bloque',
         help='Identificación del bloque de origen (se guardará en el lote)'
@@ -121,6 +125,12 @@ class StockMoveLine(models.Model):
         store=False
     )
     
+    x_numero_placa_lote = fields.Integer(
+        related='lot_id.x_numero_placa',
+        string='No. Placa Lote',
+        readonly=True,
+        store=False
+    ),
     x_bloque_lote = fields.Char(
         related='lot_id.x_bloque',
         string='Bloque Lote',
