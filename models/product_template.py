@@ -19,7 +19,7 @@ class ProductTemplate(models.Model):
         help='Tipo de acabado superficial del producto'
     )
 
-    x_marcca = fields.Char(
+    x_marca = fields.Char(
         string='Marca Comercial',
         help='Marca comercial asociada al producto'
     )
