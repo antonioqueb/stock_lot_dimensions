@@ -130,7 +130,8 @@ class StockMoveLine(models.Model):
         string='No. Placa Lote',
         readonly=True,
         store=False
-    ),
+    )
+
     x_bloque_lote = fields.Char(
         related='lot_id.x_bloque',
         string='Bloque Lote',
