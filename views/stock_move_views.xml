@@ -81,9 +81,9 @@
                 <field name="x_color_lote" optional="show" string="Color"/>
                 
                 <field name="x_tipo_lote" optional="show" string="Tipo"/>
-                <field name="x_numero_placa_lote" optional="show" string="No. Placa"/>
                 <field name="x_bloque_lote" optional="show" string="Bloque"/>
                 <field name="x_atado_lote" optional="show" string="Atado"/>
+                <field name="x_numero_placa_lote" optional="show" string="No. Placa"/>
                 <field name="x_grupo_lote" widget="many2many_tags" optional="show" string="Grupo"/>
                 <field name="x_pedimento_lote" optional="show" string="Pedimento"/>
                 <field name="x_contenedor_lote" optional="show" string="Contenedor"/>
