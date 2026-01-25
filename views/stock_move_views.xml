@@ -33,7 +33,6 @@
                        optional="show" 
                        string="Tipo"
                        readonly="not x_is_incoming"/>
-                <field name="x_numero_placa_temp" optional="show" string="No. Placa" readonly="not x_is_incoming"/>
                 <field name="x_numero_placa_temp" string="No. Placa" readonly="not x_is_incoming"/>
                 <field name="x_bloque_temp" 
                        optional="show" 

@@ -45,7 +45,6 @@
                                        placeholder="Color del producto"/>
                                 <field name="x_tipo" 
                                        placeholder="Selecciona tipo..."/>
-                                <field name="x_numero_placa" placeholder="#"/>
                                 <field name="x_numero_placa" optional="show" string="No. Placa"/>
                                 <field name="x_bloque" 
                                        placeholder="Identificación del bloque"/>
