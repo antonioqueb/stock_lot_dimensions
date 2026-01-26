@@ -19,6 +19,8 @@
                             <field name="x_dureza"/>
                             <field name="x_nombre_generico"/>
                             <field name="x_dimensiones"/>
+                        </group>
+                    <group>
                 </page>
             </xpath>
         </field>
