@@ -17,8 +17,6 @@
                             <field name="x_acabado_producto"/>
                             <field name="x_uso_recomendado"/>
                             <field name="x_dureza"/>
-                            <field name="x_calidad_material"/>
-
                         </group>
                     </group>
                 </page>

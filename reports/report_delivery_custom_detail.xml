@@ -247,10 +247,10 @@
                             <div class="row mt-2">
                                 <div class="col-12">
                                     <div style="border: 1px solid #ccc; padding: 5px; background-color: #fafafa;">
-                                        <strong style="font-size: 9px; display: block; border-bottom: 1px solid #eee; margin-bottom: 3px; text-transform: uppercase;">
+                                        <strong style="font-size: 12px; display: block; border-bottom: 1px solid #eee; margin-bottom: 3px; text-transform: uppercase;">
                                             Términos y Condiciones – Remisión de Entrega
                                         </strong>
-                                        <ul class="list-unstyled mb-0" style="font-size: 7px; text-align: justify; color: #555; padding-left: 0;">
+                                        <ul class="list-unstyled mb-0" style="font-size: 11px; text-align: justify; color: #555; padding-left: 0;">
                                             <li class="mb-1">• Para la programación y realización de la entrega, el pedido deberá estar pagado al 100%.</li>
                                             <li class="mb-1">• La entrega se realiza a pie de camión. No incluye maniobras especiales de descarga.</li>
                                             <li class="mb-1">• Es indispensable que se encuentre presente el contacto autorizado para recibir el material. En caso contrario, el material será regresado a bodega y se generará un cargo adicional por reenvío.</li>
