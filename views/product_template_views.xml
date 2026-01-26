@@ -17,8 +17,8 @@
                             <field name="x_acabado_producto"/>
                             <field name="x_uso_recomendado"/>
                             <field name="x_dureza"/>
-                        </group>
-                    </group>
+                            <field name="x_nombre_generico"/>
+                            <field name="x_dimensiones"/>
                 </page>
             </xpath>
         </field>

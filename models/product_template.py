@@ -44,6 +44,16 @@ class ProductTemplate(models.Model):
         help='Descripción de la calidad del material del producto'
     )
 
+    x_nombre_generico = fields.Char(
+        string='Nombre Genérico',
+        help='Nombre genérico del producto para identificación'
+    )
+
+    x_dimensiones = fields.Char(
+        string='Dimensiones (LxAnxAl)',
+        help='Dimensiones estándar del producto en Largo x Ancho x Alto'
+    )
+
 
 
 
