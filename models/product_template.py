@@ -10,9 +10,9 @@ class ProductTemplate(models.Model):
     )
     x_grosor = fields.Char(
         string='Grosor Nominal (cm)',
-        digits=(10, 2),
         help='Grosor estándar definido para este producto'
     )
+
 
     x_acabado = fields.Char(
         string='Acabado Superficial',
