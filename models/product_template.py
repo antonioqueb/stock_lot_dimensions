@@ -4,6 +4,12 @@ from odoo import models, fields
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
+
+    x_nombre_alternativo = fields.Char(
+        string='Nombre Alternativo',
+        help='Nombre alternativo o comercial del producto'
+    )
+
     x_color = fields.Char(
         string='Color Estándar',
         help='Color base definido para este producto'

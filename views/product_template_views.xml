@@ -9,6 +9,7 @@
                 <page string="Atributos" name="marble_attributes">
                     <group>
                         <group>
+                            <field name="x_nombre_alternativo"/>
                             <field name="x_color"/>
                             <field name="x_grosor"/>
                             <field name="x_acabado"/>
