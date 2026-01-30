@@ -118,8 +118,9 @@
                                 </tr>
                             </thead>
                             <tbody style="border-bottom: 1px solid #000;">
-                                <!-- CORRECCIÓN ODOO 17+: Usamos solo 'quantity' -->
-                                <t t-set="lines" t-value="o.move_line_ids.filtered(lambda l: l.quantity > 0).sorted(key=lambda l: (l.product_id.display_name, l.lot_id.name))"/>
+                                <!-- CORRECCIÓN CRÍTICA: Quitamos el filtro de quantity > 0.
+                                     Si la linea existe y tiene producto, debe salir en el reporte. -->
+                                <t t-set="lines" t-value="o.move_line_ids.filtered(lambda l: l.product_id).sorted(key=lambda l: (l.product_id.display_name, l.lot_id.name))"/>
                                 <t t-set="current_product" t-value="None"/>
                                 <t t-set="seq" t-value="1"/>
 
@@ -133,7 +134,8 @@
                                         </tr>
                                     </t>
 
-                                    <!-- En Odoo 17+, 'quantity' es el único campo que necesitamos -->
+                                    <!-- LÓGICA DE VISUALIZACIÓN DE CANTIDAD -->
+                                    <!-- Mostramos quantity. Si es 0, aparecerá 0.00 pero verás la ubicación y el lote -->
                                     <t t-set="qty_to_show" t-value="line.quantity"/>
 
                                     <tr>
@@ -168,6 +170,7 @@
                                             <span t-field="line.lot_id.x_ancho" t-options='{"widget": "float", "precision": 3}'/>
                                         </td>
                                         <td class="text-end align-middle">
+                                            <!-- Si quantity es 0, usamos un estilo visual distinto o mostramos 0 -->
                                             <strong t-esc="qty_to_show" t-options='{"widget": "float", "precision": 2}'/>
                                         </td>
                                         <td class="text-center align-middle">
@@ -183,7 +186,6 @@
                                 <tr>
                                     <td colspan="8" class="text-end" style="padding: 5px; font-weight: bold;">TOTAL UNIDADES:</td>
                                     <td class="text-end" style="padding: 5px; font-weight: bold;">
-                                        <!-- Suma simple de 'quantity' -->
                                         <span t-esc="sum(lines.mapped('quantity'))" t-options='{"widget": "float", "precision": 2}'/>
                                     </td>
                                     <td colspan="2"></td>
