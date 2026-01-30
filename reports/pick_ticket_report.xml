@@ -41,10 +41,8 @@
                             </div>
                         </div>
 
-                        <!-- ================= INFORMACIÓN GENERAL (3 COLUMNAS) ================= -->
+                        <!-- ================= INFORMACIÓN GENERAL ================= -->
                         <div class="row mb-4" id="informations">
-                            
-                            <!-- Columna 1: Cliente -->
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
@@ -56,7 +54,6 @@
                                 </div>
                             </div>
 
-                            <!-- Columna 2: Dirección de Entrega -->
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Dirección de Entrega</strong>
@@ -76,7 +73,6 @@
                                 </div>
                             </div>
 
-                            <!-- Columna 3: Detalles del Documento -->
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Referencia</strong>
@@ -109,19 +105,21 @@
                             <thead>
                                 <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
                                     <th class="text-center" style="width: 5%; color: #fff; font-weight: bold;">#</th>
-                                    <th style="width: 20%; color: #fff; font-weight: bold;">LOTE</th>
-                                    <th style="width: 10%; color: #fff; font-weight: bold;">BLOQUE</th>
-                                    <th style="width: 10%; color: #fff; font-weight: bold;">ATADO</th>
-                                    <th class="text-center" style="width: 10%; color: #fff; font-weight: bold;">GROSOR</th>
-                                    <th class="text-center" style="width: 10%; color: #fff; font-weight: bold;">ALTO</th>
-                                    <th class="text-center" style="width: 10%; color: #fff; font-weight: bold;">ANCHO</th>
+                                    <th style="width: 15%; color: #fff; font-weight: bold;">UBICACIÓN</th>
+                                    <th style="width: 15%; color: #fff; font-weight: bold;">LOTE</th>
+                                    <th style="width: 8%; color: #fff; font-weight: bold;">BLOQUE</th>
+                                    <th style="width: 8%; color: #fff; font-weight: bold;">ATADO</th>
+                                    <th class="text-center" style="width: 8%; color: #fff; font-weight: bold;">GROSOR</th>
+                                    <th class="text-center" style="width: 8%; color: #fff; font-weight: bold;">ALTO</th>
+                                    <th class="text-center" style="width: 8%; color: #fff; font-weight: bold;">ANCHO</th>
                                     <th class="text-end" style="width: 10%; color: #fff; font-weight: bold;">CANTIDAD</th>
                                     <th class="text-center" style="width: 10%; color: #fff; font-weight: bold;">UDM</th>
                                     <th class="text-center" style="width: 5%; color: #fff; font-weight: bold;">✓</th>
                                 </tr>
                             </thead>
                             <tbody style="border-bottom: 1px solid #000;">
-                                <t t-set="lines" t-value="o.move_line_ids.filtered(lambda l: l.qty_done > 0 or l.quantity > 0).sorted(key=lambda l: (l.product_id.display_name, l.lot_id.name))"/>
+                                <!-- CORRECCIÓN ODOO 17+: Usamos solo 'quantity' -->
+                                <t t-set="lines" t-value="o.move_line_ids.filtered(lambda l: l.quantity > 0).sorted(key=lambda l: (l.product_id.display_name, l.lot_id.name))"/>
                                 <t t-set="current_product" t-value="None"/>
                                 <t t-set="seq" t-value="1"/>
 
@@ -129,18 +127,22 @@
                                     <t t-if="current_product != line.product_id.id">
                                         <t t-set="current_product" t-value="line.product_id.id"/>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
-                                            <td colspan="10" style="padding: 4px 8px; font-weight: bold; font-size: 10px; text-transform: uppercase; color: #FFFFFF;">
+                                            <td colspan="11" style="padding: 4px 8px; font-weight: bold; font-size: 10px; text-transform: uppercase; color: #FFFFFF;">
                                                 <span t-field="line.product_id.display_name"/>
                                             </td>
                                         </tr>
                                     </t>
 
-                                    <t t-set="qty_to_show" t-value="line.qty_done if line.qty_done > 0 else line.quantity"/>
+                                    <!-- En Odoo 17+, 'quantity' es el único campo que necesitamos -->
+                                    <t t-set="qty_to_show" t-value="line.quantity"/>
 
                                     <tr>
                                         <td class="text-center align-middle">
                                             <span t-esc="seq"/>
                                             <t t-set="seq" t-value="seq + 1"/>
+                                        </td>
+                                        <td class="align-middle">
+                                            <span t-field="line.location_id.display_name"/>
                                         </td>
                                         <td class="align-middle">
                                             <t t-if="line.lot_id">
@@ -171,7 +173,6 @@
                                         <td class="text-center align-middle">
                                             <span t-field="line.product_uom_id.name"/>
                                         </td>
-                                        <!-- Columna para marcar (checkbox manual) -->
                                         <td class="text-center align-middle">
                                             <span style="font-size: 14px;">☐</span>
                                         </td>
@@ -180,9 +181,10 @@
                             </tbody>
                             <tfoot style="border-top: 2px solid #000; background-color: #f9f9f9;">
                                 <tr>
-                                    <td colspan="7" class="text-end" style="padding: 5px; font-weight: bold;">TOTAL UNIDADES:</td>
+                                    <td colspan="8" class="text-end" style="padding: 5px; font-weight: bold;">TOTAL UNIDADES:</td>
                                     <td class="text-end" style="padding: 5px; font-weight: bold;">
-                                        <span t-esc="sum(lines.mapped(lambda l: l.qty_done if l.qty_done > 0 else l.quantity))" t-options='{"widget": "float", "precision": 2}'/>
+                                        <!-- Suma simple de 'quantity' -->
+                                        <span t-esc="sum(lines.mapped('quantity'))" t-options='{"widget": "float", "precision": 2}'/>
                                     </td>
                                     <td colspan="2"></td>
                                 </tr>
