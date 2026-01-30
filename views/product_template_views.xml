@@ -9,13 +9,13 @@
                 <page string="Atributos" name="marble_attributes">
                     <group>
                         <group>
+                            <field name="x_unidad_del_producto"/>
                             <field name="x_nombre_alternativo"/>
                             <field name="x_color"/>
                             <field name="x_grosor"/>
                             <field name="x_acabado"/>
                             <field name="x_calidad_material"/>
                             <field name="x_marca"/>
-                            <field name="x_acabado_producto"/>
                             <field name="x_uso_recomendado"/>
                             <field name="x_dureza"/>
                             <field name="x_nombre_generico"/>

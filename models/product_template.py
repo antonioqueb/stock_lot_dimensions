@@ -60,6 +60,11 @@ class ProductTemplate(models.Model):
         help='Dimensiones estándar del producto en Largo x Ancho x Alto'
     )
 
+    x_unidad_del_producto = fields.Char(
+        string='Unidad del Producto',
+        help='Unidad de medida utilizada para este producto'
+    )
+
 
 
 
