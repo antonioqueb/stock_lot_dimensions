@@ -118,8 +118,7 @@
                                 </tr>
                             </thead>
                             <tbody style="border-bottom: 1px solid #000;">
-                                <!-- ESTRATEGIA NUEVA: Iteramos por Move (Operación) y extraemos sus líneas -->
-                                <!-- Esto replica la lógica de la vista stock.move.operations.form -->
+                                <!-- ESTRATEGIA: Iteramos por Move (Operación) y extraemos sus líneas -->
                                 
                                 <t t-set="seq" t-value="1"/>
                                 <t t-set="grand_total_qty" t-value="0"/>
@@ -127,7 +126,7 @@
                                 <!-- Iteramos sobre las operaciones principales (Move) -->
                                 <t t-foreach="o.move_ids.sorted(key=lambda m: m.product_id.display_name)" t-as="move">
                                     
-                                    <!-- Header del Producto (Siempre mostramos el producto) -->
+                                    <!-- Header del Producto -->
                                     <tr style="background-color: #2f2f2f; color: #fff;">
                                         <td colspan="11" style="padding: 4px 8px; font-weight: bold; font-size: 10px; text-transform: uppercase; color: #FFFFFF;">
                                             <span t-field="move.product_id.display_name"/>
@@ -139,7 +138,6 @@
                                         <t t-foreach="move.move_line_ids.sorted(key=lambda l: l.lot_id.name)" t-as="line">
                                             
                                             <!-- Calculamos cantidad a mostrar -->
-                                            <!-- Si quantity > 0 usamos eso. Si es 0 (Pick inicial), intentamos usar la demanda o 0 -->
                                             <t t-set="qty_to_show" t-value="line.quantity"/>
                                             <t t-set="grand_total_qty" t-value="grand_total_qty + qty_to_show"/>
 
@@ -149,7 +147,8 @@
                                                     <t t-set="seq" t-value="seq + 1"/>
                                                 </td>
                                                 <td class="align-middle">
-                                                    <span t-field="line.location_id.display_name"/>
+                                                    <!-- CAMBIO AQUI: Recortamos la ubicación -->
+                                                    <span t-esc="'/'.join(line.location_id.display_name.split('/')[-2:]).strip()"/>
                                                 </td>
                                                 <td class="align-middle">
                                                     <t t-if="line.lot_id">
@@ -179,7 +178,7 @@
                                         </t>
                                     </t>
 
-                                    <!-- CASO B: NO tiene líneas de detalle todavía (fallback a la Demanda del Move) -->
+                                    <!-- CASO B: NO tiene líneas de detalle todavía -->
                                     <t t-else="">
                                         <t t-set="grand_total_qty" t-value="grand_total_qty + move.product_uom_qty"/>
                                         <tr>
@@ -188,14 +187,13 @@
                                                 <t t-set="seq" t-value="seq + 1"/>
                                             </td>
                                             <td class="align-middle">
-                                                <!-- Ubicación origen del movimiento -->
-                                                <span t-field="move.location_id.display_name"/>
+                                                <!-- CAMBIO AQUI TAMBIÉN: Recortamos la ubicación origen del movimiento -->
+                                                <span t-esc="'/'.join(move.location_id.display_name.split('/')[-2:]).strip()"/>
                                             </td>
                                             <td class="align-middle" colspan="6">
                                                 <span class="text-muted text-italic">Sin detalles de lote reservados aún</span>
                                             </td>
                                             <td class="text-end align-middle">
-                                                <!-- Mostramos la demanda (product_uom_qty) -->
                                                 <strong t-field="move.product_uom_qty" t-options='{"widget": "float", "precision": 2}'/>
                                             </td>
                                             <td class="text-center align-middle">
