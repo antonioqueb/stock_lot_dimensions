@@ -18,10 +18,9 @@ class LotDimensionFields:
             dict: Definiciones de campos
         """
         return {
-            'x_grosor': fields.Float(
-                string='Grosor (cm)',
-                digits=(10, 2),
-                help='Grosor del producto en centímetros'
+            'x_grosor': fields.Char(
+                string='Grosor', 
+                help='Grosor de la placa'
             ),
             'x_alto': fields.Float(
                 string='Alto (m)',
