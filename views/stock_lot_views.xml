@@ -30,8 +30,8 @@
                         <group>
                             <group string="Dimensiones" name="dimensions_group">
                                 <field name="x_grosor" 
-                                       widget="float" 
-                                       placeholder="0.00"/>
+                                       widget="char" 
+                                       placeholder="2-3"/>
                                 <field name="x_alto" 
                                        widget="float" 
                                        placeholder="0.0000"/>
