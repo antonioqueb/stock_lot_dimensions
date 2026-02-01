@@ -175,7 +175,7 @@
                                         </td>
                                         <!-- Dimensiones -->
                                         <td class="text-center align-middle">
-                                            <span t-field="line.lot_id.x_grosor" t-options='{"widget": "float", "precision": 2}'/>
+                                            <span t-field="line.lot_id.x_grosor"'/>
                                         </td>
                                         <td class="text-center align-middle">
                                             <span t-field="line.lot_id.x_alto" t-options='{"widget": "float", "precision": 3}'/>

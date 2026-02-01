@@ -441,7 +441,7 @@ class StockLotHoldOrderLine(models.Model):
     
     # Campos relacionados del lote (solo lectura, vacíos si no hay lote)
     x_color = fields.Char(related='lot_id.x_color', string='Color', readonly=True)
-    x_grosor = fields.Float(related='lot_id.x_grosor', string='Grosor (cm)', readonly=True)
+    x_grosor = fields.Char(related='lot_id.x_grosor', string='Grosor (cm)', readonly=True)
     x_alto = fields.Float(related='lot_id.x_alto', string='Alto (m)', readonly=True)
     x_ancho = fields.Float(related='lot_id.x_ancho', string='Ancho (m)', readonly=True)
     x_bloque = fields.Char(related='lot_id.x_bloque', string='Bloque', readonly=True)

@@ -21,7 +21,7 @@ class StockMoveLine(models.Model):
         help='Color del producto (se guardará en el lote)'
     )
 
-    x_grosor_temp = fields.Float(
+    x_grosor_temp = fields.Char(
         string='Grosor (cm)',
         digits=(10, 2),
         help='Grosor del producto en centímetros (se guardará en el lote)'

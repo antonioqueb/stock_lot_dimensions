@@ -92,7 +92,7 @@ class StockLotHoldWizard(models.TransientModel):
     )
     
     x_color = fields.Char(related='lot_id.x_color', readonly=True)
-    x_grosor = fields.Float(related='lot_id.x_grosor', readonly=True)
+    x_grosor = fields.Char(related='lot_id.x_grosor', readonly=True)
     x_alto = fields.Float(related='lot_id.x_alto', readonly=True)
     x_ancho = fields.Float(related='lot_id.x_ancho', readonly=True)
     x_bloque = fields.Char(related='lot_id.x_bloque', readonly=True)
