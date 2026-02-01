@@ -97,7 +97,7 @@ class StockMoveLine(models.Model):
         store=False
     )
 
-    x_grosor_lote = fields.Float(
+    x_grosor_lote = fields.Char(
         related='lot_id.x_grosor',
         string='Grosor Lote (cm)',
         readonly=True,
