@@ -18,7 +18,7 @@ class StockQuant(models.Model):
     # ==================== CAMPOS RELACIONADOS DEL LOTE ====================
 
     x_color = fields.Char(related='lot_id.x_color', string='Color', readonly=True)
-    x_grosor = fields.Float(related='lot_id.x_grosor', string='Grosor', readonly=True)
+    x_grosor = fields.Char(related='lot_id.x_grosor', string='Grosor', readonly=True)
     x_alto = fields.Float(related='lot_id.x_alto', string='Alto', readonly=True)
     x_ancho = fields.Float(related='lot_id.x_ancho', string='Ancho', readonly=True)
     x_numero_placa = fields.Integer(related='lot_id.x_numero_placa', string='No. Placa', readonly=True)
