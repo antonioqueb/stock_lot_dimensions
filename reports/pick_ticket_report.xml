@@ -161,7 +161,7 @@
                                                 <!-- Datos dimensionales del lote -->
                                                 <td class="align-middle"><span t-field="line.lot_id.x_bloque"/></td>
                                                 <td class="align-middle"><span t-field="line.lot_id.x_atado"/></td>
-                                                <td class="text-center align-middle"><span t-field="line.lot_id.x_grosor"'/></td>
+                                                <td class="text-center align-middle"><span t-field="line.lot_id.x_grosor"/></td>
                                                 <td class="text-center align-middle"><span t-field="line.lot_id.x_alto" t-options='{"widget": "float", "precision": 3}'/></td>
                                                 <td class="text-center align-middle"><span t-field="line.lot_id.x_ancho" t-options='{"widget": "float", "precision": 3}'/></td>
                                                 
