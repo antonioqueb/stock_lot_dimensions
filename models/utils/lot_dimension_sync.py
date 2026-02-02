@@ -13,6 +13,7 @@ class LotDimensionSync:
         'x_grosor_temp': 'x_grosor',
         'x_alto_temp': 'x_alto',
         'x_ancho_temp': 'x_ancho',
+        'x_peso_temp': 'x_peso',
         'x_color_temp': 'x_color',
         'x_numero_placa_temp': 'x_numero_placa',
         'x_bloque_temp': 'x_bloque',
@@ -47,6 +48,7 @@ class LotDimensionSync:
         move_line.x_referencia_proveedor_temp = lot.x_referencia_proveedor
         move_line.x_proveedor_temp = lot.x_proveedor
         move_line.x_origen_temp = lot.x_origen
+        move_line.x_peso_temp = lot.x_peso
         if lot.x_grupo:
             move_line.x_grupo_temp = [(6, 0, lot.x_grupo.ids)]
     

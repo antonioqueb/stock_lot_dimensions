@@ -32,6 +32,11 @@ class LotDimensionFields:
                 digits=(10, 4),
                 help='Ancho del producto en metros'
             ),
+            'x_peso': fields.Float(
+                string='Peso (kg)',
+                digits=(10, 3),
+                help='Peso del producto en kilogramos'
+            ),
         }
     
     @staticmethod

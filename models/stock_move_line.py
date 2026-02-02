@@ -190,6 +190,12 @@ class StockMoveLine(models.Model):
         readonly=True,
         store=False
     )
+
+    x_peso_temp = fields.Float(
+        string='Peso (kg)',
+        digits=(10, 3),
+        help='Peso del producto en kg (se guardará en el lote)'
+    )
     
     # ==================== MÉTODOS COMPUTADOS ====================
     @api.depends('picking_id', 'picking_id.picking_type_code')

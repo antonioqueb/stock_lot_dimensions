@@ -13,6 +13,7 @@ class StockLot(models.Model):
     x_grosor = LotDimensionFields.get_dimension_fields()['x_grosor']
     x_alto = LotDimensionFields.get_dimension_fields()['x_alto']
     x_ancho = LotDimensionFields.get_dimension_fields()['x_ancho']
+    x_peso = LotDimensionFields.get_dimension_fields()['x_peso']
     
     # ==================== CAMPOS DE CLASIFICACIÓN ====================
     x_tipo = LotDimensionFields.get_classification_fields()['x_tipo']

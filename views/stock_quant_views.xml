@@ -10,6 +10,7 @@
                 <field name="x_grosor" optional="hide" string="Grosor (cm)"/>
                 <field name="x_alto" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)"/>
+                <field name="x_peso" optional="hide" string="Peso (kg)"/>
                 <field name="x_bloque" optional="show" string="Bloque"/>
                 <field name="x_atado" optional="show" string="Atado"/>
                 <field name="x_numero_placa" optional="show" string="No. Placa"/>
@@ -58,6 +59,7 @@
                 <field name="x_grosor" optional="hide" string="Grosor (cm)" readonly="1"/>
                 <field name="x_alto" optional="hide" string="Alto (m)" readonly="1"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)" readonly="1"/>
+                <field name="x_peso" optional="hide" string="Peso (kg)" readonly="1"/>
                 <field name="x_color" optional="show" string="Color" readonly="1"/>
                 <field name="x_tipo" optional="show" string="Tipo" readonly="1"/>
                 <field name="x_bloque" optional="show" string="Bloque" readonly="1"/>
