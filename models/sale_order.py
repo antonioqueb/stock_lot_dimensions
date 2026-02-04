@@ -7,14 +7,15 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
     
     x_selected_lots = fields.Many2many('stock.quant', string='Lotes Seleccionados')
 
+
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
-
 
     x_project_id = fields.Many2one('project.project', string='Proyecto')
     x_architect_id = fields.Many2one('res.partner', string='Arquitecto')
@@ -30,7 +31,6 @@ class SaleOrder(models.Model):
         pricelist = self.env['product.pricelist'].browse(pricelist_id)
         currency_code = pricelist.name
         
-        # Si viene de hold order, omitir verificación de autorización
         from_hold_order = self.env.context.get('from_hold_order', False)
         
         if not from_hold_order:
@@ -85,7 +85,6 @@ class SaleOrder(models.Model):
                         'message': f'Solicitud de autorización {result["authorization_name"]} creada. Espere aprobación del autorizador.'
                     }
         
-        # Crear orden
         company_id = self.env.context.get('company_id') or self.env.company.id
         
         for product in products:
@@ -185,11 +184,20 @@ class SaleOrder(models.Model):
                 context['allowed_partner_ids'] = all_partner_ids
         
         res = super(SaleOrder, self.with_context(**context)).action_confirm()
-        self._clear_auto_assigned_lots()
+        
+        # MODIFICADO: Solo limpiar si NO viene de sale_stone_selection
+        if not self.env.context.get('skip_picking_clean'):
+            self._clear_auto_assigned_lots()
+        else:
+            _logger.info("[STONE] Limpieza de lotes omitida por contexto skip_picking_clean")
+        
         return res
     
     def _clear_auto_assigned_lots(self):
+        # MODIFICADO: Obtener lotes protegidos del contexto
+        protected_lot_ids = self.env.context.get('protected_lot_ids', [])
+        
         cleaner = PickingLotCleaner(self.env)
         for order in self:
             if order.picking_ids:
-                cleaner.clear_pickings_lots(order.picking_ids)
+                cleaner.clear_pickings_lots(order.picking_ids, protected_lot_ids=protected_lot_ids)
