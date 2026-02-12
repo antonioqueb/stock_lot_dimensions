@@ -187,13 +187,13 @@
                                                         <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                                     </td>
                                                     <td class="text-end align-middle">
-                                                        <span t-esc="row_subtotal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                                        <span t-esc="o.currency_id.format(row_subtotal)"/>
                                                     </td>
                                                     <td class="text-end align-middle">
-                                                        <span t-esc="row_tax" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                                        <span t-esc="o.currency_id.format(row_tax)"/>
                                                     </td>
                                                     <td class="text-end align-middle" style="font-weight: bold;">
-                                                        <span t-esc="row_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                                        <span t-esc="o.currency_id.format(row_total)"/>
                                                     </td>
                                                 </tr>
                                             </t>
@@ -223,19 +223,19 @@
                                                     <td class="text-center align-middle"><span t-field="lot.x_alto" t-options='{"precision": 3}'/></td>
                                                     <td class="text-center align-middle"><span t-field="lot.x_ancho" t-options='{"precision": 3}'/></td>
                                                     <td class="text-end align-middle">
-                                                        <strong t-esc="lot_area" t-options='{"precision": 2}'/>
+                                                        <strong t-esc="'%.2f' % lot_area"/>
                                                     </td>
                                                     <td class="text-end align-middle">
                                                         <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                                     </td>
                                                     <td class="text-end align-middle">
-                                                        <span t-esc="row_subtotal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                                        <span t-esc="o.currency_id.format(row_subtotal)"/>
                                                     </td>
                                                     <td class="text-end align-middle">
-                                                        <span t-esc="row_tax" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                                        <span t-esc="o.currency_id.format(row_tax)"/>
                                                     </td>
                                                     <td class="text-end align-middle" style="font-weight: bold;">
-                                                        <span t-esc="row_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                                        <span t-esc="o.currency_id.format(row_total)"/>
                                                     </td>
                                                 </tr>
                                             </t>
