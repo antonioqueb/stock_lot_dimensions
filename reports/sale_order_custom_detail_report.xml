@@ -158,13 +158,17 @@
                                             </td>
                                         </tr>
 
-                                        <!-- CASO A: x_selected_lots (flujo carrito - stock.quant) -->
-                                        <t t-if="line.x_selected_lots">
-                                            <t t-foreach="line.x_selected_lots" t-as="quant">
-                                                <t t-set="row_subtotal" t-value="quant.quantity * line.price_unit"/>
+                                        <!-- Usar el método helper que busca en TODOS los moves/pickings -->
+                                        <t t-set="all_lots_data" t-value="line._get_all_sale_lots_with_qty()"/>
+
+                                        <t t-if="all_lots_data">
+                                            <t t-foreach="all_lots_data" t-as="lot_info">
+                                                <t t-set="lot" t-value="lot_info['lot']"/>
+                                                <t t-set="lot_qty" t-value="lot_info['quantity']"/>
+                                                <t t-set="row_subtotal" t-value="lot_qty * line.price_unit"/>
                                                 <t t-set="tax_ratio" t-value="0"/>
                                                 <t t-if="line.product_uom_qty > 0">
-                                                    <t t-set="tax_ratio" t-value="quant.quantity / line.product_uom_qty"/>
+                                                    <t t-set="tax_ratio" t-value="lot_qty / line.product_uom_qty"/>
                                                 </t>
                                                 <t t-set="row_tax" t-value="line.price_tax * tax_ratio"/>
                                                 <t t-set="row_total" t-value="row_subtotal + row_tax"/>
@@ -174,14 +178,14 @@
                                                         <span t-esc="global_seq"/>
                                                         <t t-set="global_seq" t-value="global_seq + 1"/>
                                                     </td>
-                                                    <td class="align-middle"><strong t-field="quant.lot_id.name"/></td>
-                                                    <td class="align-middle"><span t-field="quant.lot_id.x_bloque"/></td>
-                                                    <td class="align-middle"><span t-field="quant.lot_id.x_atado"/></td>
-                                                    <td class="text-center align-middle"><span t-field="quant.lot_id.x_grosor" t-options='{"precision": 2}'/></td>
-                                                    <td class="text-center align-middle"><span t-field="quant.lot_id.x_alto" t-options='{"precision": 3}'/></td>
-                                                    <td class="text-center align-middle"><span t-field="quant.lot_id.x_ancho" t-options='{"precision": 3}'/></td>
+                                                    <td class="align-middle"><strong t-esc="lot.name"/></td>
+                                                    <td class="align-middle"><span t-esc="lot.x_bloque or ''"/></td>
+                                                    <td class="align-middle"><span t-esc="lot.x_atado or ''"/></td>
+                                                    <td class="text-center align-middle"><span t-esc="'%.2f' % (lot.x_grosor or 0)"/></td>
+                                                    <td class="text-center align-middle"><span t-esc="'%.3f' % (lot.x_alto or 0)"/></td>
+                                                    <td class="text-center align-middle"><span t-esc="'%.3f' % (lot.x_ancho or 0)"/></td>
                                                     <td class="text-end align-middle">
-                                                        <strong t-field="quant.quantity" t-options='{"precision": 2}'/>
+                                                        <strong t-esc="'%.2f' % lot_qty"/>
                                                     </td>
                                                     <td class="text-end align-middle">
                                                         <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
@@ -199,49 +203,7 @@
                                             </t>
                                         </t>
 
-                                        <!-- CASO B: lot_ids (flujo sale_stone_selection - stock.lot) -->
-                                        <t t-elif="line.lot_ids">
-                                            <t t-foreach="line.lot_ids" t-as="lot">
-                                                <t t-set="lot_area" t-value="lot.x_alto * lot.x_ancho if lot.x_alto and lot.x_ancho else 0"/>
-                                                <t t-set="row_subtotal" t-value="lot_area * line.price_unit"/>
-                                                <t t-set="tax_ratio" t-value="0"/>
-                                                <t t-if="line.product_uom_qty > 0">
-                                                    <t t-set="tax_ratio" t-value="lot_area / line.product_uom_qty"/>
-                                                </t>
-                                                <t t-set="row_tax" t-value="line.price_tax * tax_ratio"/>
-                                                <t t-set="row_total" t-value="row_subtotal + row_tax"/>
-
-                                                <tr>
-                                                    <td class="text-center align-middle">
-                                                        <span t-esc="global_seq"/>
-                                                        <t t-set="global_seq" t-value="global_seq + 1"/>
-                                                    </td>
-                                                    <td class="align-middle"><strong t-field="lot.name"/></td>
-                                                    <td class="align-middle"><span t-field="lot.x_bloque"/></td>
-                                                    <td class="align-middle"><span t-field="lot.x_atado"/></td>
-                                                    <td class="text-center align-middle"><span t-field="lot.x_grosor" t-options='{"precision": 2}'/></td>
-                                                    <td class="text-center align-middle"><span t-field="lot.x_alto" t-options='{"precision": 3}'/></td>
-                                                    <td class="text-center align-middle"><span t-field="lot.x_ancho" t-options='{"precision": 3}'/></td>
-                                                    <td class="text-end align-middle">
-                                                        <strong t-esc="'%.2f' % lot_area"/>
-                                                    </td>
-                                                    <td class="text-end align-middle">
-                                                        <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                                    </td>
-                                                    <td class="text-end align-middle">
-                                                        <span t-esc="o.currency_id.format(row_subtotal)"/>
-                                                    </td>
-                                                    <td class="text-end align-middle">
-                                                        <span t-esc="o.currency_id.format(row_tax)"/>
-                                                    </td>
-                                                    <td class="text-end align-middle" style="font-weight: bold;">
-                                                        <span t-esc="o.currency_id.format(row_total)"/>
-                                                    </td>
-                                                </tr>
-                                            </t>
-                                        </t>
-
-                                        <!-- CASO C: Sin lotes -->
+                                        <!-- CASO: Sin lotes en ninguna fuente -->
                                         <t t-else="">
                                             <tr>
                                                 <td class="text-center align-middle"><span t-esc="global_seq"/><t t-set="global_seq" t-value="global_seq + 1"/></td>
