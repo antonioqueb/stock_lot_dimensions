@@ -164,7 +164,7 @@
                                         <t t-if="all_lots_data">
                                             <t t-foreach="all_lots_data" t-as="lot_info">
                                                 <t t-set="lot" t-value="lot_info['lot']"/>
-                                                <t t-set="lot_qty" t-value="lot_info['quantity']"/>
+                                                <t t-set="lot_qty" t-value="float(lot_info['quantity'] or 0)"/>
                                                 <t t-set="row_subtotal" t-value="lot_qty * line.price_unit"/>
                                                 <t t-set="tax_ratio" t-value="0"/>
                                                 <t t-if="line.product_uom_qty > 0">
@@ -181,11 +181,11 @@
                                                     <td class="align-middle"><strong t-esc="lot.name"/></td>
                                                     <td class="align-middle"><span t-esc="lot.x_bloque or ''"/></td>
                                                     <td class="align-middle"><span t-esc="lot.x_atado or ''"/></td>
-                                                    <td class="text-center align-middle"><span t-esc="'%.2f' % (lot.x_grosor or 0)"/></td>
-                                                    <td class="text-center align-middle"><span t-esc="'%.3f' % (lot.x_alto or 0)"/></td>
-                                                    <td class="text-center align-middle"><span t-esc="'%.3f' % (lot.x_ancho or 0)"/></td>
+                                                    <td class="text-center align-middle"><span t-esc="'%.2f' % float(lot.x_grosor or 0)"/></td>
+                                                    <td class="text-center align-middle"><span t-esc="'%.3f' % float(lot.x_alto or 0)"/></td>
+                                                    <td class="text-center align-middle"><span t-esc="'%.3f' % float(lot.x_ancho or 0)"/></td>
                                                     <td class="text-end align-middle">
-                                                        <strong t-esc="'%.2f' % lot_qty"/>
+                                                        <strong t-esc="'%.2f' % float(lot_qty)"/>
                                                     </td>
                                                     <td class="text-end align-middle">
                                                         <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
