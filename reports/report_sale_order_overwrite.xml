@@ -340,16 +340,7 @@
                     <div class="row mt-2">
                         <div class="col-12">
                             
-                            <!-- Términos Comerciales -->
-                            <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
-                                <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
-                                    Términos y Condiciones Comerciales
-                                </strong>
-                                <div class="mb-1" style="font-size: 8px; text-align: justify; color: #555;">
-                                    <p class="mb-1"><strong>1. NATURALEZA DEL PRODUCTO:</strong> La piedra natural (mármol, granito, cuarcita, ónix, etc.) es un producto de la naturaleza y está sujeta a variaciones de tono, color y veta. Las muestras son indicativas.</p>
-                                    <p class="mb-0"><strong>2. ACEPTACIÓN:</strong> La firma de remisión o salida del almacén constituye aceptación total de la calidad. No se aceptan reclamaciones tras el corte o instalación.</p>
-                                </div>
-                            </div>
+                            
 
                             <!-- Información Bancaria Agregada -->
                             <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa; margin-top: 5px;">
@@ -377,7 +368,41 @@
                                 </div>
                                 
                                 <div class="mt-2" style="font-size: 8px; color: #555; border-top: 1px solid #eee; padding-top: 4px;">
-                                    <strong>Correo de recepción de comprobantes:</strong> norma@stonia.com.mx y karen@stonia.com.mx
+                                    <strong>Correo de recepción de comprobantes:</strong> norma@somgroup.com y clara@somgroup.com
+                                </div>
+                            </div>
+
+                            <!-- Términos Comerciales -->
+                            <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
+                                <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
+                                    <t t-if="o.state in ('draft', 'sent')">Términos y Condiciones – Cotización</t>
+                                    <t t-if="o.state in ('sale', 'done')">Términos y Condiciones – Orden de Venta</t>
+                                </strong>
+                                <div style="font-size: 8px; text-align: justify; color: #555;">
+
+                                    <!-- Términos comunes -->
+                                    <p style="margin: 0 0 3px 0;">• El mármol y granito son materiales naturales, por lo que pueden existir variaciones en coloración, vetas y tonalidad respecto a muestras o imágenes.</p>
+
+                                    <!-- Solo Cotización -->
+                                    <t t-if="o.state in ('draft', 'sent')">
+                                        <p style="margin: 0 0 3px 0;">• Los precios están sujetos a disponibilidad y no garantizan existencia hasta recibir confirmación de pago.</p>
+                                        <p style="margin: 0 0 3px 0;">• En materiales de importación o bajo pedido, los tiempos de entrega son estimados y pueden variar por causas ajenas a la empresa.</p>
+                                        <p style="margin: 0 0 3px 0;">• En caso de existir variación en el tipo de cambio entre la fecha de cotización y el pago, se realizará el ajuste correspondiente al día del pago.</p>
+                                        <p style="margin: 0 0 3px 0;">• La cotización no incluye maniobras especiales de descarga ni servicios adicionales, salvo que se especifique por escrito.</p>
+                                        <p style="margin: 0;">• Los precios pueden cambiar sin previo aviso en caso de incrementos por parte del proveedor.</p>
+                                    </t>
+
+                                    <!-- Solo Orden de Venta -->
+                                    <t t-if="o.state in ('sale', 'done')">
+                                        <p style="margin: 0 0 3px 0;">• La presente orden de venta confirma los materiales, cantidades y precios acordados con el cliente.</p>
+                                        <p style="margin: 0 0 3px 0;">• En caso de devolución autorizada, el material deberá entregarse en las mismas condiciones en que fue recibido, sin daño, sin cortes y sin haber sido instalado.</p>
+                                        <p style="margin: 0 0 3px 0;">• Después de 3 meses de almacenaje, se comenzará a generar un cargo de $7.00 MXN por m², por mes o fracción.</p>
+                                        <p style="margin: 0 0 3px 0;">• La entrega del material está sujeta a que el pedido se encuentre liquidado al 100%.</p>
+                                        <p style="margin: 0 0 3px 0;">• Cualquier aclaración deberá realizarse por escrito dentro de las 24 horas posteriores a la entrega.</p>
+                                        <p style="margin: 0 0 3px 0;">• El cliente acepta las condiciones aquí descritas a partir del momento en que se recibe el anticipo y/o el pago total correspondiente a esta orden de venta.</p>
+                                        <p style="margin: 0;">• El plazo de entrega será de 24 a 48 horas hábiles, contado a partir de la confirmación de disponibilidad del material y de la recepción del pago total correspondiente al pedido.</p>
+                                    </t>
+
                                 </div>
                             </div>
 

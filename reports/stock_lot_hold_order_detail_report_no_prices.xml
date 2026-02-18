@@ -245,13 +245,16 @@
                                 <div class="col-12">
                                     <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
                                         <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
-                                            Términos y Condiciones Generales
+                                            Términos y Condiciones – Reserva de Material
                                         </strong>
-                                        <ul class="list-unstyled mb-0" style="font-size: 8px; text-align: justify; color: #555;">
-                                            <li class="mb-1">1. <strong>MATERIAL NATURAL:</strong> Las piedras naturales son productos de la naturaleza y están sujetas a variaciones de tono, veta y textura.</li>
-                                            <li class="mb-1">2. <strong>DIMENSIONES:</strong> Las medidas son nominales y pueden presentar variaciones mínimas.</li>
-                                            <li>3. <strong>ACEPTACIÓN:</strong> La firma constituye la aceptación del material en el estado en que se encuentra.</li>
-                                        </ul>
+                                        <div style="font-size: 8px; text-align: justify; color: #555;">
+                                            <p style="margin: 0 0 3px 0;">• La reserva de material tiene una vigencia de 7 días naturales a partir de la fecha de confirmación.</p>
+                                            <p style="margin: 0 0 3px 0;">• Durante este periodo, el material quedará separado exclusivamente para el cliente.</p>
+                                            <p style="margin: 0 0 3px 0;">• En caso de no recibir el pago total o parcial dentro del plazo establecido, la reserva se cancelará automáticamente y el material quedará disponible para venta.</p>
+                                            <p style="margin: 0 0 3px 0;">• La reserva no congela precios en caso de variación del tipo de cambio; el precio final será el vigente al momento del pago.</p>
+                                            <p style="margin: 0 0 3px 0;">• Pasado el periodo de reserva, la empresa no garantiza disponibilidad del material ni condiciones previamente cotizadas.</p>
+                                            <p style="margin: 0;">• El mármol y granito pueden presentar variaciones naturales propias del material.</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
