@@ -30,7 +30,7 @@
         'reports/report_sale_order_overwrite.xml',
         'reports/report_delivery_custom_detail.xml',
         'reports/pick_ticket_report.xml',
-        'report/report_sale_order_no_price.xml',
+        'reports/report_sale_order_no_price.xml',
         'views/stock_lot_views.xml',
         'views/stock_lot_group_views.xml',
         'views/stock_move_views.xml',
