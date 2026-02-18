@@ -3,8 +3,9 @@
 
     <!-- ============================================================
          TEMPLATE DEL DOCUMENTO (cuerpo del reporte)
+         NOTA: ID Renombrado a *_custom para romper conflicto de herencia
     ============================================================ -->
-    <template id="report_sale_order_document_no_prices">
+    <template id="report_sale_order_document_no_prices_custom">
         <t t-call="web.external_layout">
             <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)"/>
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
@@ -298,25 +299,27 @@
     </template>
 
     <!-- ============================================================
-         TEMPLATE WRAPPER (necesario para que Odoo llame al documento)
+         TEMPLATE WRAPPER
+         NOTA: ID Renombrado a *_custom y actualizado el t-call
     ============================================================ -->
-    <template id="report_sale_order_no_prices">
+    <template id="report_sale_order_no_prices_custom">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
-                <t t-call="stock_lot_dimensions.report_sale_order_document_no_prices"/>
+                <t t-call="stock_lot_dimensions.report_sale_order_document_no_prices_custom"/>
             </t>
         </t>
     </template>
 
     <!-- ============================================================
-         ACCIÓN DEL REPORTE (aparece en el menú "Imprimir")
+         ACCIÓN DEL REPORTE
+         NOTA: ID Renombrado a *_custom y actualizado report_name
     ============================================================ -->
-    <record id="action_report_sale_order_no_prices" model="ir.actions.report">
+    <record id="action_report_sale_order_no_prices_custom" model="ir.actions.report">
         <field name="name">Cotización/OS sin Precios</field>
         <field name="model">sale.order</field>
         <field name="report_type">qweb-pdf</field>
-        <field name="report_name">stock_lot_dimensions.report_sale_order_no_prices</field>
-        <field name="report_file">stock_lot_dimensions.report_sale_order_no_prices</field>
+        <field name="report_name">stock_lot_dimensions.report_sale_order_no_prices_custom</field>
+        <field name="report_file">stock_lot_dimensions.report_sale_order_no_prices_custom</field>
         <field name="binding_model_id" ref="sale.model_sale_order"/>
         <field name="binding_type">report</field>
     </record>
