@@ -348,6 +348,36 @@
                                 </div>
                             </div>
 
+                            <!-- Información Bancaria Agregada -->
+                            <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa; margin-top: 5px;">
+                                <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
+                                    Recubrimientos STO SA de CV (RFC: RST191127ER6)
+                                </strong>
+                                
+                                <div class="row" style="font-size: 8px; color: #555; margin-top: 5px;">
+                                    <!-- Columna 1: Dólares -->
+                                    <div class="col-6">
+                                        <p class="mb-1" style="font-weight: bold; color: #000; text-transform: uppercase;">Banorte - Moneda Dólares (USD)</p>
+                                        <p class="mb-0"><strong>Cuenta:</strong> 1097074150</p>
+                                        <p class="mb-0"><strong>Clabe:</strong> 072580010970741500</p>
+                                        <p class="mb-0"><strong>Swift:</strong> MENOMXMTXXX</p>
+                                        <p class="mb-0"><strong>Sucursal:</strong> 1924 Paseo Santa Catarina</p>
+                                    </div>
+                                    
+                                    <!-- Columna 2: Pesos -->
+                                    <div class="col-6" style="border-left: 1px dotted #ccc;">
+                                        <p class="mb-1" style="font-weight: bold; color: #000; text-transform: uppercase;">Banorte - Moneda Pesos (MXN)</p>
+                                        <p class="mb-0"><strong>Cuenta:</strong> 1060415841</p>
+                                        <p class="mb-0"><strong>Clabe:</strong> 072580010604158414</p>
+                                        <p class="mb-0"><strong>Sucursal:</strong> 1924 Paseo Santa Catarina</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-2" style="font-size: 8px; color: #555; border-top: 1px solid #eee; padding-top: 4px;">
+                                    <strong>Correo de recepción de comprobantes:</strong> norma@somgroup.com y clara@somgroup.com
+                                </div>
+                            </div>
+
                             <!-- TÉRMINOS SIMPLIFICADOS (Caja Gris) -->
                             <div class="row mt-2">
                                 <div class="col-12">
