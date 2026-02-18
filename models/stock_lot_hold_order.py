@@ -183,6 +183,24 @@ class StockLotHoldOrder(models.Model):
                 vals['fecha_expiracion'] = BusinessDaysCalculator.add_business_days(fecha_orden, 5)
         return super().create(vals_list)
     
+    def _release_related_holds(self):
+        """
+        Método auxiliar para liberar masivamente los holds activos 
+        vinculados a las líneas de esta orden.
+        """
+        for order in self:
+            # 1. Obtenemos todos los holds activos de un solo golpe
+            active_holds = order.hold_line_ids.mapped('hold_id').filtered(lambda h: h.estado == 'activo')
+            
+            if active_holds:
+                # 2. Realizamos una escritura masiva (Batch write)
+                # Esto libera todos los lotes inmediatamente sin iterar
+                active_holds.write({'estado': 'cancelado'})
+                
+                # 3. Registrar en el chatter (opcional)
+                msg = f"Se liberaron {len(active_holds)} apartados automáticamente."
+                order.message_post(body=msg)
+
     def action_confirm(self):
         for order in self:
             if not order.hold_line_ids:
@@ -223,17 +241,14 @@ class StockLotHoldOrder(models.Model):
             order.state = 'confirmed'
     
     def action_cancel(self):
-        for order in self:
-            # Solo cancelamos holds físicos
-            # ✅ CORRECCIÓN: Iteramos para evitar error ensure_one() si hay 0 o >1 registros
-            active_holds = order.hold_line_ids.mapped('hold_id').filtered(lambda h: h.estado == 'activo')
-            for hold in active_holds:
-                hold.action_cancelar_hold()
-            
-            order.state = 'cancel'
+        """Cancela la orden y libera los apartados inmediatamente"""
+        self._release_related_holds()
+        self.write({'state': 'cancel'})
     
     def action_done(self):
-        self.state = 'done'
+        """Finaliza la orden y libera los apartados inmediatamente"""
+        self._release_related_holds()
+        self.write({'state': 'done'})
     
     def action_renew(self):
         for order in self:
@@ -339,11 +354,14 @@ class StockLotHoldOrder(models.Model):
             if result.get('success'):
                 sale_order = self.env['sale.order'].browse(result['order_id'])
                 
+                # Al crear la venta, finalizamos la orden y liberamos los holds
+                # Usamos _release_related_holds aquí también implícitamente al no renovar
                 self.write({
                     'sale_order_id': sale_order.id,
                     'state': 'done'
                 })
                 
+                # Liberación explícita de holds
                 for line in self.hold_line_ids:
                     if line.hold_id and line.hold_id.estado == 'activo':
                         line.hold_id.action_cancelar_hold()
