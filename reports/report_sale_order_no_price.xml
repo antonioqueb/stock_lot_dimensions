@@ -1,19 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <template id="report_sale_order_document_no_prices" inherit_id="sale.report_saleorder_document">
 
-        <!-- 1. OCULTAR DIRECCIÓN ESTÁNDAR -->
-        <xpath expr="//t[@t-set='address']" position="replace">
-            <t t-set="address" t-value="False"/>
-        </xpath>
-
-        <!-- 2. OCULTAR INFORMACIÓN BLOCK -->
-        <xpath expr="//t[@t-set='information_block']" position="replace">
-            <t t-set="information_block" t-value="False"/>
-        </xpath>
-
-        <!-- 3. CONTENIDO PERSONALIZADO SIN PRECIOS -->
-        <xpath expr="//div[hasclass('page')]" position="replace">
+    <!-- ============================================================
+         TEMPLATE DEL DOCUMENTO (cuerpo del reporte)
+    ============================================================ -->
+    <template id="report_sale_order_document_no_prices">
+        <t t-call="web.external_layout">
+            <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)"/>
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
 
                 <!-- ================= ENCABEZADO ================= -->
@@ -57,7 +50,7 @@
                             <span style="font-weight: bold; font-size: 12px;" t-field="doc.partner_id.name"/><br/>
                             <span t-if="doc.partner_id.vat">RFC: <span t-field="doc.partner_id.vat"/></span>
                         </div>
-                        <div class="mt-1" style="border-top: 1px dotted #9f9f9fff; padding-top: 1px;">
+                        <div class="mt-1" style="border-top: 1px dotted #9f9f9f; padding-top: 1px;">
                             <strong style="font-size: 9px; text-transform: uppercase; color: #555; display: block;">Dirección Fiscal / Entrega:</strong>
                             <div style="font-size: 9px; color: #333; line-height: 1.1; margin-top: 2px;">
                                 <span t-field="doc.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
@@ -162,36 +155,24 @@
                 <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
                     <thead>
                         <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                            <th name="th_description" style="color: #fff; width: 50%; padding: 4px 8px; font-weight: bold;">Descripción</th>
+                            <th style="color: #fff; width: 50%; padding: 4px 8px; font-weight: bold;">Descripción</th>
                             <th class="text-center" style="color: #fff; width: 20%; padding: 4px 8px; font-weight: bold;">Placas</th>
-                            <th name="th_quantity" class="text-end" style="color: #fff; width: 30%; padding: 4px 8px; font-weight: bold;">Cantidad</th>
-                            <!-- Hooks ocultos para compatibilidad -->
-                            <th name="th_priceunit" t-if="False"></th>
-                            <th name="th_discount" t-if="False"></th>
-                            <th name="th_taxes" t-if="False"></th>
-                            <th name="th_subtotal" t-if="False"></th>
+                            <th class="text-end" style="color: #fff; width: 30%; padding: 4px 8px; font-weight: bold;">Cantidad</th>
                         </tr>
                     </thead>
                     <tbody style="border-bottom: 1px solid #000;">
                         <t t-foreach="material_summary.values()" t-as="data">
                             <tr>
-                                <td name="td_name" class="align-middle" style="padding: 4px 8px;">
+                                <td class="align-middle" style="padding: 4px 8px;">
                                     <span t-esc="data['name']"/>
                                 </td>
                                 <td class="text-center align-middle">
                                     <span t-if="data['qty_lot'] > 0" t-esc="data['qty_lot']" style="font-weight: bold;"/>
                                     <span t-else="" style="color: #999;">-</span>
                                 </td>
-                                <td name="td_quantity" class="text-end align-middle">
+                                <td class="text-end align-middle">
                                     <span t-esc="'{:,.2f}'.format(data['qty_total'])"/> <span t-esc="data['uom']"/>
                                 </td>
-                                <!-- Hooks ocultos para compatibilidad -->
-                                <td name="td_priceunit" t-if="False"></td>
-                                <td name="td_discount" t-if="False"></td>
-                                <td name="td_taxes" t-if="False"></td>
-                                <td name="td_subtotal" t-if="False"></td>
-                                <td name="td_product_quantity" t-if="False"></td>
-                                <td name="td_product_discount" t-if="False"></td>
                             </tr>
                         </t>
                         <tr t-if="not material_summary">
@@ -232,13 +213,6 @@
                             <strong style="font-size: 9px; text-transform: uppercase; color: #555;">Notas de la Orden:</strong>
                             <div style="font-size: 9px; white-space: pre-wrap;" t-field="doc.note"/>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Bloque oculto de totales (NO BORRAR - compatibilidad) -->
-                <div class="clearfix" name="so_total_summary" t-if="False">
-                    <div id="total" class="row" name="total">
-                        <div class="col-6"></div>
                     </div>
                 </div>
 
@@ -320,6 +294,31 @@
                 </div>
 
             </div>
-        </xpath>
+        </t>
     </template>
+
+    <!-- ============================================================
+         TEMPLATE WRAPPER (necesario para que Odoo llame al documento)
+    ============================================================ -->
+    <template id="report_sale_order_no_prices">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="stock_lot_dimensions.report_sale_order_document_no_prices"/>
+            </t>
+        </t>
+    </template>
+
+    <!-- ============================================================
+         ACCIÓN DEL REPORTE (aparece en el menú "Imprimir")
+    ============================================================ -->
+    <record id="action_report_sale_order_no_prices" model="ir.actions.report">
+        <field name="name">Cotización/OS sin Precios</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">stock_lot_dimensions.report_sale_order_no_prices</field>
+        <field name="report_file">stock_lot_dimensions.report_sale_order_no_prices</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
 </odoo>
