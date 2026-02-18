@@ -27,7 +27,7 @@
         'reports/stock_lot_hold_order_report_no_prices.xml',
         'reports/stock_lot_hold_order_summary_report_no_prices.xml',
         'reports/stock_lot_hold_order_detail_report_no_prices.xml',  
-        'reports/sale_order_custom_detail_report.xml',
+        'reports/report_sale_order_document_no_prices.xml',
         'reports/report_sale_order_overwrite.xml',
         'reports/report_delivery_custom_detail.xml',
         'reports/pick_ticket_report.xml',
