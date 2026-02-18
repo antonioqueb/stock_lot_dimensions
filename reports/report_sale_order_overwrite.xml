@@ -375,16 +375,16 @@
                             <!-- Términos Comerciales -->
                             <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
                                 <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
-                                    <t t-if="o.state in ('draft', 'sent')">Términos y Condiciones – Cotización</t>
-                                    <t t-if="o.state in ('sale', 'done')">Términos y Condiciones – Orden de Venta</t>
+                                    <t t-if="doc.state in ('draft', 'sent')">Términos y Condiciones – Cotización</t>
+                                    <t t-if="doc.state in ('sale', 'done')">Términos y Condiciones – Orden de Venta</t>
                                 </strong>
                                 <div style="font-size: 8px; text-align: justify; color: #555;">
 
-                                    <!-- Términos comunes -->
+                                    <!-- Término común -->
                                     <p style="margin: 0 0 3px 0;">• El mármol y granito son materiales naturales, por lo que pueden existir variaciones en coloración, vetas y tonalidad respecto a muestras o imágenes.</p>
 
                                     <!-- Solo Cotización -->
-                                    <t t-if="o.state in ('draft', 'sent')">
+                                    <t t-if="doc.state in ('draft', 'sent')">
                                         <p style="margin: 0 0 3px 0;">• Los precios están sujetos a disponibilidad y no garantizan existencia hasta recibir confirmación de pago.</p>
                                         <p style="margin: 0 0 3px 0;">• En materiales de importación o bajo pedido, los tiempos de entrega son estimados y pueden variar por causas ajenas a la empresa.</p>
                                         <p style="margin: 0 0 3px 0;">• En caso de existir variación en el tipo de cambio entre la fecha de cotización y el pago, se realizará el ajuste correspondiente al día del pago.</p>
@@ -393,7 +393,7 @@
                                     </t>
 
                                     <!-- Solo Orden de Venta -->
-                                    <t t-if="o.state in ('sale', 'done')">
+                                    <t t-if="doc.state in ('sale', 'done')">
                                         <p style="margin: 0 0 3px 0;">• La presente orden de venta confirma los materiales, cantidades y precios acordados con el cliente.</p>
                                         <p style="margin: 0 0 3px 0;">• En caso de devolución autorizada, el material deberá entregarse en las mismas condiciones en que fue recibido, sin daño, sin cortes y sin haber sido instalado.</p>
                                         <p style="margin: 0 0 3px 0;">• Después de 3 meses de almacenaje, se comenzará a generar un cargo de $7.00 MXN por m², por mes o fracción.</p>
