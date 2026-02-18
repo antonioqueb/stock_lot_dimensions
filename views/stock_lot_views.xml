@@ -136,7 +136,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='product_id']" position="after">
                 <field name="x_peso" optional="hide" string="Peso (kg)"/>
-                <field name="x_grosor" optional="hide" string="Grosor (cm)"/>
+                <field name="x_grosor" optional="hide" string="Espesor (cm)"/>
                 <field name="x_alto" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)"/>
                 <field name="x_color" optional="show" string="Color"/>

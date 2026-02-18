@@ -17,7 +17,7 @@
                 <field name="precio_unitario" string="Precio/m²" optional="show"/>
                 <field name="precio_total" string="Total" sum="Total General" optional="show" readonly="1"/>
                 
-                <field name="x_grosor" string="Grosor" optional="show" readonly="1"/>
+                <field name="x_grosor" string="Espesor" optional="show" readonly="1"/>
                 <field name="x_alto" string="Alto" optional="show" readonly="1"/>
                 <field name="x_ancho" string="Ancho" optional="show" readonly="1"/>
                 <field name="x_color" string="Color" optional="show" readonly="1"/>

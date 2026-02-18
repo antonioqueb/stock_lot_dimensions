@@ -7,7 +7,7 @@
         <field name="inherit_id" ref="stock.view_stock_quant_tree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='lot_id']" position="after">
-                <field name="x_grosor" optional="hide" string="Grosor (cm)"/>
+                <field name="x_grosor" optional="hide" string="Espesor (cm)"/>
                 <field name="x_alto" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)"/>
                 <field name="x_peso" optional="hide" string="Peso (kg)"/>
@@ -56,7 +56,7 @@
         <field name="arch" type="xml">
             <!-- Agregar campos después de lot_id -->
             <xpath expr="//field[@name='lot_id']" position="after">
-                <field name="x_grosor" optional="hide" string="Grosor (cm)" readonly="1"/>
+                <field name="x_grosor" optional="hide" string="Espesor (cm)" readonly="1"/>
                 <field name="x_alto" optional="hide" string="Alto (m)" readonly="1"/>
                 <field name="x_ancho" optional="hide" string="Ancho (m)" readonly="1"/>
                 <field name="x_peso" optional="hide" string="Peso (kg)" readonly="1"/>

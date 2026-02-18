@@ -13,7 +13,7 @@
                 <!-- Campos temporales (editables solo en recepciones) -->
                 <field name="x_grosor_temp" 
                        optional="show" 
-                       string="Grosor (cm)"
+                       string="Espesor (cm)"
                        readonly="not x_is_incoming"/>
                 <field name="x_alto_temp" 
                        optional="show" 
@@ -74,7 +74,7 @@
         <field name="inherit_id" ref="stock.view_move_line_tree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='lot_id']" position="after">
-                <field name="x_grosor_lote" optional="hide" string="Grosor (cm)"/>
+                <field name="x_grosor_lote" optional="hide" string="Espesor (cm)"/>
                 <field name="x_alto_lote" optional="hide" string="Alto (m)"/>
                 <field name="x_ancho_lote" optional="hide" string="Ancho (m)"/>
                 <!-- NUEVO CAMPO COLOR (LOTE) -->
@@ -117,7 +117,7 @@
                 
                 <group string="Dimensiones del Lote" col="2">
                     <field name="x_grosor_temp" 
-                           string="Grosor (cm)"
+                           string="Espesor (cm)"
                            readonly="not x_is_incoming"/>
                     <field name="x_alto_temp" 
                            string="Alto (m)"
