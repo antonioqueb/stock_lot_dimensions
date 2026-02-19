@@ -324,7 +324,7 @@
                         <!-- ================= TABLA 2: PEDIDOS SIN EXISTENCIA (BACKORDERS) ================= -->
                         <div t-if="backorders" style="margin-top: 20px;">
                             <div class="mb-1">
-                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #d1ecf1; padding: 2px 5px; color: #0c5460;">Pedidos sin Existencia (Backorder)</strong>
+                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #d1ecf1; padding: 2px 5px; color: #000000;">Importación</strong>
                             </div>
                             <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
                                 <thead>
