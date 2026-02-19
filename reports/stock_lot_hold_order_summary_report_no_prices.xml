@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- ======================================================= -->
+    <!-- ACCIÓN: REPORTE DE RESERVA - RESUMEN (SIN PRECIOS) -->
+    <!-- ======================================================= -->
     <record id="action_report_stock_lot_hold_order_summary_no_prices" model="ir.actions.report">
         <field name="name">Orden de Reserva - Resumen (Sin Precios)</field>
         <field name="model">stock.lot.hold.order</field>
@@ -11,18 +14,28 @@
         <field name="binding_type">report</field>
     </record>
 
+    <!-- ======================================================= -->
+    <!-- PLANTILLA: RESUMEN SIN PRECIOS -->
+    <!-- ======================================================= -->
     <template id="report_stock_lot_hold_order_summary_document_no_prices">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
                 <t t-call="web.external_layout">
+                    
+                    <!-- 1. OCULTAR CABECERAS ESTÁNDAR DE ODOO -->
+                    <t t-set="address" t-value="False"/>
+                    <t t-set="information_block" t-value="False"/>
+
                     <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                         
-                        <!-- ENCABEZADO SIMPLE -->
+                        <!-- ================= ENCABEZADO SIMPLE ================= -->
                         <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
-                            <div class="col-12">
+                            <div class="col-8">
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
                                     Orden de Reserva <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
                                 </h4>
+                            </div>
+                            <div class="col-4 text-end">
                                 <div style="font-size: 8px; color: #999; margin-top: 4px;">
                                     Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
                                 </div>
@@ -30,21 +43,22 @@
                         </div>
 
                         <!-- ALERTA DE VENCIMIENTO -->
-                        <div class="row mb-4">
+                        <div class="row mb-4" t-if="o.fecha_expiracion and o.state not in ['done', 'cancel']">
                             <div class="col-12">
                                 <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
-                                    <div style="color: #ff0000; font-weight: 900; font-size: 16px; text-transform: uppercase;">
-                                        ⚠️ RESERVA CON VENCIMIENTO: <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
+                                    <div style="color: #ff0000; font-weight: 900; font-size: 14px; text-transform: uppercase;">
+                                        ⚠️ RESERVA VÁLIDA HASTA: <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
                                     </div>
-                                    <div style="color: #333; font-size: 12px; margin-top: 3px; font-style: italic;">
-                                        ⏱️ A partir de esa fecha, las placas se liberan automáticamente y podrán ser asignadas a otro proyecto sin previo aviso.
+                                    <div style="color: #333; font-size: 10px; margin-top: 3px; font-style: italic;">
+                                        A partir de esa fecha, las placas se liberan automáticamente y podrán ser asignadas a otro proyecto sin previo aviso.
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- INFORMACIÓN GENERAL -->
-                        <div class="row mb-2">
+                        <!-- ================= INFORMACIÓN GENERAL ================= -->
+                        <div class="row mb-2" id="informations">
+                            <!-- Columna 1: Cliente -->
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
@@ -54,45 +68,57 @@
                                     <span t-if="o.partner_id.vat">RFC: <span t-field="o.partner_id.vat"/></span>
                                 </div>
                                 <div class="mt-1" style="border-top: 1px dotted #9f9f9fff; padding-top: 1px;">
-                                    <strong style="font-size: 10px; text-transform: uppercase; color: #555; display: block; margin-bottom: 0px;">Dirección de Entrega:</strong>
-                                    <div style="font-size: 10px; color: #333; line-height: 0.6; white-space: pre-line; margin-top: 0px;">
+                                    <strong style="font-size: 9px; text-transform: uppercase; color: #555; display: block;">Dirección de Entrega:</strong>
+                                    <div style="font-size: 9px; color: #333; line-height: 1.1; margin-top: 2px; white-space: pre-line;">
                                         <span t-field="o.delivery_address"/>
                                     </div>
                                 </div>
                             </div>
 
+                            <!-- Columna 2: Referencias y Proyecto -->
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
-                                    <strong style="font-size: 10px; text-transform: uppercase;">Referencia</strong>
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Detalles del Proyecto</strong>
                                 </div>
                                 <table class="table table-borderless table-sm mb-0 p-0" style="width: 100%;">
-                                    <tr t-if="o.project_id">
-                                        <td class="p-0" style="width: 30%; padding: 2px 5px !important;"><strong>Proyecto:</strong></td>
-                                        <td class="p-0" style="padding: 2px 5px !important;"><span t-field="o.project_id.name"/></td>
-                                    </tr>
-                                    <tr t-if="o.arquitecto_id">
-                                        <td class="p-0" style="padding: 2px 5px !important;"><strong>Arquitecto:</strong></td>
-                                        <td class="p-0" style="padding: 2px 5px !important;"><span t-field="o.arquitecto_id.name"/></td>
+                                    <tr>
+                                        <td class="p-0" style="width: 35%;"><strong>Proyecto:</strong></td>
+                                        <td class="p-0">
+                                            <span t-if="o.project_id" t-field="o.project_id.name"/>
+                                            <span t-else="">-</span>
+                                        </td>
                                     </tr>
                                     <tr>
-                                        <td class="p-0" style="padding: 2px 5px !important;"><strong>Vendedor:</strong></td>
-                                        <td class="p-0" style="padding: 2px 5px !important;"><span t-field="o.user_id.name"/></td>
+                                        <td class="p-0"><strong>Arquitecto:</strong></td>
+                                        <td class="p-0">
+                                            <span t-if="o.arquitecto_id" t-field="o.arquitecto_id.name"/>
+                                            <span t-else="">-</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-0"><strong>Vendedor:</strong></td>
+                                        <td class="p-0"><span t-field="o.user_id.name"/></td>
                                     </tr>
                                 </table>
                             </div>
 
+                            <!-- Columna 3: Estado -->
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
-                                    <strong style="font-size: 10px; text-transform: uppercase;">Estado</strong>
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Estado del Documento</strong>
                                 </div>
                                 <table class="table table-borderless table-sm mb-1 p-0" style="width: 100%;">
                                     <tr>
-                                        <td class="p-0" style="padding: 2px 5px !important;"><strong>Fecha Emisión:</strong></td>
-                                        <td class="p-0 text-end" style="padding: 2px 5px !important;"><span t-field="o.fecha_orden" t-options='{"widget": "date"}'/></td>
+                                        <td class="p-0"><strong>Fecha Emisión:</strong></td>
+                                        <td class="p-0 text-end"><span t-field="o.fecha_orden" t-options='{"widget": "date"}'/></td>
                                     </tr>
                                     <tr>
-                                        <td class="p-0 pt-1" style="padding: 2px 5px !important;"><strong>Estatus:</strong></td>
-                                        <td class="p-0 pt-1 text-end" style="padding: 2px 5px !important;">
+                                        <td class="p-0"><strong>Moneda:</strong></td>
+                                        <td class="p-0 text-end"><span t-field="o.currency_id.name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-0 pt-1"><strong>Estatus:</strong></td>
+                                        <td class="p-0 pt-1 text-end">
                                             <span style="font-weight: 900; text-transform: uppercase;">
                                                 <t t-if="o.state == 'draft'">Borrador</t>
                                                 <t t-if="o.state == 'confirmed'">Confirmada</t>
@@ -106,19 +132,29 @@
                         </div>
 
                         <!-- ============================================================ -->
-                        <!-- SEPARACIÓN DE MATERIALES Y SERVICIOS -->
+                        <!-- LOGICA DE SEPARACIÓN DE DATOS (LOTES vs BACKORDERS vs SERVICIOS) -->
                         <!-- ============================================================ -->
-                        <t t-set="materials" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type != 'service')"/>
+                        <!-- 1. Todos los materiales (para el resumen global) -->
+                        <t t-set="all_materials" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type != 'service')"/>
+                        
+                        <!-- 2. Lotes Físicos (tienen lot_id) -->
+                        <t t-set="physical_lots" t-value="all_materials.filtered(lambda l: l.lot_id).sorted(key=lambda l: l.product_id.display_name)"/>
+                        
+                        <!-- 3. Backorders (NO tienen lot_id) -->
+                        <t t-set="backorders" t-value="all_materials.filtered(lambda l: not l.lot_id).sorted(key=lambda l: l.product_id.display_name)"/>
+                        
+                        <!-- 4. Servicios -->
                         <t t-set="services" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type == 'service')"/>
 
-                        <!-- RESUMEN POR PRODUCTO (MATERIALES) -->
-                        <div class="row mt-2 mb-3" t-if="materials">
+                        <!-- ================= RESUMEN DE MATERIALES (Existencia + Pedidos) ================= -->
+                        <div class="row mt-2 mb-3" t-if="all_materials">
                             <div class="col-12">
-                                <div style="border: 1px solid #000; padding: 0; background-color: #f8f9fa;">
-                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin: 5px 5px 4px 5px;">Resumen de Materiales:</strong>
+                                <div style="border: 1px solid #ddd; padding: 0; background-color: #f9f9f9;">
+                                    <strong style="font-size: 9px; text-transform: uppercase; color: #555; display: block; margin: 5px 5px 5px 5px;">Resumen por Material (Existencia + Pedidos)</strong>
                                     
+                                    <!-- Cálculo de Agrupación -->
                                     <t t-set="product_summary" t-value="{}"/>
-                                    <t t-foreach="materials" t-as="line">
+                                    <t t-foreach="all_materials" t-as="line">
                                         <t t-set="pid" t-value="line.product_id.id"/>
                                         <t t-if="pid not in product_summary">
                                             <t t-set="dummy" t-value="product_summary.update({pid: {
@@ -127,38 +163,45 @@
                                                 'm2': 0.0
                                             }})"/>
                                         </t>
+                                        <!-- Solo contamos placas si es físico -->
+                                        <t t-set="is_plate" t-value="1 if line.lot_id else 0"/>
                                         <t t-set="dummy" t-value="product_summary[pid].update({
-                                            'placas': product_summary[pid]['placas'] + 1,
+                                            'placas': product_summary[pid]['placas'] + is_plate,
                                             'm2': product_summary[pid]['m2'] + line.cantidad_m2
                                         })"/>
                                     </t>
                                     
-                                    <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
+                                    <!-- Tabla de Resumen -->
+                                    <table class="table table-sm table-borderless mb-0 p-0" style="font-size: 8px; width: 100%;">
                                         <thead>
-                                            <tr style="border-bottom: 1px solid #ccc; background-color: #000; color: #fff;">
-                                                <th style="width: 70%; color: #fff; font-weight: bold; padding: 4px;">NOMBRE</th>
-                                                <th class="text-center" style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">PLACAS</th>
-                                                <th class="text-end" style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">m²</th>
+                                            <tr style="border-bottom: 1px solid #000; background-color: #000; color: #fff;">
+                                                <th style="width: 70%; color: #fff; font-weight: bold; padding: 4px;">DESCRIPCIÓN</th>
+                                                <th class="text-center" style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">PLACAS FÍSICAS</th>
+                                                <th class="text-end" style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">CANT TOTAL (m²)</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <t t-foreach="product_summary.items()" t-as="item">
-                                                <t t-set="pid" t-value="item[0]"/>
-                                                <t t-set="data" t-value="item[1]"/>
+                                            <t t-foreach="product_summary.values()" t-as="data">
                                                 <tr>
-                                                    <td style="padding: 2px 5px;"><span t-esc="data['name']"/></td>
-                                                    <td class="text-center" style="padding: 2px 5px;"><span t-esc="data['placas']"/></td>
-                                                    <td class="text-end" style="padding: 2px 5px;"><span t-esc="'%.2f' % data['m2']"/></td>
+                                                    <td style="padding: 2px 5px; text-transform: uppercase;">
+                                                        <strong t-esc="data['name']"/>
+                                                    </td>
+                                                    <td class="text-center" style="padding: 2px 5px;">
+                                                        <span t-esc="data['placas']"/>
+                                                    </td>
+                                                    <td class="text-end" style="padding: 2px 5px;">
+                                                        <span t-esc="'%.2f' % data['m2']"/>
+                                                    </td>
                                                 </tr>
                                             </t>
                                         </tbody>
-                                        <tfoot style="border-top: 2px solid #000;">
-                                            <tr style="font-weight: bold;">
+                                        <!-- Footer Materiales -->
+                                        <tfoot style="border-top: 1px solid #000; font-weight: bold;">
+                                            <tr>
                                                 <td style="padding: 4px 5px;">TOTAL MATERIALES</td>
                                                 <td class="text-center" style="padding: 4px 5px;"><span t-esc="o.total_placas"/></td>
                                                 <td class="text-end" style="padding: 4px 5px;">
-                                                    <!-- Suma solo de materiales para coincidir con la tabla -->
-                                                    <span t-esc="'%.2f' % sum(materials.mapped('cantidad_m2'))"/>
+                                                    <span t-esc="'%.2f' % sum(all_materials.mapped('cantidad_m2'))"/>
                                                 </td>
                                             </tr>
                                         </tfoot>
@@ -167,48 +210,129 @@
                             </div>
                         </div>
 
-                        <!-- RESUMEN DE SERVICIOS ADICIONALES -->
-                        <div class="row mb-3" t-if="services">
-                            <div class="col-12">
-                                <div style="border: 1px solid #ccc; border-top: none; padding: 0; background-color: #fff;">
-                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin: 5px 5px 4px 5px; color: #555;">Servicios Adicionales:</strong>
+                        <!-- ================= TABLA 1: DETALLE DE LOTES (EXISTENCIA FÍSICA) ================= -->
+                        <div t-if="physical_lots">
+                            <div class="mt-3 mb-1">
+                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Detalle de Lotes (Existencia Física)</strong>
+                            </div>
+                            
+                            <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
+                                        <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">#</th>
+                                        <th style="color: #fff; width: 25%; font-weight: bold;">LOTE</th>
+                                        <th style="color: #fff; width: 15%; font-weight: bold;">BLOQUE</th>
+                                        <th style="color: #fff; width: 15%; font-weight: bold;">ATADO</th>
+                                        <th class="text-center" style="color: #fff; width: 10%; font-weight: bold;">GROSOR</th>
+                                        <th class="text-center" style="color: #fff; width: 10%; font-weight: bold;">ALTO</th>
+                                        <th class="text-center" style="color: #fff; width: 10%; font-weight: bold;">ANCHO</th>
+                                        <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">m²</th>
+                                    </tr>
+                                </thead>
+                                <tbody style="border-bottom: 1px solid #000;">
+                                    <t t-set="seq" t-value="1"/>
+                                    <t t-set="current_product" t-value="None"/>
                                     
-                                    <t t-set="service_summary" t-value="{}"/>
-                                    <t t-foreach="services" t-as="line">
-                                        <t t-set="pid" t-value="line.product_id.id"/>
-                                        <t t-if="pid not in service_summary">
-                                            <t t-set="dummy" t-value="service_summary.update({pid: {
-                                                'name': line.product_id.display_name,
-                                                'qty': 0.0
-                                            }})"/>
-                                        </t>
-                                        <t t-set="dummy" t-value="service_summary[pid].update({
-                                            'qty': service_summary[pid]['qty'] + line.cantidad_m2
-                                        })"/>
-                                    </t>
-
-                                    <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
-                                        <thead>
-                                            <tr style="border-bottom: 1px solid #eee; background-color: #000; color: #fff;">
-                                                <th style="width: 85%; color: #fff; font-weight: bold; padding: 4px;">DESCRIPCIÓN</th>
-                                                <th class="text-end" style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">CANTIDAD</th>
+                                    <t t-foreach="physical_lots" t-as="line">
+                                        <!-- AGRUPACIÓN POR PRODUCTO -->
+                                        <t t-if="current_product != line.product_id.id">
+                                            <t t-set="current_product" t-value="line.product_id.id"/>
+                                            <tr style="background-color: #2f2f2f; color: #fff;">
+                                                <td colspan="8" style="background-color: #2f2f2f; padding: 2px 8px; font-weight: bold; color: #fff; font-size: 9px; text-transform: uppercase;">
+                                                    <span t-field="line.product_id.display_name"/>
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            <t t-foreach="service_summary.values()" t-as="data">
-                                                <tr>
-                                                    <td style="padding: 2px 5px;"><span t-esc="data['name']"/></td>
-                                                    <td class="text-end" style="padding: 2px 5px;"><span t-esc="'%.2f' % data['qty']"/></td>
-                                                </tr>
-                                            </t>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        </t>
+
+                                        <!-- FILA DE DETALLE -->
+                                        <tr>
+                                            <td class="text-center align-middle">
+                                                <span t-esc="seq"/>
+                                                <t t-set="seq" t-value="seq + 1"/>
+                                            </td>
+                                            <td class="align-middle"><strong t-field="line.lot_id.name"/></td>
+                                            <td class="align-middle"><span t-field="line.lot_id.x_bloque"/></td>
+                                            <td class="align-middle"><span t-field="line.lot_id.x_atado"/></td>
+                                            <td class="text-center align-middle"><span t-field="line.x_grosor" t-options='{"precision": 2}'/></td>
+                                            <td class="text-center align-middle"><span t-field="line.x_alto" t-options='{"precision": 3}'/></td>
+                                            <td class="text-center align-middle"><span t-field="line.x_ancho" t-options='{"precision": 3}'/></td>
+                                            <td class="text-end align-middle">
+                                                <strong t-field="line.cantidad_m2" t-options='{"precision": 2}'/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- ================= TABLA 2: PEDIDOS SIN EXISTENCIA (BACKORDERS) ================= -->
+                        <div t-if="backorders" style="margin-top: 20px;">
+                            <div class="mb-1">
+                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #d1ecf1; padding: 2px 5px; color: #0c5460;">Pedidos sin Existencia (Backorder)</strong>
+                            </div>
+                            <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid #ccc; color: #fff; background-color: #17a2b8;">
+                                        <th style="width: 80%; color: #fff; font-weight: bold; padding: 4px;">DESCRIPCIÓN</th>
+                                        <th class="text-end" style="width: 20%; color: #fff; font-weight: bold; padding: 4px;">CANTIDAD</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="backorders" t-as="line">
+                                        <td class="align-middle" style="padding: 2px 5px;">
+                                            <span t-field="line.product_id.display_name"/>
+                                            <span style="font-style: italic; color: #666; font-size: 8px;"> (Por pedir)</span>
+                                        </td>
+                                        <td class="text-end align-middle" style="padding: 2px 5px;">
+                                            <strong t-field="line.cantidad_m2" t-options='{"precision": 2}'/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- ================= TABLA 3: SERVICIOS ================= -->
+                        <div t-if="services" style="margin-top: 15px;">
+                            <div class="mb-1">
+                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Servicios Adicionales</strong>
+                            </div>
+                            <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
+                                        <th style="width: 80%; color: #fff; font-weight: bold;">Descripción</th>
+                                        <th class="text-end" style="width: 20%; color: #fff; font-weight: bold;">Cantidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="services" t-as="line">
+                                        <tr>
+                                            <td class="align-middle"><span t-field="line.product_id.display_name"/></td>
+                                            <td class="text-end align-middle">
+                                                <span t-field="line.cantidad_m2"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- ================= TOTALES ================= -->
+                        <div class="row mt-2">
+                            <div class="col-6"></div>
+                            <div class="col-6">
+                                <table class="table table-sm table-borderless" style="font-size: 9px; border-top: 2px solid #000;">
+                                    <tr style="font-weight: 900; font-size: 11px;">
+                                        <td class="text-end">TOTAL m²</td>
+                                        <td class="text-end" style="width: 30%;">
+                                            <span t-esc="'%.2f' % o.total_m2"/>
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
                         </div>
 
-                        <!-- FIRMAS Y TÉRMINOS -->
-                        <div style="page-break-inside: avoid;">
+                        <!-- ================= FOOTER / FIRMAS ================= -->
+                        <div style="margin-top: 50px; width: 100%; page-break-inside: avoid;">
                             <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                                 <div class="col-1"></div>
                                 <div class="col-4 text-center">
@@ -219,17 +343,17 @@
                                 <div class="col-2"></div>
                                 <div class="col-4 text-center">
                                     <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                        <strong style="font-size: 9px; text-transform: uppercase;">FIRMA DEL CLIENTE / ACEPTACIÓN DE LA RESERVA</strong>
+                                        <strong style="font-size: 9px; text-transform: uppercase;">FIRMA DEL CLIENTE</strong>
                                     </div>
                                 </div>
                                 <div class="col-1"></div>
                             </div>
 
                             <!-- LEYENDA DE ACEPTACIÓN DE VENCIMIENTO -->
-                            <div class="row mb-3">
+                            <div class="row mb-2">
                                 <div class="col-12 text-center">
-                                    <p style="font-size: 9px; margin-top: 5px; padding: 0 20px;">
-                                        Al firmar este documento, el cliente confirma la selección de las placas y acepta que la <span style="font-weight: bold;">RESERVA ES VÁLIDA SOLO HASTA EL <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/></span>. Para garantizar la disponibilidad del material en su proyecto, se recomienda firmar y formalizar las condiciones comerciales antes de esa fecha.
+                                    <p style="font-size: 8px; margin-top: 2px; padding: 0 20px; color: #555;">
+                                        Confirmo la selección de las placas y acepto que la reserva vence el <span style="font-weight: bold;" t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>.
                                     </p>
                                 </div>
                             </div>
@@ -252,11 +376,8 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="text-center text-muted mt-2" style="font-size: 7px;">
-                                Documento Interno | Página <span class="page"/>
-                            </div>
                         </div>
+
                     </div>
                 </t>
             </t>

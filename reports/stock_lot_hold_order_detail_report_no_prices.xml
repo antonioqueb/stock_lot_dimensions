@@ -106,23 +106,90 @@
                         </div>
 
                         <!-- ============================================================ -->
-                        <!-- SEPARACIÓN DE MATERIALES Y SERVICIOS -->
+                        <!-- LOGICA DE SEPARACIÓN DE DATOS -->
                         <!-- ============================================================ -->
-                        <t t-set="materials" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type != 'service').sorted(key=lambda l: l.product_id.display_name)"/>
+                        <!-- 1. Todos los materiales (para el resumen global) -->
+                        <t t-set="all_materials" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type != 'service')"/>
+                        
+                        <!-- 2. Lotes Físicos (tienen lot_id) -->
+                        <t t-set="physical_lots" t-value="all_materials.filtered(lambda l: l.lot_id).sorted(key=lambda l: l.product_id.display_name)"/>
+                        
+                        <!-- 3. Backorders (NO tienen lot_id) -->
+                        <t t-set="backorders" t-value="all_materials.filtered(lambda l: not l.lot_id).sorted(key=lambda l: l.product_id.display_name)"/>
+                        
+                        <!-- 4. Servicios -->
                         <t t-set="services" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type == 'service')"/>
 
-                        <!-- TABLA 1: DETALLE DE MATERIALES (Lotes) -->
-                        <div t-if="materials">
-                            <div class="mt-3 mb-1">
-                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Materiales</strong>
+                        <!-- ================= RESUMEN POR PRODUCTO (MATERIALES) ================= -->
+                        <div class="row mt-2 mb-3" t-if="all_materials">
+                            <div class="col-12">
+                                <div style="border: 1px solid #000; padding: 0; background-color: #f8f9fa;">
+                                    <strong style="font-size: 10px; text-transform: uppercase; display: block; margin: 5px 5px 4px 5px;">Resumen de Materiales:</strong>
+                                    
+                                    <t t-set="product_summary" t-value="{}"/>
+                                    <t t-foreach="all_materials" t-as="line">
+                                        <t t-set="pid" t-value="line.product_id.id"/>
+                                        <t t-if="pid not in product_summary">
+                                            <t t-set="dummy" t-value="product_summary.update({pid: {
+                                                'name': line.product_id.display_name,
+                                                'placas': 0,
+                                                'm2': 0.0
+                                            }})"/>
+                                        </t>
+                                        <!-- Solo contamos placas si es físico -->
+                                        <t t-set="is_plate" t-value="1 if line.lot_id else 0"/>
+                                        <t t-set="dummy" t-value="product_summary[pid].update({
+                                            'placas': product_summary[pid]['placas'] + is_plate,
+                                            'm2': product_summary[pid]['m2'] + line.cantidad_m2
+                                        })"/>
+                                    </t>
+                                    
+                                    <table class="table table-sm table-borderless mb-1" style="font-size: 9px; width: 100%;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid #ccc; background-color: #000; color: #fff;">
+                                                <th style="width: 70%; color: #fff; font-weight: bold; padding: 4px;">NOMBRE</th>
+                                                <th class="text-center" style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">PLACAS FÍSICAS</th>
+                                                <th class="text-end" style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">m²</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="product_summary.items()" t-as="item">
+                                                <t t-set="pid" t-value="item[0]"/>
+                                                <t t-set="data" t-value="item[1]"/>
+                                                <tr>
+                                                    <td style="padding: 2px 5px;"><span t-esc="data['name']"/></td>
+                                                    <td class="text-center" style="padding: 2px 5px;"><span t-esc="data['placas']"/></td>
+                                                    <td class="text-end" style="padding: 2px 5px;"><span t-esc="'%.2f' % data['m2']"/></td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                        <tfoot style="border-top: 2px solid #000;">
+                                            <tr style="font-weight: bold;">
+                                                <td style="padding: 4px 5px;">TOTAL MATERIALES</td>
+                                                <td class="text-center" style="padding: 4px 5px;"><span t-esc="o.total_placas"/></td>
+                                                <td class="text-end" style="padding: 4px 5px;">
+                                                    <span t-esc="'%.2f' % sum(all_materials.mapped('cantidad_m2'))"/>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
                             </div>
+                        </div>
+
+                        <!-- ================= TABLA 1: DETALLE DE LOTES (EXISTENCIA FÍSICA) ================= -->
+                        <div t-if="physical_lots">
+                            <div class="mt-3 mb-1">
+                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Detalle de Lotes (Existencia Física)</strong>
+                            </div>
+                            
                             <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
                                 <thead>
                                     <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
                                         <th class="text-center" style="width: 5%; color: #fff; font-weight: bold; padding: 4px;">#</th>
-                                        <th style="width: 20%; color: #fff; font-weight: bold; padding: 4px;">LOTE</th>
-                                        <th style="width: 12%; color: #fff; font-weight: bold; padding: 4px;">BLOQUE</th>
-                                        <th style="width: 12%; color: #fff; font-weight: bold; padding: 4px;">ATADO</th>
+                                        <th style="width: 25%; color: #fff; font-weight: bold; padding: 4px;">LOTE</th>
+                                        <th style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">BLOQUE</th>
+                                        <th style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">ATADO</th>
                                         <th class="text-center" style="width: 10%; color: #fff; font-weight: bold; padding: 4px;">GROSOR</th>
                                         <th class="text-center" style="width: 10%; color: #fff; font-weight: bold; padding: 4px;">ALTO</th>
                                         <th class="text-center" style="width: 10%; color: #fff; font-weight: bold; padding: 4px;">ANCHO</th>
@@ -133,16 +200,18 @@
                                     <t t-set="seq" t-value="1"/>
                                     <t t-set="current_product" t-value="None"/>
                                     
-                                    <t t-foreach="materials" t-as="line">
+                                    <t t-foreach="physical_lots" t-as="line">
+                                        <!-- AGRUPACIÓN POR PRODUCTO -->
                                         <t t-if="current_product != line.product_id.id">
                                             <t t-set="current_product" t-value="line.product_id.id"/>
-                                            <tr style="background-color: #000000; color: #FFFFFF;">
-                                                <td colspan="8" style="padding: 4px 8px; font-weight: bold; font-size: 10px; text-transform: uppercase; color: #FFFFFF;">
+                                            <tr style="background-color: #2f2f2f; color: #fff;">
+                                                <td colspan="8" style="background-color: #2f2f2f; padding: 2px 8px; font-weight: bold; color: #fff; font-size: 9px; text-transform: uppercase;">
                                                     <span t-field="line.product_id.display_name"/>
                                                 </td>
                                             </tr>
                                         </t>
-                                        
+
+                                        <!-- FILA DE DETALLE -->
                                         <tr>
                                             <td class="text-center align-middle" style="padding: 2px 5px;">
                                                 <span t-esc="seq"/>
@@ -172,49 +241,77 @@
                                         </tr>
                                     </t>
                                 </tbody>
-                                
-                                <tfoot style="border-top: 2px solid #000;">
-                                    <tr>
-                                        <td colspan="7" class="text-end" style="padding: 5px 5px;">
-                                            <span style="text-transform: uppercase; font-weight: bold;">Total m² Material:</span>
-                                        </td>
-                                        <td class="text-end" style="padding: 5px 5px;">
-                                            <strong style="font-size: 10px;">
-                                                <span t-field="o.total_m2" t-options='{"precision": 2}'/>
-                                            </strong>
-                                        </td>
-                                    </tr>
-                                </tfoot>
                             </table>
                         </div>
 
-                        <!-- TABLA 2: SERVICIOS (Sin Precios, Solo Cantidad) -->
-                        <div t-if="services" style="margin-top: 20px;">
+                        <!-- ================= TABLA 2: PEDIDOS SIN EXISTENCIA (BACKORDERS) ================= -->
+                        <div t-if="backorders" style="margin-top: 20px;">
                             <div class="mb-1">
-                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Servicios Adicionales</strong>
+                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #d1ecf1; padding: 2px 5px; color: #0c5460;">Pedidos sin Existencia (Backorder)</strong>
                             </div>
-                            <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
+                            <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
                                 <thead>
-                                    <tr style="border-bottom: 1px solid #ccc; background-color: #000; color: #fff;">
+                                    <tr style="border-bottom: 1px solid #ccc; color: #fff; background-color: #17a2b8;">
                                         <th style="width: 80%; color: #fff; font-weight: bold; padding: 4px;">DESCRIPCIÓN</th>
                                         <th class="text-end" style="width: 20%; color: #fff; font-weight: bold; padding: 4px;">CANTIDAD</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr t-foreach="services" t-as="line">
+                                    <tr t-foreach="backorders" t-as="line">
                                         <td class="align-middle" style="padding: 2px 5px;">
                                             <span t-field="line.product_id.display_name"/>
+                                            <span style="font-style: italic; color: #666; font-size: 8px;"> (Por pedir)</span>
                                         </td>
                                         <td class="text-end align-middle" style="padding: 2px 5px;">
-                                            <span t-field="line.cantidad_m2" t-options='{"precision": 2}'/> <span t-field="line.product_id.uom_id"/>
+                                            <strong t-field="line.cantidad_m2" t-options='{"precision": 2}'/>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <!-- FIRMAS Y TÉRMINOS -->
-                        <div style="page-break-inside: avoid;">
+                        <!-- ================= TABLA 3: SERVICIOS ================= -->
+                        <div t-if="services" style="margin-top: 15px;">
+                            <div class="mb-1">
+                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Servicios Adicionales</strong>
+                            </div>
+                            <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
+                                        <th style="width: 80%; color: #fff; font-weight: bold;">Descripción</th>
+                                        <th class="text-end" style="width: 20%; color: #fff; font-weight: bold;">Cantidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="services" t-as="line">
+                                        <tr>
+                                            <td class="align-middle"><span t-field="line.product_id.display_name"/></td>
+                                            <td class="text-end align-middle">
+                                                <span t-field="line.cantidad_m2"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- ================= TOTALES (SOLO CANTIDAD) ================= -->
+                        <div class="row mt-2">
+                            <div class="col-6"></div>
+                            <div class="col-6">
+                                <table class="table table-sm table-borderless" style="font-size: 9px; border-top: 2px solid #000;">
+                                    <tr style="font-weight: 900; font-size: 11px;">
+                                        <td class="text-end">TOTAL m²</td>
+                                        <td class="text-end" style="width: 30%;">
+                                            <span t-esc="'%.2f' % o.total_m2"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- ================= FOOTER / FIRMAS ================= -->
+                        <div style="margin-top: 50px; width: 100%; page-break-inside: avoid;">
                             <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                                 <div class="col-1"></div>
                                 <div class="col-4 text-center">
@@ -258,11 +355,8 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="text-center text-muted mt-2" style="font-size: 7px;">
-                                Documento Interno | Página <span class="page"/>
-                            </div>
                         </div>
+
                     </div>
                 </t>
             </t>
