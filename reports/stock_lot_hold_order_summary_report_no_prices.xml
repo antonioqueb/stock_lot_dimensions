@@ -15,7 +15,7 @@
     </record>
 
     <!-- ======================================================= -->
-    <!-- PLANTILLA: RESUMEN SIN PRECIOS -->
+    <!-- PLANTILLA: SOLO RESUMEN AGRUPADO (SIN PRECIOS)          -->
     <!-- ======================================================= -->
     <template id="report_stock_lot_hold_order_summary_document_no_prices">
         <t t-call="web.html_container">
@@ -32,7 +32,7 @@
                         <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                             <div class="col-8">
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
-                                    Orden de Reserva <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
+                                    Orden de Reserva (Sin Precios) <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
                                 </h4>
                             </div>
                             <div class="col-4 text-end">
@@ -57,7 +57,7 @@
                         </div>
 
                         <!-- ================= INFORMACIÓN GENERAL ================= -->
-                        <div class="row mb-2" id="informations">
+                        <div class="row mb-3" id="informations">
                             <!-- Columna 1: Cliente -->
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
@@ -131,39 +131,27 @@
                             </div>
                         </div>
 
-                        <!-- ============================================================ -->
-                        <!-- LOGICA DE SEPARACIÓN DE DATOS (LOTES vs BACKORDERS vs SERVICIOS) -->
-                        <!-- ============================================================ -->
-                        <!-- 1. Todos los materiales (para el resumen global) -->
-                        <t t-set="all_materials" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type != 'service')"/>
-                        
-                        <!-- 2. Lotes Físicos (tienen lot_id) -->
-                        <t t-set="physical_lots" t-value="all_materials.filtered(lambda l: l.lot_id).sorted(key=lambda l: l.product_id.display_name)"/>
-                        
-                        <!-- 3. Backorders (NO tienen lot_id) -->
-                        <t t-set="backorders" t-value="all_materials.filtered(lambda l: not l.lot_id).sorted(key=lambda l: l.product_id.display_name)"/>
-                        
-                        <!-- 4. Servicios -->
-                        <t t-set="services" t-value="o.hold_line_ids.filtered(lambda l: l.product_id.type == 'service')"/>
-
-                        <!-- ================= RESUMEN DE MATERIALES (Existencia + Pedidos) ================= -->
-                        <div class="row mt-2 mb-3" t-if="all_materials">
+                        <!-- ================= RESUMEN ÚNICO (TODO AGRUPADO SIN PRECIOS) ================= -->
+                        <div class="row mt-2 mb-3" t-if="o.hold_line_ids">
                             <div class="col-12">
                                 <div style="border: 1px solid #ddd; padding: 0; background-color: #f9f9f9;">
-                                    <strong style="font-size: 9px; text-transform: uppercase; color: #555; display: block; margin: 5px 5px 5px 5px;">Resumen por Material (Existencia + Pedidos)</strong>
+                                    <strong style="font-size: 9px; text-transform: uppercase; color: #555; display: block; margin: 5px 5px 5px 5px;">
+                                        Resumen General (Materiales, Importación y Servicios)
+                                    </strong>
                                     
                                     <!-- Cálculo de Agrupación -->
                                     <t t-set="product_summary" t-value="{}"/>
-                                    <t t-foreach="all_materials" t-as="line">
+                                    <t t-foreach="o.hold_line_ids" t-as="line">
                                         <t t-set="pid" t-value="line.product_id.id"/>
                                         <t t-if="pid not in product_summary">
                                             <t t-set="dummy" t-value="product_summary.update({pid: {
                                                 'name': line.product_id.display_name,
+                                                'type': line.product_id.type,
                                                 'placas': 0,
                                                 'm2': 0.0
                                             }})"/>
                                         </t>
-                                        <!-- Solo contamos placas si es físico -->
+                                        <!-- Solo contamos placas si es material físico -->
                                         <t t-set="is_plate" t-value="1 if line.lot_id else 0"/>
                                         <t t-set="dummy" t-value="product_summary[pid].update({
                                             'placas': product_summary[pid]['placas'] + is_plate,
@@ -171,163 +159,52 @@
                                         })"/>
                                     </t>
                                     
-                                    <!-- Tabla de Resumen -->
+                                    <!-- Tabla Única de Resumen -->
                                     <table class="table table-sm table-borderless mb-0 p-0" style="font-size: 8px; width: 100%;">
+                                        <!-- Cabecera -->
                                         <thead>
                                             <tr style="border-bottom: 1px solid #000; background-color: #000; color: #fff;">
                                                 <th style="width: 70%; color: #fff; font-weight: bold; padding: 4px;">DESCRIPCIÓN</th>
                                                 <th class="text-center" style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">PLACAS FÍSICAS</th>
-                                                <th class="text-end" style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">CANT TOTAL (m²)</th>
+                                                <th class="text-end" style="width: 15%; color: #fff; font-weight: bold; padding: 4px;">CANT TOTAL (m² / Unid)</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <t t-foreach="product_summary.values()" t-as="data">
-                                                <tr>
-                                                    <td style="padding: 2px 5px; text-transform: uppercase;">
+                                                <tr style="border-bottom: 1px solid #eee;">
+                                                    <td style="padding: 4px 5px; text-transform: uppercase;">
                                                         <strong t-esc="data['name']"/>
+                                                        <!-- Indicador visual si es un servicio -->
+                                                        <t t-if="data['type'] == 'service'">
+                                                            <span style="font-style: italic; color: #888; font-size: 7px;"> (Servicio)</span>
+                                                        </t>
                                                     </td>
-                                                    <td class="text-center" style="padding: 2px 5px;">
-                                                        <span t-esc="data['placas']"/>
+                                                    <td class="text-center" style="padding: 4px 5px;">
+                                                        <span t-if="data['type'] != 'service'" t-esc="data['placas']"/>
+                                                        <span t-else="" style="color: #aaa;">-</span>
                                                     </td>
-                                                    <td class="text-end" style="padding: 2px 5px;">
-                                                        <span t-esc="'%.2f' % data['m2']"/>
+                                                    <td class="text-end" style="padding: 4px 5px;">
+                                                        <strong t-esc="'%.2f' % data['m2']"/>
                                                     </td>
                                                 </tr>
                                             </t>
                                         </tbody>
-                                        <!-- Footer Materiales -->
-                                        <tfoot style="border-top: 1px solid #000; font-weight: bold;">
-                                            <tr>
-                                                <td style="padding: 4px 5px;">TOTAL MATERIALES</td>
-                                                <td class="text-center" style="padding: 4px 5px;"><span t-esc="o.total_placas"/></td>
-                                                <td class="text-end" style="padding: 4px 5px;">
-                                                    <span t-esc="'%.2f' % sum(all_materials.mapped('cantidad_m2'))"/>
+                                        <!-- Footer: TOTALES GENERALES DE CANTIDAD -->
+                                        <tfoot style="border-top: 2px solid #000; background-color: #eaeaea;">
+                                            <tr style="font-weight: bold; font-size: 9px;">
+                                                <td class="text-end pt-2 pb-2" style="padding: 4px 5px; text-transform: uppercase;">
+                                                    TOTAL GENERAL:
+                                                </td>
+                                                <td class="text-center pt-2 pb-2" style="padding: 4px 5px;">
+                                                    <span t-esc="o.total_placas"/>
+                                                </td>
+                                                <td class="text-end pt-2 pb-2" style="padding: 4px 5px;">
+                                                    <span t-esc="'%.2f' % o.total_m2"/>
                                                 </td>
                                             </tr>
                                         </tfoot>
                                     </table>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- ================= TABLA 1: DETALLE DE LOTES (EXISTENCIA FÍSICA) ================= -->
-                        <div t-if="physical_lots">
-                            <div class="mt-3 mb-1">
-                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Detalle de Lotes (Existencia Física)</strong>
-                            </div>
-                            
-                            <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
-                                <thead>
-                                    <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                                        <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">#</th>
-                                        <th style="color: #fff; width: 25%; font-weight: bold;">LOTE</th>
-                                        <th style="color: #fff; width: 15%; font-weight: bold;">BLOQUE</th>
-                                        <th style="color: #fff; width: 15%; font-weight: bold;">ATADO</th>
-                                        <th class="text-center" style="color: #fff; width: 10%; font-weight: bold;">GROSOR</th>
-                                        <th class="text-center" style="color: #fff; width: 10%; font-weight: bold;">ALTO</th>
-                                        <th class="text-center" style="color: #fff; width: 10%; font-weight: bold;">ANCHO</th>
-                                        <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">m²</th>
-                                    </tr>
-                                </thead>
-                                <tbody style="border-bottom: 1px solid #000;">
-                                    <t t-set="seq" t-value="1"/>
-                                    <t t-set="current_product" t-value="None"/>
-                                    
-                                    <t t-foreach="physical_lots" t-as="line">
-                                        <!-- AGRUPACIÓN POR PRODUCTO -->
-                                        <t t-if="current_product != line.product_id.id">
-                                            <t t-set="current_product" t-value="line.product_id.id"/>
-                                            <tr style="background-color: #2f2f2f; color: #fff;">
-                                                <td colspan="8" style="background-color: #2f2f2f; padding: 2px 8px; font-weight: bold; color: #fff; font-size: 9px; text-transform: uppercase;">
-                                                    <span t-field="line.product_id.display_name"/>
-                                                </td>
-                                            </tr>
-                                        </t>
-
-                                        <!-- FILA DE DETALLE -->
-                                        <tr>
-                                            <td class="text-center align-middle">
-                                                <span t-esc="seq"/>
-                                                <t t-set="seq" t-value="seq + 1"/>
-                                            </td>
-                                            <td class="align-middle"><strong t-field="line.lot_id.name"/></td>
-                                            <td class="align-middle"><span t-field="line.lot_id.x_bloque"/></td>
-                                            <td class="align-middle"><span t-field="line.lot_id.x_atado"/></td>
-                                            <td class="text-center align-middle"><span t-field="line.x_grosor" t-options='{"precision": 2}'/></td>
-                                            <td class="text-center align-middle"><span t-field="line.x_alto" t-options='{"precision": 3}'/></td>
-                                            <td class="text-center align-middle"><span t-field="line.x_ancho" t-options='{"precision": 3}'/></td>
-                                            <td class="text-end align-middle">
-                                                <strong t-field="line.cantidad_m2" t-options='{"precision": 2}'/>
-                                            </td>
-                                        </tr>
-                                    </t>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- ================= TABLA 2: PEDIDOS SIN EXISTENCIA (BACKORDERS) ================= -->
-                        <div t-if="backorders" style="margin-top: 20px;">
-                            <div class="mb-1">
-                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #d1ecf1; padding: 2px 5px; color: #000000;">Importación</strong>
-                            </div>
-                            <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
-                                <thead>
-                                    <tr style="border-bottom: 1px solid #ccc; color: #fff; background-color: #000000;">
-                                        <th style="width: 80%; color: #fff; font-weight: bold; padding: 4px;">DESCRIPCIÓN</th>
-                                        <th class="text-end" style="width: 20%; color: #fff; font-weight: bold; padding: 4px;">CANTIDAD</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr t-foreach="backorders" t-as="line">
-                                        <td class="align-middle" style="padding: 2px 5px;">
-                                            <span t-field="line.product_id.display_name"/>
-                                            <span style="font-style: italic; color: #666; font-size: 8px;"> (Por pedir)</span>
-                                        </td>
-                                        <td class="text-end align-middle" style="padding: 2px 5px;">
-                                            <strong t-field="line.cantidad_m2" t-options='{"precision": 2}'/>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- ================= TABLA 3: SERVICIOS ================= -->
-                        <div t-if="services" style="margin-top: 15px;">
-                            <div class="mb-1">
-                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Servicios Adicionales</strong>
-                            </div>
-                            <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
-                                <thead>
-                                    <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                                        <th style="width: 80%; color: #fff; font-weight: bold;">Descripción</th>
-                                        <th class="text-end" style="width: 20%; color: #fff; font-weight: bold;">Cantidad</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-foreach="services" t-as="line">
-                                        <tr>
-                                            <td class="align-middle"><span t-field="line.product_id.display_name"/></td>
-                                            <td class="text-end align-middle">
-                                                <span t-field="line.cantidad_m2"/>
-                                            </td>
-                                        </tr>
-                                    </t>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- ================= TOTALES ================= -->
-                        <div class="row mt-2">
-                            <div class="col-6"></div>
-                            <div class="col-6">
-                                <table class="table table-sm table-borderless" style="font-size: 9px; border-top: 2px solid #000;">
-                                    <tr style="font-weight: 900; font-size: 11px;">
-                                        <td class="text-end">TOTAL m²</td>
-                                        <td class="text-end" style="width: 30%;">
-                                            <span t-esc="'%.2f' % o.total_m2"/>
-                                        </td>
-                                    </tr>
-                                </table>
                             </div>
                         </div>
 
