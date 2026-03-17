@@ -18,9 +18,12 @@
     'depends': ['stock', 'sale', 'web', 'project', 'mail', 'sale_stock'],
     'data': [
         'security/stock_lot_hold_security.xml',
+        'security/res_company_bank_info_security.xml',
         'security/ir.model.access.csv',
         'data/stock_lot_hold_cron.xml',
+        'data/res_company_bank_info_defaults.xml',
         'data/stock_lot_hold_order_sequence.xml',
+        'reports/company_bank_details_templates.xml',
         'reports/stock_lot_hold_order_report.xml',
         'reports/stock_lot_hold_order_summary_report.xml', 
         'reports/stock_lot_hold_order_detail_report.xml',
@@ -44,6 +47,7 @@
         'views/project_project_views.xml',
         'views/product_template_views.xml',
         'views/stock_lot_image_delete_wizard_views.xml', 
+        'views/res_company_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

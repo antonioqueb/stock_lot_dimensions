@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="company_bank_details_block">
+        <t t-set="bank_lines"
+           t-value="company.x_sale_bank_info_ids.filtered(lambda b: b.active).sorted(key=lambda b: (b.sequence, b.id))"/>
+
+        <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa; margin-top: 5px;">
+            <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
+                <span t-esc="company.name"/>
+                <t t-if="company.partner_id and company.partner_id.vat">
+                    (RFC: <span t-esc="company.partner_id.vat"/>)
+                </t>
+            </strong>
+
+            <t t-if="bank_lines">
+                <div class="row" style="font-size: 8px; color: #555; margin-top: 5px;">
+                    <t t-foreach="bank_lines" t-as="bank">
+                        <div class="col-6" style="margin-bottom: 8px;">
+                            <p class="mb-1" style="font-weight: bold; color: #000; text-transform: uppercase;">
+                                <span t-esc="bank.bank_name"/>
+                                <t t-if="bank.currency_id"> - Moneda <span t-esc="bank.currency_id.name"/></t>
+                            </p>
+
+                            <p class="mb-0" t-if="bank.account_holder">
+                                <strong>Titular:</strong> <span t-esc="bank.account_holder"/>
+                            </p>
+                            <p class="mb-0" t-if="bank.account_number">
+                                <strong>Cuenta:</strong> <span t-esc="bank.account_number"/>
+                            </p>
+                            <p class="mb-0" t-if="bank.clabe">
+                                <strong>Clabe:</strong> <span t-esc="bank.clabe"/>
+                            </p>
+                            <p class="mb-0" t-if="bank.swift">
+                                <strong>Swift:</strong> <span t-esc="bank.swift"/>
+                            </p>
+                            <p class="mb-0" t-if="bank.branch">
+                                <strong>Sucursal:</strong> <span t-esc="bank.branch"/>
+                            </p>
+                            <p class="mb-0" t-if="bank.notes">
+                                <strong>Notas:</strong> <span t-esc="bank.notes"/>
+                            </p>
+                        </div>
+                    </t>
+                </div>
+            </t>
+            <t t-else="">
+                <div style="font-size: 8px; color: #777;">
+                    No hay datos bancarios configurados para esta compañía.
+                </div>
+            </t>
+
+            <div t-if="company.x_payment_receipt_emails"
+                 class="mt-2"
+                 style="font-size: 8px; color: #555; border-top: 1px solid #eee; padding-top: 4px;">
+                <strong>Correo de recepción de comprobantes:</strong>
+                <span t-esc="company.x_payment_receipt_emails"/>
+            </div>
+        </div>
+    </template>
+</odoo>

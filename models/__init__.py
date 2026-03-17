@@ -12,3 +12,5 @@ from . import project_project
 from . import res_partner
 from . import stock_lot_hold_order
 from . import product_template
+from . import res_company_bank_info
+from . import res_company

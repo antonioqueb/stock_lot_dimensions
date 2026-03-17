@@ -10,3 +10,5 @@ access_stock_lot_hold_order_manager,stock.lot.hold.order.manager,model_stock_lot
 access_stock_lot_hold_order_line_user,stock.lot.hold.order.line.user,model_stock_lot_hold_order_line,stock.group_stock_user,1,1,1,0
 access_stock_lot_hold_order_line_manager,stock.lot.hold.order.line.manager,model_stock_lot_hold_order_line,stock.group_stock_manager,1,1,1,1
 access_stock_lot_image_delete_wizard,stock.lot.image.delete.wizard,model_stock_lot_image_delete_wizard,stock.group_stock_manager,1,1,1,1
+access_res_company_bank_info_user,res.company.bank.info.user,model_res_company_bank_info,base.group_user,1,0,0,0
+access_res_company_bank_info_system,res.company.bank.info.system,model_res_company_bank_info,base.group_system,1,1,1,1
