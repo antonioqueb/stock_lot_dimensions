@@ -107,9 +107,8 @@
                         <field name="name" readonly="1"/>
                     </h1>
                     
-                    <div class="alert alert-success" invisible="not sale_order_id">
-                        <i class="fa fa-check-circle me-2"></i>
-                        <strong>Orden de Venta Generada:</strong>
+                    <div class="border rounded p-3 bg-light text-success" invisible="not sale_order_id">
+                        <span class="fw-bold">Orden de Venta Generada:</span>
                         <field name="sale_order_id" readonly="1"/>
                     </div>
                     
