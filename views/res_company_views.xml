@@ -12,8 +12,14 @@
                                placeholder="norma@somgroup.com, clara@somgroup.com"/>
                     </group>
 
-                    <field name="x_sale_bank_info_ids" nolabel="1">
-                        <list editable="bottom">
+                    <field name="x_sale_bank_info_ids"
+                           nolabel="1"
+                           context="{
+                               'default_company_id': id,
+                               'tree_view_ref': 'stock_lot_dimensions.view_res_company_bank_info_tree',
+                               'form_view_ref': 'stock_lot_dimensions.view_res_company_bank_info_form'
+                           }">
+                        <list>
                             <field name="sequence" widget="handle"/>
                             <field name="active"/>
                             <field name="name"/>
@@ -25,29 +31,6 @@
                             <field name="swift"/>
                             <field name="branch"/>
                         </list>
-                        <form string="Dato Bancario Comercial">
-                            <sheet>
-                                <group>
-                                    <group>
-                                        <field name="sequence"/>
-                                        <field name="active"/>
-                                        <field name="name"/>
-                                        <field name="bank_name"/>
-                                        <field name="currency_id"/>
-                                    </group>
-                                    <group>
-                                        <field name="account_holder"/>
-                                        <field name="account_number"/>
-                                        <field name="clabe"/>
-                                        <field name="swift"/>
-                                        <field name="branch"/>
-                                    </group>
-                                </group>
-                                <group>
-                                    <field name="notes" placeholder="Notas opcionales..."/>
-                                </group>
-                            </sheet>
-                        </form>
                     </field>
                 </page>
             </xpath>

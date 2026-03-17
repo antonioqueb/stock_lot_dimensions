@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_res_company_bank_info_tree" model="ir.ui.view">
+        <field name="name">res.company.bank.info.tree</field>
+        <field name="model">res.company.bank.info</field>
+        <field name="arch" type="xml">
+            <list string="Datos Bancarios Comerciales">
+                <field name="sequence" widget="handle"/>
+                <field name="active"/>
+                <field name="name"/>
+                <field name="bank_name"/>
+                <field name="currency_id"/>
+                <field name="account_holder"/>
+                <field name="account_number"/>
+                <field name="clabe"/>
+                <field name="swift"/>
+                <field name="branch"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_res_company_bank_info_form" model="ir.ui.view">
+        <field name="name">res.company.bank.info.form</field>
+        <field name="model">res.company.bank.info</field>
+        <field name="arch" type="xml">
+            <form string="Dato Bancario Comercial">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                            <field name="name"/>
+                            <field name="bank_name"/>
+                            <field name="currency_id"/>
+                        </group>
+                        <group>
+                            <field name="account_holder"/>
+                            <field name="account_number"/>
+                            <field name="clabe"/>
+                            <field name="swift"/>
+                            <field name="branch"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="notes" placeholder="Notas opcionales..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>
