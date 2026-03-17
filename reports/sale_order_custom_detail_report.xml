@@ -19,18 +19,44 @@
                     <t t-set="address" t-value="False"/>
                     <t t-set="information_block" t-value="False"/>
 
-                    <!-- Totales globales de descuento -->
-                    <t t-set="gross_total_amount" t-value="0.0"/>
-                    <t t-set="total_discount_amount" t-value="0.0"/>
+                    <!-- ================= LÓGICA GLOBAL DE DESCUENTOS ================= -->
+                    <!-- Líneas normales -->
+                    <t t-set="normal_lines" t-value="o.order_line.filtered(lambda l: not l.display_type and l.price_subtotal &gt;= 0)"/>
 
-                    <!-- Precalcular bruto/descuento -->
-                    <t t-foreach="o.order_line.filtered(lambda l: not l.display_type)" t-as="calc_line">
-                        <t t-set="line_discount_pct" t-value="calc_line.discount or 0.0"/>
-                        <t t-set="line_gross" t-value="calc_line.price_unit * calc_line.product_uom_qty"/>
-                        <t t-set="line_discount_amount" t-value="line_gross * (line_discount_pct / 100.0)"/>
-                        <t t-set="gross_total_amount" t-value="gross_total_amount + line_gross"/>
-                        <t t-set="total_discount_amount" t-value="total_discount_amount + line_discount_amount"/>
+                    <!-- Líneas de descuento global / importe fijo -->
+                    <t t-set="discount_lines" t-value="o.order_line.filtered(lambda l: not l.display_type and l.price_subtotal &lt; 0)"/>
+
+                    <!-- Materiales y servicios solo de líneas normales -->
+                    <t t-set="materials" t-value="normal_lines.filtered(lambda l: l.product_id.type != 'service')"/>
+                    <t t-set="services" t-value="normal_lines.filtered(lambda l: l.product_id.type == 'service')"/>
+
+                    <!-- Mostrar columnas de descuento por línea solo si aplica -->
+                    <t t-set="has_line_discount_columns" t-value="False"/>
+                    <t t-foreach="normal_lines" t-as="chk_line">
+                        <t t-if="(chk_line.discount or 0.0) &gt; 0">
+                            <t t-set="has_line_discount_columns" t-value="True"/>
+                        </t>
                     </t>
+
+                    <!-- Totales -->
+                    <t t-set="gross_total_amount" t-value="0.0"/>
+                    <t t-set="line_discount_total_amount" t-value="0.0"/>
+                    <t t-set="global_discount_total_amount" t-value="0.0"/>
+
+                    <!-- Precalcular bruto y descuento por líneas normales -->
+                    <t t-foreach="normal_lines" t-as="calc_line">
+                        <t t-set="line_gross" t-value="calc_line.price_unit * calc_line.product_uom_qty"/>
+                        <t t-set="line_discount_amount" t-value="(line_gross - calc_line.price_subtotal) if line_gross &gt;= calc_line.price_subtotal else 0.0"/>
+                        <t t-set="gross_total_amount" t-value="gross_total_amount + line_gross"/>
+                        <t t-set="line_discount_total_amount" t-value="line_discount_total_amount + line_discount_amount"/>
+                    </t>
+
+                    <!-- Precalcular descuentos globales / importe fijo -->
+                    <t t-foreach="discount_lines" t-as="disc_line">
+                        <t t-set="global_discount_total_amount" t-value="global_discount_total_amount + abs(disc_line.price_subtotal)"/>
+                    </t>
+
+                    <t t-set="total_discount_amount" t-value="line_discount_total_amount + global_discount_total_amount"/>
 
                     <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
 
@@ -136,10 +162,6 @@
                             </div>
                         </div>
 
-                        <!-- LÓGICA DE SEPARACIÓN -->
-                        <t t-set="materials" t-value="o.order_line.filtered(lambda l: l.product_id.type != 'service' and not l.display_type)"/>
-                        <t t-set="services" t-value="o.order_line.filtered(lambda l: l.product_id.type == 'service' and not l.display_type)"/>
-
                         <!-- TABLA 1: MATERIALES DETALLADOS -->
                         <div t-if="materials">
                             <div class="mt-3 mb-1">
@@ -158,8 +180,8 @@
                                         <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Ancho</th>
                                         <th class="text-end" style="color: #fff; width: 7%; font-weight: bold;">m²</th>
                                         <th class="text-end" style="color: #fff; width: 8%; font-weight: bold;">P. Unitario</th>
-                                        <th class="text-end" style="color: #fff; width: 6%; font-weight: bold;">% Desc.</th>
-                                        <th class="text-end" style="color: #fff; width: 8%; font-weight: bold;">Descuento</th>
+                                        <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 6%; font-weight: bold;">% Desc.</th>
+                                        <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 8%; font-weight: bold;">Descuento</th>
                                         <th class="text-end" style="color: #fff; width: 8%; font-weight: bold;">Subtotal</th>
                                         <th class="text-end" style="color: #fff; width: 7%; font-weight: bold;">IVA</th>
                                         <th class="text-end" style="color: #fff; width: 9%; font-weight: bold;">Total</th>
@@ -169,9 +191,8 @@
                                     <t t-set="global_seq" t-value="1"/>
 
                                     <t t-foreach="materials" t-as="line">
-                                        <!-- Sub-encabezado del Producto -->
                                         <tr style="background-color: #2f2f2f; color: #fff;">
-                                            <td colspan="14" style="background-color: #2f2f2f; padding: 2px 8px; font-weight: bold; color: #fff; font-size: 9px; text-transform: uppercase;">
+                                            <td t-att-colspan="14 if has_line_discount_columns else 12" style="background-color: #2f2f2f; padding: 2px 8px; font-weight: bold; color: #fff; font-size: 9px; text-transform: uppercase;">
                                                 <span t-field="line.product_id.display_name"/>
                                             </td>
                                         </tr>
@@ -184,14 +205,13 @@
                                                 <t t-set="lot" t-value="lot_info['lot']"/>
                                                 <t t-set="lot_qty" t-value="float(lot_info['quantity'] or 0)"/>
                                                 <t t-set="row_gross" t-value="lot_qty * line.price_unit"/>
-                                                <t t-set="row_discount_amount" t-value="row_gross * (line_discount_pct / 100.0)"/>
-                                                <t t-set="row_subtotal" t-value="row_gross - row_discount_amount"/>
-                                                <t t-set="tax_ratio" t-value="0.0"/>
-                                                <t t-if="line.product_uom_qty > 0">
-                                                    <t t-set="tax_ratio" t-value="lot_qty / line.product_uom_qty"/>
-                                                </t>
-                                                <t t-set="row_tax" t-value="line.price_tax * tax_ratio"/>
-                                                <t t-set="row_total" t-value="row_subtotal + row_tax"/>
+                                                <t t-set="row_tax_ratio" t-value="(lot_qty / line.product_uom_qty) if line.product_uom_qty else 0.0"/>
+                                                <!-- Descuento real proporcional al subtotal bruto -->
+                                                <t t-set="row_discount_amount" t-value="(row_gross - (line.price_subtotal * row_tax_ratio)) if has_line_discount_columns else 0.0"/>
+                                                <t t-set="row_discount_amount" t-value="row_discount_amount if row_discount_amount &gt;= 0 else 0.0"/>
+                                                <t t-set="row_subtotal" t-value="line.price_subtotal * row_tax_ratio"/>
+                                                <t t-set="row_tax" t-value="line.price_tax * row_tax_ratio"/>
+                                                <t t-set="row_total" t-value="line.price_total * row_tax_ratio"/>
 
                                                 <tr>
                                                     <td class="text-center align-middle">
@@ -210,12 +230,18 @@
                                                     <td class="text-end align-middle">
                                                         <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                                     </td>
-                                                    <td class="text-end align-middle">
-                                                        <span t-esc="'%.2f%%' % line_discount_pct"/>
+
+                                                    <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                                        <span t-if="line_discount_pct &gt; 0" t-esc="'%.2f%%' % line_discount_pct"/>
+                                                        <span t-else="" style="color: #999;">-</span>
                                                     </td>
-                                                    <td class="text-end align-middle">
-                                                        <span t-esc="o.currency_id.format(row_discount_amount)"/>
+                                                    <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                                        <span t-if="row_discount_amount &gt; 0" style="color: #b00020; font-weight: 700;">
+                                                            -<span t-esc="o.currency_id.format(row_discount_amount)"/>
+                                                        </span>
+                                                        <span t-else="" style="color: #999;">-</span>
                                                     </td>
+
                                                     <td class="text-end align-middle">
                                                         <span t-esc="o.currency_id.format(row_subtotal)"/>
                                                     </td>
@@ -232,7 +258,7 @@
                                         <!-- CASO: Sin lotes -->
                                         <t t-else="">
                                             <t t-set="line_gross" t-value="line.price_unit * line.product_uom_qty"/>
-                                            <t t-set="line_discount_amount" t-value="line_gross * (line_discount_pct / 100.0)"/>
+                                            <t t-set="line_discount_amount" t-value="(line_gross - line.price_subtotal) if line_gross &gt;= line.price_subtotal else 0.0"/>
                                             <tr>
                                                 <td class="text-center align-middle">
                                                     <span t-esc="global_seq"/>
@@ -245,12 +271,18 @@
                                                 <td class="text-end align-middle">
                                                     <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                                 </td>
-                                                <td class="text-end align-middle">
-                                                    <span t-esc="'%.2f%%' % line_discount_pct"/>
+
+                                                <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                                    <span t-if="line_discount_pct &gt; 0" t-esc="'%.2f%%' % line_discount_pct"/>
+                                                    <span t-else="" style="color: #999;">-</span>
                                                 </td>
-                                                <td class="text-end align-middle">
-                                                    <span t-esc="o.currency_id.format(line_discount_amount)"/>
+                                                <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                                    <span t-if="line_discount_amount &gt; 0" style="color: #b00020; font-weight: 700;">
+                                                        -<span t-esc="o.currency_id.format(line_discount_amount)"/>
+                                                    </span>
+                                                    <span t-else="" style="color: #999;">-</span>
                                                 </td>
+
                                                 <td class="text-end align-middle">
                                                     <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                                 </td>
@@ -275,11 +307,11 @@
                             <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
                                 <thead>
                                     <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                                        <th style="width: 26%; font-weight: bold; color: #fff;">Descripción</th>
+                                        <th style="width: 30%; font-weight: bold; color: #fff;">Descripción</th>
                                         <th class="text-end" style="width: 10%; font-weight: bold; color: #fff;">Cantidad</th>
                                         <th class="text-end" style="width: 12%; font-weight: bold; color: #fff;">Precio Unitario</th>
-                                        <th class="text-end" style="width: 8%; font-weight: bold; color: #fff;">% Desc.</th>
-                                        <th class="text-end" style="width: 12%; font-weight: bold; color: #fff;">Descuento</th>
+                                        <th t-if="has_line_discount_columns" class="text-end" style="width: 8%; font-weight: bold; color: #fff;">% Desc.</th>
+                                        <th t-if="has_line_discount_columns" class="text-end" style="width: 12%; font-weight: bold; color: #fff;">Descuento</th>
                                         <th class="text-end" style="width: 12%; font-weight: bold; color: #fff;">Subtotal</th>
                                         <th class="text-end" style="width: 8%; font-weight: bold; color: #fff;">IVA</th>
                                         <th class="text-end" style="width: 12%; font-weight: bold; color: #fff;">Total</th>
@@ -289,7 +321,7 @@
                                     <t t-foreach="services" t-as="line">
                                         <t t-set="line_discount_pct" t-value="line.discount or 0.0"/>
                                         <t t-set="line_gross" t-value="line.price_unit * line.product_uom_qty"/>
-                                        <t t-set="line_discount_amount" t-value="line_gross * (line_discount_pct / 100.0)"/>
+                                        <t t-set="line_discount_amount" t-value="(line_gross - line.price_subtotal) if line_gross &gt;= line.price_subtotal else 0.0"/>
                                         <tr>
                                             <td class="align-middle"><span t-field="line.name"/></td>
                                             <td class="text-end align-middle">
@@ -298,12 +330,18 @@
                                             <td class="text-end align-middle">
                                                 <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                             </td>
-                                            <td class="text-end align-middle">
-                                                <span t-esc="'%.2f%%' % line_discount_pct"/>
+
+                                            <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                                <span t-if="line_discount_pct &gt; 0" t-esc="'%.2f%%' % line_discount_pct"/>
+                                                <span t-else="" style="color: #999;">-</span>
                                             </td>
-                                            <td class="text-end align-middle">
-                                                <span t-esc="o.currency_id.format(line_discount_amount)"/>
+                                            <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                                <span t-if="line_discount_amount &gt; 0" style="color: #b00020; font-weight: 700;">
+                                                    -<span t-esc="o.currency_id.format(line_discount_amount)"/>
+                                                </span>
+                                                <span t-else="" style="color: #999;">-</span>
                                             </td>
+
                                             <td class="text-end align-middle">
                                                 <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                             </td>
@@ -312,6 +350,41 @@
                                             </td>
                                             <td class="text-end align-middle" style="font-weight: bold;">
                                                 <span t-field="line.price_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- TABLA 3: DESCUENTOS GLOBALES / IMPORTE FIJO -->
+                        <div t-if="discount_lines" style="margin-top: 15px;">
+                            <div class="mb-1">
+                                <strong style="font-size: 10px; text-transform: uppercase; background-color: #ffeaea; padding: 2px 5px; color: #b00020;">Descuentos Aplicados</strong>
+                            </div>
+                            <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #b00020;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #b00020; background-color: #b00020; color: #fff;">
+                                        <th style="width: 55%; font-weight: bold; color: #fff;">Concepto</th>
+                                        <th class="text-end" style="width: 15%; font-weight: bold; color: #fff;">Subtotal</th>
+                                        <th class="text-end" style="width: 10%; font-weight: bold; color: #fff;">IVA</th>
+                                        <th class="text-end" style="width: 20%; font-weight: bold; color: #fff;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="discount_lines" t-as="dline">
+                                        <tr>
+                                            <td class="align-middle">
+                                                <span t-esc="dline.name or 'Descuento'"/>
+                                            </td>
+                                            <td class="text-end align-middle" style="color: #b00020; font-weight: 700;">
+                                                <span t-esc="dline.price_subtotal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                            </td>
+                                            <td class="text-end align-middle" style="color: #b00020; font-weight: 700;">
+                                                <span t-esc="dline.price_tax" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                            </td>
+                                            <td class="text-end align-middle" style="color: #b00020; font-weight: 800;">
+                                                <span t-esc="dline.price_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                             </td>
                                         </tr>
                                     </t>
@@ -335,12 +408,28 @@
                                             <span t-esc="gross_total_amount" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                         </td>
                                     </tr>
-                                    <tr style="font-weight: bold; color: #b00020;">
-                                        <td class="text-end">DESCUENTO TOTAL</td>
+
+                                    <tr t-if="line_discount_total_amount &gt; 0" style="font-weight: bold; color: #b00020;">
+                                        <td class="text-end">DESCUENTO EN LÍNEAS</td>
                                         <td class="text-end">
-                                            <span t-esc="total_discount_amount" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                            -<span t-esc="line_discount_total_amount" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                         </td>
                                     </tr>
+
+                                    <tr t-if="global_discount_total_amount &gt; 0" style="font-weight: bold; color: #b00020;">
+                                        <td class="text-end">DESCUENTOS GLOBALES / IMPORTE FIJO</td>
+                                        <td class="text-end">
+                                            -<span t-esc="global_discount_total_amount" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                    </tr>
+
+                                    <tr t-if="total_discount_amount &gt; 0" style="font-weight: 900; color: #b00020; border-top: 1px dashed #d88;">
+                                        <td class="text-end">DESCUENTO TOTAL</td>
+                                        <td class="text-end">
+                                            -<span t-esc="total_discount_amount" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                    </tr>
+
                                     <tr style="font-weight: bold;">
                                         <td class="text-end">SUBTOTAL</td>
                                         <td class="text-end" style="width: 30%;">
@@ -396,10 +485,8 @@
                                         </strong>
                                         <div style="font-size: 8px; text-align: justify; color: #555;">
 
-                                            <!-- Término común -->
                                             <p style="margin: 0 0 3px 0;">• El mármol y granito son materiales naturales, por lo que pueden existir variaciones en coloración, vetas y tonalidad respecto a muestras o imágenes.</p>
 
-                                            <!-- Solo Cotización -->
                                             <t t-if="o.state in ('draft', 'sent')">
                                                 <p style="margin: 0 0 3px 0;">• Los precios están sujetos a disponibilidad y no garantizan existencia hasta recibir confirmación de pago.</p>
                                                 <p style="margin: 0 0 3px 0;">• En materiales de importación o bajo pedido, los tiempos de entrega son estimados y pueden variar por causas ajenas a la empresa.</p>
@@ -408,7 +495,6 @@
                                                 <p style="margin: 0;">• Los precios pueden cambiar sin previo aviso en caso de incrementos por parte del proveedor.</p>
                                             </t>
 
-                                            <!-- Solo Orden de Venta -->
                                             <t t-if="o.state in ('sale', 'done')">
                                                 <p style="margin: 0 0 3px 0;">• La presente orden de venta confirma los materiales, cantidades y precios acordados con el cliente.</p>
                                                 <p style="margin: 0 0 3px 0;">• En caso de devolución autorizada, el material deberá entregarse en las mismas condiciones en que fue recibido, sin daño, sin cortes y sin haber sido instalado.</p>
