@@ -5,33 +5,32 @@
         <field name="model">res.company</field>
         <field name="inherit_id" ref="base.view_company_form"/>
         <field name="arch" type="xml">
+            <!-- Smart button -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_sale_bank_info"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-university">
+                    <field name="x_sale_bank_info_count" widget="statinfo" string="Datos Bancarios"/>
+                </button>
+            </xpath>
+
+            <!-- Campo general -->
             <xpath expr="//sheet/notebook" position="inside">
-                <page string="Datos Bancarios Comerciales" name="sale_bank_info_page">
+                <page string="Ventas y Cobranza" name="sale_billing_page">
                     <group>
                         <field name="x_payment_receipt_emails"
                                placeholder="norma@somgroup.com, clara@somgroup.com"/>
                     </group>
-
-                    <field name="x_sale_bank_info_ids"
-                           nolabel="1"
-                           context="{
-                               'default_company_id': id,
-                               'tree_view_ref': 'stock_lot_dimensions.view_res_company_bank_info_tree',
-                               'form_view_ref': 'stock_lot_dimensions.view_res_company_bank_info_form'
-                           }">
-                        <list>
-                            <field name="sequence" widget="handle"/>
-                            <field name="active"/>
-                            <field name="name"/>
-                            <field name="bank_name"/>
-                            <field name="currency_id"/>
-                            <field name="account_holder"/>
-                            <field name="account_number"/>
-                            <field name="clabe"/>
-                            <field name="swift"/>
-                            <field name="branch"/>
-                        </list>
-                    </field>
+                    <group>
+                        <label string="Administración de cuentas bancarias"/>
+                        <div>
+                            <button name="action_open_sale_bank_info"
+                                    type="object"
+                                    string="Abrir Datos Bancarios Comerciales"
+                                    class="btn btn-primary"/>
+                        </div>
+                    </group>
                 </page>
             </xpath>
         </field>

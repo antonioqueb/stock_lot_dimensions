@@ -5,23 +5,42 @@ from odoo import models, fields, api
 class ResCompany(models.Model):
     _inherit = 'res.company'
 
+    x_payment_receipt_emails = fields.Char(
+        string='Correos para recepción de comprobantes',
+        help='Separar múltiples correos con coma'
+    )
+
     x_sale_bank_info_ids = fields.One2many(
         'res.company.bank.info',
         'company_id',
         string='Datos Bancarios Comerciales'
     )
 
-    x_payment_receipt_emails = fields.Char(
-        string='Correos para recepción de comprobantes',
-        help='Separar múltiples correos con coma'
+    x_sale_bank_info_count = fields.Integer(
+        string='Datos Bancarios',
+        compute='_compute_x_sale_bank_info_count'
     )
+
+    def _compute_x_sale_bank_info_count(self):
+        for company in self:
+            company.x_sale_bank_info_count = len(company.x_sale_bank_info_ids)
+
+    def action_open_sale_bank_info(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Datos Bancarios Comerciales',
+            'res_model': 'res.company.bank.info',
+            'view_mode': 'list,form',
+            'domain': [('company_id', '=', self.id)],
+            'context': {
+                'default_company_id': self.id,
+            },
+            'target': 'current',
+        }
 
     @api.model
     def _load_default_sale_bank_info(self):
-        """
-        Carga los datos bancarios actuales SOLO si la compañía aún no tiene registros.
-        Esto permite que el módulo se actualice sin duplicar información.
-        """
         companies = self.search([])
         usd = self.env.ref('base.USD', raise_if_not_found=False)
         mxn = self.env.ref('base.MXN', raise_if_not_found=False)

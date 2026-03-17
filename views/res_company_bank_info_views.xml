@@ -7,6 +7,7 @@
             <list string="Datos Bancarios Comerciales">
                 <field name="sequence" widget="handle"/>
                 <field name="active"/>
+                <field name="company_id"/>
                 <field name="name"/>
                 <field name="bank_name"/>
                 <field name="currency_id"/>
@@ -48,5 +49,11 @@
                 </sheet>
             </form>
         </field>
+    </record>
+
+    <record id="action_res_company_bank_info" model="ir.actions.act_window">
+        <field name="name">Datos Bancarios Comerciales</field>
+        <field name="res_model">res.company.bank.info</field>
+        <field name="view_mode">list,form</field>
     </record>
 </odoo>
