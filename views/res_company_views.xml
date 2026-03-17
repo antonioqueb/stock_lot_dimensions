@@ -5,7 +5,6 @@
         <field name="model">res.company</field>
         <field name="inherit_id" ref="base.view_company_form"/>
         <field name="arch" type="xml">
-            <!-- Smart button -->
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_open_sale_bank_info"
                         type="object"
@@ -15,7 +14,6 @@
                 </button>
             </xpath>
 
-            <!-- Campo general -->
             <xpath expr="//sheet/notebook" position="inside">
                 <page string="Ventas y Cobranza" name="sale_billing_page">
                     <group>
@@ -23,7 +21,7 @@
                                placeholder="norma@somgroup.com, clara@somgroup.com"/>
                     </group>
                     <group>
-                        <label string="Administración de cuentas bancarias"/>
+                        <div class="o_form_label">Administración de cuentas bancarias</div>
                         <div>
                             <button name="action_open_sale_bank_info"
                                     type="object"
