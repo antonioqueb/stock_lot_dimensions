@@ -123,13 +123,14 @@
                 </div>
 
                 <!-- ================= LÓGICA DE PROCESAMIENTO ================= -->
+
                 <!-- Líneas normales: productos/servicios con subtotal >= 0 -->
                 <t t-set="normal_lines" t-value="doc.order_line.filtered(lambda l: not l.display_type and l.price_subtotal &gt;= 0)"/>
 
                 <!-- Líneas de descuento global/fijo: subtotal negativo -->
                 <t t-set="discount_lines" t-value="doc.order_line.filtered(lambda l: not l.display_type and l.price_subtotal &lt; 0)"/>
 
-                <!-- Solo mostrar columnas de descuento por línea si realmente hay descuento en líneas -->
+                <!-- Detectar si hay descuento real en líneas normales -->
                 <t t-set="has_line_discount_columns" t-value="False"/>
                 <t t-foreach="normal_lines" t-as="chk_line">
                     <t t-if="(chk_line.discount or 0.0) &gt; 0">
@@ -137,73 +138,88 @@
                     </t>
                 </t>
 
-                <t t-set="material_summary" t-value="{}"/>
+                <!-- ====== CLASIFICACIÓN POR CATEGORÍA ====== -->
+                <!-- Categoría: Placas (Bienes / Placas) -->
+                <t t-set="placas_summary" t-value="{}"/>
+                <!-- Categoría: Formatos (Bienes / Formatos) -->
+                <t t-set="formatos_summary" t-value="{}"/>
+                <!-- Categoría: Adhesivos y Selladores (Bienes / Adhesivos y Selladores) -->
+                <t t-set="adhesivos_summary" t-value="{}"/>
+                <!-- Categoría: Accesorios (Bienes / Accesorios) -->
+                <t t-set="accesorios_summary" t-value="{}"/>
+                <!-- Categoría: Servicios (Indirectos / Servicios + Servicios) -->
                 <t t-set="service_summary" t-value="{}"/>
+                <!-- Categoría: Otros (cualquier línea que no caiga en las anteriores) -->
+                <t t-set="otros_summary" t-value="{}"/>
 
                 <t t-set="gross_total_amount" t-value="0.0"/>
                 <t t-set="line_discount_total_amount" t-value="0.0"/>
                 <t t-set="global_discount_total_amount" t-value="0.0"/>
 
-                <!-- Acumular líneas normales -->
+                <!-- Acumular líneas normales por categoría -->
                 <t t-foreach="normal_lines" t-as="line">
-                    <!-- llave segura -->
                     <t t-set="key" t-value="'%s|%s|%s|%s' % (line.product_id.id, line.price_unit, line.discount or 0.0, line.name or '')"/>
 
                     <t t-set="line_gross" t-value="line.price_unit * line.product_uom_qty"/>
                     <t t-set="line_discount_pct" t-value="line.discount or 0.0"/>
-                    <!-- usar diferencia real para respetar redondeos -->
                     <t t-set="line_discount_amount" t-value="(line_gross - line.price_subtotal) if line_gross &gt;= line.price_subtotal else 0.0"/>
 
                     <t t-set="gross_total_amount" t-value="gross_total_amount + line_gross"/>
                     <t t-set="line_discount_total_amount" t-value="line_discount_total_amount + line_discount_amount"/>
 
-                    <t t-if="line.product_id.type == 'service'">
-                        <t t-if="key not in service_summary">
-                            <t t-set="dummy" t-value="service_summary.update({key: {
-                                'name': line.name,
-                                'qty_total': 0.0,
-                                'uom': line.product_id.uom_id.name,
-                                'price_unit': line.price_unit,
-                                'discount_pct': line_discount_pct,
-                                'discount_amount': 0.0,
-                                'subtotal': 0.0,
-                                'tax': 0.0,
-                                'total': 0.0
-                            }})"/>
-                        </t>
-                        <t t-set="dummy" t-value="service_summary[key].update({
-                            'qty_total': service_summary[key]['qty_total'] + line.product_uom_qty,
-                            'discount_amount': service_summary[key]['discount_amount'] + line_discount_amount,
-                            'subtotal': service_summary[key]['subtotal'] + line.price_subtotal,
-                            'tax': service_summary[key]['tax'] + line.price_tax,
-                            'total': service_summary[key]['total'] + line.price_total
-                        })"/>
+                    <!-- Determinar la categoría interna completa -->
+                    <t t-set="categ_path" t-value="line.product_id.categ_id.complete_name or ''"/>
+
+                    <!-- Clasificar en el diccionario correspondiente -->
+                    <t t-if="'Placas' in categ_path">
+                        <t t-set="target_dict" t-value="placas_summary"/>
+                        <t t-set="is_placa" t-value="True"/>
+                    </t>
+                    <t t-elif="'Formatos' in categ_path">
+                        <t t-set="target_dict" t-value="formatos_summary"/>
+                        <t t-set="is_placa" t-value="False"/>
+                    </t>
+                    <t t-elif="'Adhesivos' in categ_path or 'Selladores' in categ_path">
+                        <t t-set="target_dict" t-value="adhesivos_summary"/>
+                        <t t-set="is_placa" t-value="False"/>
+                    </t>
+                    <t t-elif="'Accesorios' in categ_path">
+                        <t t-set="target_dict" t-value="accesorios_summary"/>
+                        <t t-set="is_placa" t-value="False"/>
+                    </t>
+                    <t t-elif="'Servicios' in categ_path or line.product_id.type == 'service'">
+                        <t t-set="target_dict" t-value="service_summary"/>
+                        <t t-set="is_placa" t-value="False"/>
                     </t>
                     <t t-else="">
-                        <t t-if="key not in material_summary">
-                            <t t-set="dummy" t-value="material_summary.update({key: {
-                                'name': line.name,
-                                'qty_lot': 0,
-                                'qty_total': 0.0,
-                                'uom': line.product_id.uom_id.name,
-                                'price_unit': line.price_unit,
-                                'discount_pct': line_discount_pct,
-                                'discount_amount': 0.0,
-                                'subtotal': 0.0,
-                                'tax': 0.0,
-                                'total': 0.0
-                            }})"/>
-                        </t>
-                        <t t-set="current_plates" t-value="len(line.x_selected_lots) if line.x_selected_lots else 0"/>
-                        <t t-set="dummy" t-value="material_summary[key].update({
-                            'qty_lot': material_summary[key]['qty_lot'] + current_plates,
-                            'qty_total': material_summary[key]['qty_total'] + line.product_uom_qty,
-                            'discount_amount': material_summary[key]['discount_amount'] + line_discount_amount,
-                            'subtotal': material_summary[key]['subtotal'] + line.price_subtotal,
-                            'tax': material_summary[key]['tax'] + line.price_tax,
-                            'total': material_summary[key]['total'] + line.price_total
-                        })"/>
+                        <t t-set="target_dict" t-value="otros_summary"/>
+                        <t t-set="is_placa" t-value="False"/>
                     </t>
+
+                    <t t-if="key not in target_dict">
+                        <t t-set="dummy" t-value="target_dict.update({key: {
+                            'name': line.name,
+                            'qty_lot': 0,
+                            'qty_total': 0.0,
+                            'uom': line.product_id.uom_id.name,
+                            'price_unit': line.price_unit,
+                            'discount_pct': line_discount_pct,
+                            'discount_amount': 0.0,
+                            'subtotal': 0.0,
+                            'tax': 0.0,
+                            'total': 0.0
+                        }})"/>
+                    </t>
+
+                    <t t-set="current_plates" t-value="len(line.x_selected_lots) if (is_placa and line.x_selected_lots) else 0"/>
+                    <t t-set="dummy" t-value="target_dict[key].update({
+                        'qty_lot': target_dict[key]['qty_lot'] + current_plates,
+                        'qty_total': target_dict[key]['qty_total'] + line.product_uom_qty,
+                        'discount_amount': target_dict[key]['discount_amount'] + line_discount_amount,
+                        'subtotal': target_dict[key]['subtotal'] + line.price_subtotal,
+                        'tax': target_dict[key]['tax'] + line.price_tax,
+                        'total': target_dict[key]['total'] + line.price_total
+                    })"/>
                 </t>
 
                 <!-- Acumular descuentos globales / importe fijo -->
@@ -213,138 +229,285 @@
 
                 <t t-set="total_discount_amount" t-value="line_discount_total_amount + global_discount_total_amount"/>
 
-                <!-- ================= TABLA 1: MATERIALES ================= -->
-                <div class="mt-3 mb-1">
-                    <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Suministro de Materiales</strong>
-                </div>
+                <!-- ================= MACRO: TABLA DE MATERIALES (con columna Placas) ================= -->
+                <!-- Reutilizable para Placas, Formatos, Adhesivos, Accesorios, Otros -->
 
-                <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                            <th name="th_description" style="color: #fff; width: 24%; padding: 4px 8px; font-weight: bold;">Descripción</th>
-                            <th class="text-center" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">Placas</th>
-                            <th name="th_quantity" class="text-end" style="color: #fff; width: 11%; padding: 4px 8px; font-weight: bold;">Cantidad</th>
-                            <th name="th_price_unit_display" class="text-end" style="color: #fff; width: 13%; padding: 4px 8px; font-weight: bold;">Precio Unitario</th>
-
-                            <!-- COLUMNAS OCULTAS (HOOKS) PARA EVITAR ERROR RPC -->
-                            <th name="th_priceunit" t-if="False"></th>
-                            <th name="th_discount" t-if="False"></th>
-                            <th name="th_taxes" t-if="False"></th>
-
-                            <th t-if="has_line_discount_columns" name="th_discount_percent_visible" class="text-end" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">% Desc.</th>
-                            <th t-if="has_line_discount_columns" name="th_discount_amount_visible" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">Descuento</th>
-
-                            <th name="th_subtotal" class="text-end" style="color: #fff; width: 12%; padding: 4px 8px; font-weight: bold;">Subtotal</th>
-                            <th name="th_iva_custom" class="text-end" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">IVA</th>
-                            <th name="th_total_custom" class="text-end" style="color: #fff; width: 12%; padding: 4px 8px; font-weight: bold;">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody style="border-bottom: 1px solid #000;">
-                        <t t-foreach="material_summary.values()" t-as="data">
-                            <tr>
-                                <td name="td_name" class="align-middle" style="padding: 4px 8px;">
-                                    <span t-esc="data['name']"/>
-                                </td>
-                                <td class="text-center align-middle">
-                                    <span t-if="data['qty_lot'] > 0" t-esc="data['qty_lot']" style="font-weight: bold;"/>
-                                    <span t-else="" style="color: #999;">-</span>
-                                </td>
-                                <td name="td_quantity" class="text-end align-middle">
-                                    <span t-esc="'{:,.2f}'.format(data['qty_total'])"/> <span t-esc="data['uom']"/>
-                                </td>
-                                <td name="td_price_unit_display" class="text-end align-middle">
-                                    <span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                </td>
-
-                                <!-- hooks ocultos -->
-                                <td name="td_priceunit" t-if="False"></td>
-                                <td name="td_discount" t-if="False"></td>
-                                <td name="td_taxes" t-if="False"></td>
-                                <td name="td_product_quantity" t-if="False"></td>
-                                <td name="td_product_discount" t-if="False"></td>
-
-                                <td t-if="has_line_discount_columns" name="td_discount_percent_visible" class="text-end align-middle">
-                                    <span t-if="data['discount_pct'] &gt; 0" t-esc="'{:,.2f}%'.format(data['discount_pct'])"/>
-                                    <span t-else="" style="color: #999;">-</span>
-                                </td>
-                                <td t-if="has_line_discount_columns" name="td_discount_amount_visible" class="text-end align-middle">
-                                    <span t-if="data['discount_amount'] &gt; 0" style="color: #b00020; font-weight: 700;">
-                                        -<span t-esc="data['discount_amount']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                    </span>
-                                    <span t-else="" style="color: #999;">-</span>
-                                </td>
-
-                                <td name="td_subtotal" class="text-end align-middle">
-                                    <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                </td>
-                                <td name="td_iva_custom" class="text-end align-middle">
-                                    <span t-esc="data['tax']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                </td>
-                                <td name="td_total_custom" class="text-end align-middle" style="font-weight: bold;">
-                                    <span t-esc="data['total']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                </td>
-                            </tr>
-                        </t>
-                        <tr t-if="not material_summary">
-                            <td t-att-colspan="9 if has_line_discount_columns else 7" class="text-center" style="font-style: italic; color: #777;">Sin materiales físicos seleccionados.</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <!-- ================= TABLA 2: SERVICIOS ================= -->
-                <div t-if="service_summary" style="margin-top: 15px;">
-                    <div class="mb-1">
-                        <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Servicios Adicionales</strong>
+                <!-- ======== TABLA: PLACAS ======== -->
+                <t t-if="placas_summary">
+                    <div class="mt-3 mb-1">
+                        <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Placas</strong>
                     </div>
-                    <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
+                    <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
                         <thead>
                             <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
-                                <th style="width: 30%; font-weight: bold; color: #fff;">Descripción</th>
-                                <th class="text-end" style="width: 10%; font-weight: bold; color: #fff;">Cantidad</th>
-                                <th class="text-end" style="width: 12%; font-weight: bold; color: #fff;">Precio Unitario</th>
-                                <th t-if="has_line_discount_columns" class="text-end" style="width: 8%; font-weight: bold; color: #fff;">% Desc.</th>
-                                <th t-if="has_line_discount_columns" class="text-end" style="width: 12%; font-weight: bold; color: #fff;">Descuento</th>
-                                <th class="text-end" style="width: 12%; font-weight: bold; color: #fff;">Subtotal</th>
-                                <th class="text-end" style="width: 8%; font-weight: bold; color: #fff;">IVA</th>
-                                <th class="text-end" style="width: 12%; font-weight: bold; color: #fff;">Total</th>
+                                <th name="th_description" style="color: #fff; width: 24%; padding: 4px 8px; font-weight: bold;">Descripción</th>
+                                <th class="text-center" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">Placas</th>
+                                <th name="th_quantity" class="text-end" style="color: #fff; width: 11%; padding: 4px 8px; font-weight: bold;">Cantidad</th>
+                                <th name="th_price_unit_display" class="text-end" style="color: #fff; width: 13%; padding: 4px 8px; font-weight: bold;">Precio Unitario</th>
+                                <th name="th_priceunit" t-if="False"/>
+                                <th name="th_discount" t-if="False"/>
+                                <th name="th_taxes" t-if="False"/>
+                                <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">% Desc.</th>
+                                <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">Descuento</th>
+                                <th name="th_subtotal" class="text-end" style="color: #fff; width: 12%; padding: 4px 8px; font-weight: bold;">Subtotal</th>
+                                <th class="text-end" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">IVA</th>
+                                <th class="text-end" style="color: #fff; width: 12%; padding: 4px 8px; font-weight: bold;">Total</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <t t-foreach="service_summary.values()" t-as="data">
+                        <tbody style="border-bottom: 1px solid #000;">
+                            <t t-foreach="placas_summary.values()" t-as="data">
                                 <tr>
-                                    <td class="align-middle"><span t-esc="data['name']"/></td>
-                                    <td class="text-end align-middle">
-                                        <span t-esc="'{:,.2f}'.format(data['qty_total'])"/> <span t-esc="data['uom']"/>
+                                    <td class="align-middle" style="padding: 4px 8px;"><span t-esc="data['name']"/></td>
+                                    <td class="text-center align-middle">
+                                        <span t-if="data['qty_lot'] > 0" t-esc="data['qty_lot']" style="font-weight: bold;"/>
+                                        <span t-else="" style="color: #999;">-</span>
                                     </td>
-                                    <td class="text-end align-middle">
-                                        <span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                    </td>
+                                    <td class="text-end align-middle"><span t-esc="'{:,.2f}'.format(data['qty_total'])"/> <span t-esc="data['uom']"/></td>
+                                    <td class="text-end align-middle"><span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td name="td_priceunit" t-if="False"/>
+                                    <td name="td_discount" t-if="False"/>
+                                    <td name="td_taxes" t-if="False"/>
+                                    <td name="td_product_quantity" t-if="False"/>
+                                    <td name="td_product_discount" t-if="False"/>
                                     <td t-if="has_line_discount_columns" class="text-end align-middle">
                                         <span t-if="data['discount_pct'] &gt; 0" t-esc="'{:,.2f}%'.format(data['discount_pct'])"/>
                                         <span t-else="" style="color: #999;">-</span>
                                     </td>
                                     <td t-if="has_line_discount_columns" class="text-end align-middle">
-                                        <span t-if="data['discount_amount'] &gt; 0" style="color: #b00020; font-weight: 700;">
-                                            -<span t-esc="data['discount_amount']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                        </span>
+                                        <span t-if="data['discount_amount'] &gt; 0" style="color: #b00020; font-weight: 700;">-<span t-esc="data['discount_amount']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></span>
                                         <span t-else="" style="color: #999;">-</span>
                                     </td>
-                                    <td class="text-end align-middle">
-                                        <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                    </td>
-                                    <td class="text-end align-middle">
-                                        <span t-esc="data['tax']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                    </td>
-                                    <td class="text-end align-middle" style="font-weight: bold;">
-                                        <span t-esc="data['total']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                    </td>
+                                    <td class="text-end align-middle"><span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td class="text-end align-middle"><span t-esc="data['tax']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td class="text-end align-middle" style="font-weight: bold;"><span t-esc="data['total']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
                                 </tr>
                             </t>
                         </tbody>
                     </table>
-                </div>
+                </t>
 
-                <!-- ================= TABLA 3: DESCUENTOS GLOBALES / IMPORTE FIJO ================= -->
+                <!-- ======== TABLA: FORMATOS ======== -->
+                <t t-if="formatos_summary">
+                    <div class="mt-3 mb-1">
+                        <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Formatos</strong>
+                    </div>
+                    <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
+                                <th style="color: #fff; width: 32%; padding: 4px 8px; font-weight: bold;">Descripción</th>
+                                <th class="text-end" style="color: #fff; width: 11%; padding: 4px 8px; font-weight: bold;">Cantidad</th>
+                                <th class="text-end" style="color: #fff; width: 13%; padding: 4px 8px; font-weight: bold;">Precio Unitario</th>
+                                <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">% Desc.</th>
+                                <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">Descuento</th>
+                                <th class="text-end" style="color: #fff; width: 12%; padding: 4px 8px; font-weight: bold;">Subtotal</th>
+                                <th class="text-end" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">IVA</th>
+                                <th class="text-end" style="color: #fff; width: 12%; padding: 4px 8px; font-weight: bold;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody style="border-bottom: 1px solid #000;">
+                            <t t-foreach="formatos_summary.values()" t-as="data">
+                                <tr>
+                                    <td class="align-middle" style="padding: 4px 8px;"><span t-esc="data['name']"/></td>
+                                    <td class="text-end align-middle"><span t-esc="'{:,.2f}'.format(data['qty_total'])"/> <span t-esc="data['uom']"/></td>
+                                    <td class="text-end align-middle"><span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                        <span t-if="data['discount_pct'] &gt; 0" t-esc="'{:,.2f}%'.format(data['discount_pct'])"/>
+                                        <span t-else="" style="color: #999;">-</span>
+                                    </td>
+                                    <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                        <span t-if="data['discount_amount'] &gt; 0" style="color: #b00020; font-weight: 700;">-<span t-esc="data['discount_amount']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></span>
+                                        <span t-else="" style="color: #999;">-</span>
+                                    </td>
+                                    <td class="text-end align-middle"><span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td class="text-end align-middle"><span t-esc="data['tax']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td class="text-end align-middle" style="font-weight: bold;"><span t-esc="data['total']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+
+                <!-- ======== TABLA: ADHESIVOS Y SELLADORES ======== -->
+                <t t-if="adhesivos_summary">
+                    <div class="mt-3 mb-1">
+                        <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Adhesivos y Selladores</strong>
+                    </div>
+                    <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
+                                <th style="color: #fff; width: 32%; padding: 4px 8px; font-weight: bold;">Descripción</th>
+                                <th class="text-end" style="color: #fff; width: 11%; padding: 4px 8px; font-weight: bold;">Cantidad</th>
+                                <th class="text-end" style="color: #fff; width: 13%; padding: 4px 8px; font-weight: bold;">Precio Unitario</th>
+                                <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">% Desc.</th>
+                                <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">Descuento</th>
+                                <th class="text-end" style="color: #fff; width: 12%; padding: 4px 8px; font-weight: bold;">Subtotal</th>
+                                <th class="text-end" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">IVA</th>
+                                <th class="text-end" style="color: #fff; width: 12%; padding: 4px 8px; font-weight: bold;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody style="border-bottom: 1px solid #000;">
+                            <t t-foreach="adhesivos_summary.values()" t-as="data">
+                                <tr>
+                                    <td class="align-middle" style="padding: 4px 8px;"><span t-esc="data['name']"/></td>
+                                    <td class="text-end align-middle"><span t-esc="'{:,.2f}'.format(data['qty_total'])"/> <span t-esc="data['uom']"/></td>
+                                    <td class="text-end align-middle"><span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                        <span t-if="data['discount_pct'] &gt; 0" t-esc="'{:,.2f}%'.format(data['discount_pct'])"/>
+                                        <span t-else="" style="color: #999;">-</span>
+                                    </td>
+                                    <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                        <span t-if="data['discount_amount'] &gt; 0" style="color: #b00020; font-weight: 700;">-<span t-esc="data['discount_amount']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></span>
+                                        <span t-else="" style="color: #999;">-</span>
+                                    </td>
+                                    <td class="text-end align-middle"><span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td class="text-end align-middle"><span t-esc="data['tax']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td class="text-end align-middle" style="font-weight: bold;"><span t-esc="data['total']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+
+                <!-- ======== TABLA: ACCESORIOS ======== -->
+                <t t-if="accesorios_summary">
+                    <div class="mt-3 mb-1">
+                        <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Accesorios</strong>
+                    </div>
+                    <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
+                                <th style="color: #fff; width: 32%; padding: 4px 8px; font-weight: bold;">Descripción</th>
+                                <th class="text-end" style="color: #fff; width: 11%; padding: 4px 8px; font-weight: bold;">Cantidad</th>
+                                <th class="text-end" style="color: #fff; width: 13%; padding: 4px 8px; font-weight: bold;">Precio Unitario</th>
+                                <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">% Desc.</th>
+                                <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">Descuento</th>
+                                <th class="text-end" style="color: #fff; width: 12%; padding: 4px 8px; font-weight: bold;">Subtotal</th>
+                                <th class="text-end" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">IVA</th>
+                                <th class="text-end" style="color: #fff; width: 12%; padding: 4px 8px; font-weight: bold;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody style="border-bottom: 1px solid #000;">
+                            <t t-foreach="accesorios_summary.values()" t-as="data">
+                                <tr>
+                                    <td class="align-middle" style="padding: 4px 8px;"><span t-esc="data['name']"/></td>
+                                    <td class="text-end align-middle"><span t-esc="'{:,.2f}'.format(data['qty_total'])"/> <span t-esc="data['uom']"/></td>
+                                    <td class="text-end align-middle"><span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                        <span t-if="data['discount_pct'] &gt; 0" t-esc="'{:,.2f}%'.format(data['discount_pct'])"/>
+                                        <span t-else="" style="color: #999;">-</span>
+                                    </td>
+                                    <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                        <span t-if="data['discount_amount'] &gt; 0" style="color: #b00020; font-weight: 700;">-<span t-esc="data['discount_amount']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></span>
+                                        <span t-else="" style="color: #999;">-</span>
+                                    </td>
+                                    <td class="text-end align-middle"><span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td class="text-end align-middle"><span t-esc="data['tax']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td class="text-end align-middle" style="font-weight: bold;"><span t-esc="data['total']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+
+                <!-- ======== TABLA: OTROS MATERIALES (catch-all para bienes sin categoría mapeada) ======== -->
+                <t t-if="otros_summary">
+                    <div class="mt-3 mb-1">
+                        <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Otros Materiales</strong>
+                    </div>
+                    <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
+                                <th style="color: #fff; width: 32%; padding: 4px 8px; font-weight: bold;">Descripción</th>
+                                <th class="text-end" style="color: #fff; width: 11%; padding: 4px 8px; font-weight: bold;">Cantidad</th>
+                                <th class="text-end" style="color: #fff; width: 13%; padding: 4px 8px; font-weight: bold;">Precio Unitario</th>
+                                <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">% Desc.</th>
+                                <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">Descuento</th>
+                                <th class="text-end" style="color: #fff; width: 12%; padding: 4px 8px; font-weight: bold;">Subtotal</th>
+                                <th class="text-end" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">IVA</th>
+                                <th class="text-end" style="color: #fff; width: 12%; padding: 4px 8px; font-weight: bold;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody style="border-bottom: 1px solid #000;">
+                            <t t-foreach="otros_summary.values()" t-as="data">
+                                <tr>
+                                    <td class="align-middle" style="padding: 4px 8px;"><span t-esc="data['name']"/></td>
+                                    <td class="text-end align-middle"><span t-esc="'{:,.2f}'.format(data['qty_total'])"/> <span t-esc="data['uom']"/></td>
+                                    <td class="text-end align-middle"><span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                        <span t-if="data['discount_pct'] &gt; 0" t-esc="'{:,.2f}%'.format(data['discount_pct'])"/>
+                                        <span t-else="" style="color: #999;">-</span>
+                                    </td>
+                                    <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                        <span t-if="data['discount_amount'] &gt; 0" style="color: #b00020; font-weight: 700;">-<span t-esc="data['discount_amount']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></span>
+                                        <span t-else="" style="color: #999;">-</span>
+                                    </td>
+                                    <td class="text-end align-middle"><span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td class="text-end align-middle"><span t-esc="data['tax']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td class="text-end align-middle" style="font-weight: bold;"><span t-esc="data['total']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+
+                <!-- Mensaje cuando no hay ningún material -->
+                <t t-if="not placas_summary and not formatos_summary and not adhesivos_summary and not accesorios_summary and not otros_summary and not service_summary">
+                    <div class="mt-3 mb-1">
+                        <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Suministro de Materiales</strong>
+                    </div>
+                    <table class="table table-sm" style="width: 100%; font-size: 9px;">
+                        <tbody>
+                            <tr>
+                                <td class="text-center" style="font-style: italic; color: #777;">Sin materiales seleccionados.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </t>
+
+                <!-- ================= TABLA: SERVICIOS ================= -->
+                <t t-if="service_summary">
+                    <div style="margin-top: 15px;">
+                        <div class="mb-1">
+                            <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Servicios</strong>
+                        </div>
+                        <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
+                                    <th style="width: 32%; font-weight: bold; color: #fff; padding: 4px 8px;">Descripción</th>
+                                    <th class="text-end" style="width: 11%; font-weight: bold; color: #fff; padding: 4px 8px;">Cantidad</th>
+                                    <th class="text-end" style="width: 13%; font-weight: bold; color: #fff; padding: 4px 8px;">Precio Unitario</th>
+                                    <th t-if="has_line_discount_columns" class="text-end" style="width: 8%; font-weight: bold; color: #fff; padding: 4px 8px;">% Desc.</th>
+                                    <th t-if="has_line_discount_columns" class="text-end" style="width: 10%; font-weight: bold; color: #fff; padding: 4px 8px;">Descuento</th>
+                                    <th class="text-end" style="width: 12%; font-weight: bold; color: #fff; padding: 4px 8px;">Subtotal</th>
+                                    <th class="text-end" style="width: 8%; font-weight: bold; color: #fff; padding: 4px 8px;">IVA</th>
+                                    <th class="text-end" style="width: 12%; font-weight: bold; color: #fff; padding: 4px 8px;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="service_summary.values()" t-as="data">
+                                    <tr>
+                                        <td class="align-middle" style="padding: 4px 8px;"><span t-esc="data['name']"/></td>
+                                        <td class="text-end align-middle"><span t-esc="'{:,.2f}'.format(data['qty_total'])"/> <span t-esc="data['uom']"/></td>
+                                        <td class="text-end align-middle"><span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                        <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                            <span t-if="data['discount_pct'] &gt; 0" t-esc="'{:,.2f}%'.format(data['discount_pct'])"/>
+                                            <span t-else="" style="color: #999;">-</span>
+                                        </td>
+                                        <td t-if="has_line_discount_columns" class="text-end align-middle">
+                                            <span t-if="data['discount_amount'] &gt; 0" style="color: #b00020; font-weight: 700;">-<span t-esc="data['discount_amount']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></span>
+                                            <span t-else="" style="color: #999;">-</span>
+                                        </td>
+                                        <td class="text-end align-middle"><span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                        <td class="text-end align-middle"><span t-esc="data['tax']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                        <td class="text-end align-middle" style="font-weight: bold;"><span t-esc="data['total']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+
+                <!-- ================= TABLA: DESCUENTOS GLOBALES / IMPORTE FIJO ================= -->
                 <div t-if="discount_lines" style="margin-top: 15px;">
                     <div class="mb-1">
                         <strong style="font-size: 10px; text-transform: uppercase; background-color: #ffeaea; padding: 2px 5px; color: #b00020;">Descuentos Aplicados</strong>
@@ -361,9 +524,7 @@
                         <tbody>
                             <t t-foreach="discount_lines" t-as="dline">
                                 <tr>
-                                    <td class="align-middle">
-                                        <span t-esc="dline.name or 'Descuento'"/>
-                                    </td>
+                                    <td class="align-middle"><span t-esc="dline.name or 'Descuento'"/></td>
                                     <td class="text-end align-middle" style="color: #b00020; font-weight: 700;">
                                         <span t-esc="dline.price_subtotal" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                     </td>
@@ -389,13 +550,16 @@
                     </div>
                     <div class="col-6">
                         <table class="table table-sm table-borderless" style="font-size: 9px; border-top: 2px solid #000;">
-                            <tr style="font-weight: bold; color: #555;">
+
+                            <!-- IMPORTE BRUTO: solo si hay descuento real -->
+                            <tr t-if="total_discount_amount &gt; 0" style="font-weight: bold; color: #555;">
                                 <td class="text-end">IMPORTE BRUTO</td>
                                 <td class="text-end" style="width: 30%;">
                                     <span t-esc="gross_total_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                 </td>
                             </tr>
 
+                            <!-- DESCUENTO EN LÍNEAS: solo si > 0 -->
                             <tr t-if="line_discount_total_amount &gt; 0" style="font-weight: bold; color: #b00020;">
                                 <td class="text-end">DESCUENTO EN LÍNEAS</td>
                                 <td class="text-end">
@@ -403,6 +567,7 @@
                                 </td>
                             </tr>
 
+                            <!-- DESCUENTOS GLOBALES: solo si > 0 -->
                             <tr t-if="global_discount_total_amount &gt; 0" style="font-weight: bold; color: #b00020;">
                                 <td class="text-end">DESCUENTOS GLOBALES / IMPORTE FIJO</td>
                                 <td class="text-end">
@@ -410,6 +575,7 @@
                                 </td>
                             </tr>
 
+                            <!-- DESCUENTO TOTAL: solo si > 0 -->
                             <tr t-if="total_discount_amount &gt; 0" style="font-weight: 900; color: #b00020; border-top: 1px dashed #d88;">
                                 <td class="text-end">DESCUENTO TOTAL</td>
                                 <td class="text-end">
