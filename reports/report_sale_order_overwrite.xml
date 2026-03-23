@@ -1,19 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Sobrescribir el documento base del reporte de ventas original -->
     <template id="report_sale_order_document_inherit_marmol" inherit_id="sale.report_saleorder_document">
 
-        <!-- 1. OCULTAR DIRECCIÓN ESTÁNDAR -->
         <xpath expr="//t[@t-set='address']" position="replace">
             <t t-set="address" t-value="False"/>
         </xpath>
 
-        <!-- 2. OCULTAR INFORMACIÓN BLOCK -->
         <xpath expr="//t[@t-set='information_block']" position="replace">
             <t t-set="information_block" t-value="False"/>
         </xpath>
 
-        <!-- 3. CONTENIDO PERSONALIZADO -->
         <xpath expr="//div[hasclass('page')]" position="replace">
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
 
@@ -27,7 +23,7 @@
                         </h4>
                     </div>
                     <div class="col-4 text-end">
-                        <div style="font-size: 12px; color: #999; margin-top: 4px;">
+                        <div style="font-size: 8px; color: #999; margin-top: 4px;">
                             Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
                         </div>
                     </div>
@@ -49,7 +45,6 @@
 
                 <!-- ================= INFORMACIÓN GENERAL ================= -->
                 <div class="row mb-2" id="informations">
-                    <!-- Columna 1: Cliente -->
                     <div class="col-4">
                         <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                             <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
@@ -66,7 +61,6 @@
                         </div>
                     </div>
 
-                    <!-- Columna 2: Referencias -->
                     <div class="col-4">
                         <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                             <strong style="font-size: 10px; text-transform: uppercase;">Detalles del Proyecto</strong>
@@ -97,7 +91,6 @@
                         </table>
                     </div>
 
-                    <!-- Columna 3: Estado -->
                     <div class="col-4">
                         <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                             <strong style="font-size: 10px; text-transform: uppercase;">Estado del Documento</strong>
@@ -111,15 +104,10 @@
                                 <td class="p-0"><strong>Moneda:</strong></td>
                                 <td class="p-0 text-end"><span t-field="doc.currency_id.name"/></td>
                             </tr>
-                            <!-- TIPO DE CAMBIO: Solo visible cuando la orden es en USD -->
                             <tr t-if="doc.x_is_usd">
                                 <td class="p-0"><strong>Tipo de Cambio:</strong></td>
                                 <td class="p-0 text-end">
                                     <span t-esc="'%.4f' % doc.x_exchange_rate"/> MXN/USD
-                                    <span style="font-size: 8px; color: #777;">
-                                        (<span t-if="doc.x_exchange_rate_source == 'banorte'">Banorte</span>
-                                         <span t-if="doc.x_exchange_rate_source == 'official'">DOF</span>)
-                                    </span>
                                 </td>
                             </tr>
                             <tr>
@@ -134,14 +122,9 @@
                 </div>
 
                 <!-- ================= LÓGICA DE PROCESAMIENTO ================= -->
-
-                <!-- Líneas normales: productos/servicios con subtotal >= 0 -->
                 <t t-set="normal_lines" t-value="doc.order_line.filtered(lambda l: not l.display_type and l.price_subtotal &gt;= 0)"/>
-
-                <!-- Líneas de descuento global/fijo: subtotal negativo -->
                 <t t-set="discount_lines" t-value="doc.order_line.filtered(lambda l: not l.display_type and l.price_subtotal &lt; 0)"/>
 
-                <!-- Detectar si hay descuento real en líneas normales -->
                 <t t-set="has_line_discount_columns" t-value="False"/>
                 <t t-foreach="normal_lines" t-as="chk_line">
                     <t t-if="(chk_line.discount or 0.0) &gt; 0">
@@ -149,7 +132,6 @@
                     </t>
                 </t>
 
-                <!-- ====== CLASIFICACIÓN POR CATEGORÍA ====== -->
                 <t t-set="placas_summary" t-value="{}"/>
                 <t t-set="formatos_summary" t-value="{}"/>
                 <t t-set="adhesivos_summary" t-value="{}"/>
@@ -161,14 +143,11 @@
                 <t t-set="line_discount_total_amount" t-value="0.0"/>
                 <t t-set="global_discount_total_amount" t-value="0.0"/>
 
-                <!-- Acumular líneas normales por categoría -->
                 <t t-foreach="normal_lines" t-as="line">
                     <t t-set="key" t-value="'%s|%s|%s|%s' % (line.product_id.id, line.price_unit, line.discount or 0.0, line.name or '')"/>
-
                     <t t-set="line_gross" t-value="line.price_unit * line.product_uom_qty"/>
                     <t t-set="line_discount_pct" t-value="line.discount or 0.0"/>
                     <t t-set="line_discount_amount" t-value="(line_gross - line.price_subtotal) if line_gross &gt;= line.price_subtotal else 0.0"/>
-
                     <t t-set="gross_total_amount" t-value="gross_total_amount + line_gross"/>
                     <t t-set="line_discount_total_amount" t-value="line_discount_total_amount + line_discount_amount"/>
 
@@ -225,7 +204,6 @@
                     })"/>
                 </t>
 
-                <!-- Acumular descuentos globales / importe fijo -->
                 <t t-foreach="discount_lines" t-as="dline">
                     <t t-set="global_discount_total_amount" t-value="global_discount_total_amount + abs(dline.price_subtotal)"/>
                 </t>
@@ -450,16 +428,14 @@
                     </table>
                 </t>
 
-                <!-- Mensaje cuando no hay ningún material -->
+                <!-- Sin materiales -->
                 <t t-if="not placas_summary and not formatos_summary and not adhesivos_summary and not accesorios_summary and not otros_summary and not service_summary">
                     <div class="mt-3 mb-1">
                         <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Suministro de Materiales</strong>
                     </div>
                     <table class="table table-sm" style="width: 100%; font-size: 9px;">
                         <tbody>
-                            <tr>
-                                <td class="text-center" style="font-style: italic; color: #777;">Sin materiales seleccionados.</td>
-                            </tr>
+                            <tr><td class="text-center" style="font-style: italic; color: #777;">Sin materiales seleccionados.</td></tr>
                         </tbody>
                     </table>
                 </t>
@@ -507,7 +483,7 @@
                     </div>
                 </t>
 
-                <!-- ================= TABLA: DESCUENTOS GLOBALES / IMPORTE FIJO ================= -->
+                <!-- ================= DESCUENTOS GLOBALES ================= -->
                 <div t-if="discount_lines" style="margin-top: 15px;">
                     <div class="mb-1">
                         <strong style="font-size: 10px; text-transform: uppercase; background-color: #ffeaea; padding: 2px 5px; color: #b00020;">Descuentos Aplicados</strong>
@@ -550,31 +526,24 @@
                     </div>
                     <div class="col-6">
                         <table class="table table-sm table-borderless" style="font-size: 9px; border-top: 2px solid #000;">
-
-                            <!-- DESCUENTO EN LÍNEAS: solo si > 0 -->
                             <tr t-if="line_discount_total_amount &gt; 0" style="font-weight: bold; color: #b00020;">
                                 <td class="text-end">DESCUENTO EN LÍNEAS</td>
                                 <td class="text-end">
                                     -<span t-esc="line_discount_total_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                 </td>
                             </tr>
-
-                            <!-- DESCUENTOS GLOBALES: solo si > 0 -->
                             <tr t-if="global_discount_total_amount &gt; 0" style="font-weight: bold; color: #b00020;">
                                 <td class="text-end">DESCUENTOS GLOBALES / IMPORTE FIJO</td>
                                 <td class="text-end">
                                     -<span t-esc="global_discount_total_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                 </td>
                             </tr>
-
-                            <!-- DESCUENTO TOTAL: solo si > 0 -->
                             <tr t-if="total_discount_amount &gt; 0" style="font-weight: 900; color: #b00020; border-top: 1px dashed #d88;">
                                 <td class="text-end">DESCUENTO TOTAL</td>
                                 <td class="text-end">
                                     -<span t-esc="total_discount_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                 </td>
                             </tr>
-
                             <tr style="font-weight: bold;">
                                 <td class="text-end">SUBTOTAL</td>
                                 <td class="text-end">
@@ -593,29 +562,13 @@
                                     <span t-field="doc.amount_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                 </td>
                             </tr>
-
-                            <!-- EQUIVALENTE MXN: Solo cuando la orden es en USD -->
-                            <tr t-if="doc.x_is_usd and doc.x_exchange_rate > 0" style="font-weight: bold; color: #555; border-top: 1px dashed #aaa;">
-                                <td class="text-end" style="padding-top: 6px;">
-                                    EQUIVALENTE MXN
-                                    <div style="font-size: 7px; font-weight: normal; color: #999;">
-                                        TC <span t-esc="'%.4f' % doc.x_exchange_rate"/>
-                                        (<span t-if="doc.x_exchange_rate_source == 'banorte'">Banorte</span><span t-if="doc.x_exchange_rate_source == 'official'">DOF</span>)
-                                    </div>
-                                </td>
-                                <td class="text-end" style="padding-top: 6px;">
-                                    $<span t-esc="'{:,.2f}'.format(doc.amount_total * doc.x_exchange_rate)"/> MXN
-                                </td>
-                            </tr>
                         </table>
                     </div>
                 </div>
 
-                <!-- ✅ BLOQUE OCULTO DE TOTALES (NO BORRAR) -->
+                <!-- BLOQUE OCULTO -->
                 <div class="clearfix" name="so_total_summary" t-if="False">
-                    <div id="total" class="row" name="total">
-                        <div class="col-6"></div>
-                    </div>
+                    <div id="total" class="row" name="total"><div class="col-6"></div></div>
                 </div>
 
                 <!-- ================= FOOTER / FIRMAS ================= -->
@@ -638,21 +591,16 @@
 
                     <div class="row mt-2">
                         <div class="col-12">
-
-                            <!-- Información Bancaria Agregada -->
                             <t t-set="company" t-value="doc.company_id"/>
                             <t t-call="stock_lot_dimensions.company_bank_details_block"/>
 
-                            <!-- Términos Comerciales -->
                             <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
                                 <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
                                     <t t-if="doc.state in ('draft', 'sent')">Términos y Condiciones – Cotización</t>
                                     <t t-if="doc.state in ('sale', 'done')">Términos y Condiciones – Orden de Venta</t>
                                 </strong>
                                 <div style="font-size: 8px; text-align: justify; color: #555;">
-
                                     <p style="margin: 0 0 3px 0;">• El mármol y granito son materiales naturales, por lo que pueden existir variaciones en coloración, vetas y tonalidad respecto a muestras o imágenes.</p>
-
                                     <t t-if="doc.state in ('draft', 'sent')">
                                         <p style="margin: 0 0 3px 0;">• Los precios están sujetos a disponibilidad y no garantizan existencia hasta recibir confirmación de pago.</p>
                                         <p style="margin: 0 0 3px 0;">• En materiales de importación o bajo pedido, los tiempos de entrega son estimados y pueden variar por causas ajenas a la empresa.</p>
@@ -660,7 +608,6 @@
                                         <p style="margin: 0 0 3px 0;">• La cotización no incluye maniobras especiales de descarga ni servicios adicionales, salvo que se especifique por escrito.</p>
                                         <p style="margin: 0;">• Los precios pueden cambiar sin previo aviso en caso de incrementos por parte del proveedor.</p>
                                     </t>
-
                                     <t t-if="doc.state in ('sale', 'done')">
                                         <p style="margin: 0 0 3px 0;">• La presente orden de venta confirma los materiales, cantidades y precios acordados con el cliente.</p>
                                         <p style="margin: 0 0 3px 0;">• En caso de devolución autorizada, el material deberá entregarse en las mismas condiciones en que fue recibido, sin daño, sin cortes y sin haber sido instalado.</p>
@@ -670,10 +617,8 @@
                                         <p style="margin: 0 0 3px 0;">• El cliente acepta las condiciones aquí descritas a partir del momento en que se recibe el anticipo y/o el pago total correspondiente a esta orden de venta.</p>
                                         <p style="margin: 0;">• El plazo de entrega será de 24 a 48 horas hábiles, contado a partir de la confirmación de disponibilidad del material y de la recepción del pago total correspondiente al pedido.</p>
                                     </t>
-
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
