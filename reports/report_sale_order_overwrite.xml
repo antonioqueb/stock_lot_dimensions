@@ -13,6 +13,40 @@
         <xpath expr="//div[hasclass('page')]" position="replace">
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; line-height: 1.25;">
 
+                <style type="text/css">
+                    .no-grid,
+                    .no-grid table {
+                        border: 0 !important;
+                        border-collapse: collapse !important;
+                        border-spacing: 0 !important;
+                    }
+
+                    .no-grid th,
+                    .no-grid td {
+                        border: 0 !important;
+                        box-shadow: none !important;
+                    }
+
+                    .no-grid thead tr,
+                    .no-grid tbody tr {
+                        border: 0 !important;
+                    }
+
+                    .no-grid.table-striped > tbody > tr:nth-of-type(odd),
+                    .no-grid.table-striped > tbody > tr:nth-of-type(even) {
+                        background: transparent !important;
+                    }
+
+                    .soft-section-title {
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        background-color: #eee;
+                        padding: 2px 5px;
+                        display: inline-block;
+                        border: 0 !important;
+                    }
+                </style>
+
                 <!-- Anchors ocultos para herencias de Odoo (proforma, portal). NO BORRAR. -->
                 <div style="display: none;">
                     <table>
@@ -263,13 +297,13 @@
 
                     <t t-if="section_lines">
                         <div style="margin-top: 12px; margin-bottom: 4px;">
-                            <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;" t-esc="section_title"/>
+                            <strong class="soft-section-title" t-esc="section_title"/>
                         </div>
 
-                        <table class="table table-sm table-striped"
-                               style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000; table-layout: fixed; page-break-inside: auto;">
+                        <table class="table table-sm no-grid"
+                               style="width: 100%; font-size: 9px; border-collapse: collapse; table-layout: fixed; page-break-inside: auto;">
                             <thead>
-                                <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
+                                <tr style="background-color: #000; color: #fff;">
                                     <th class="text-center" style="color: #fff; width: 4%; font-weight: bold;">#</th>
                                     <th style="color: #fff; width: 32%; font-weight: bold;">Descripción</th>
                                     <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">Cantidad</th>
@@ -342,10 +376,10 @@
                         <strong style="font-size: 10px; text-transform: uppercase; background-color: #ffeaea; padding: 2px 5px; color: #b00020;">Descuentos Aplicados</strong>
                     </div>
 
-                    <table class="table table-sm"
-                           style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #b00020; table-layout: fixed;">
+                    <table class="table table-sm no-grid"
+                           style="width: 100%; font-size: 9px; border-collapse: collapse; table-layout: fixed;">
                         <thead>
-                            <tr style="border-bottom: 2px solid #b00020; background-color: #b00020; color: #fff;">
+                            <tr style="background-color: #b00020; color: #fff;">
                                 <th style="width: 55%; font-weight: bold; color: #fff;">Concepto</th>
                                 <th class="text-end" style="width: 15%; font-weight: bold; color: #fff;">Subtotal</th>
                                 <th class="text-end" style="width: 10%; font-weight: bold; color: #fff;">IVA</th>
@@ -383,7 +417,7 @@
                     </div>
 
                     <div class="col-6">
-                        <table class="table table-sm table-borderless" style="font-size: 9px; border-top: 2px solid #000;">
+                        <table class="table table-sm table-borderless no-grid" style="font-size: 9px;">
                             <tr t-if="line_discount_total_amount &gt; 0" style="font-weight: bold; color: #b00020;">
                                 <td class="text-end">DESCUENTO EN LÍNEAS</td>
                                 <td class="text-end" style="width: 35%; white-space: nowrap;">
@@ -398,7 +432,7 @@
                                 </td>
                             </tr>
 
-                            <tr t-if="total_discount_amount &gt; 0" style="font-weight: 900; color: #b00020; border-top: 1px dashed #d88;">
+                            <tr t-if="total_discount_amount &gt; 0" style="font-weight: 900; color: #b00020;">
                                 <td class="text-end">DESCUENTO TOTAL</td>
                                 <td class="text-end" style="width: 35%; white-space: nowrap;">
                                     -<span t-esc="total_discount_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
@@ -419,7 +453,7 @@
                                 </td>
                             </tr>
 
-                            <tr style="font-weight: 900; font-size: 11px; border-top: 1px solid #ccc;">
+                            <tr style="font-weight: 900; font-size: 11px;">
                                 <td class="text-end">TOTAL</td>
                                 <td class="text-end" style="width: 35%; white-space: nowrap;">
                                     <span t-field="doc.amount_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
