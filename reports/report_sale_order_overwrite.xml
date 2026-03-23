@@ -111,6 +111,17 @@
                                 <td class="p-0"><strong>Moneda:</strong></td>
                                 <td class="p-0 text-end"><span t-field="doc.currency_id.name"/></td>
                             </tr>
+                            <!-- TIPO DE CAMBIO: Solo visible cuando la orden es en USD -->
+                            <tr t-if="doc.x_is_usd">
+                                <td class="p-0"><strong>Tipo de Cambio:</strong></td>
+                                <td class="p-0 text-end">
+                                    <span t-esc="'%.4f' % doc.x_exchange_rate"/> MXN/USD
+                                    <span style="font-size: 8px; color: #777;">
+                                        (<span t-if="doc.x_exchange_rate_source == 'banorte'">Banorte</span>
+                                         <span t-if="doc.x_exchange_rate_source == 'official'">DOF</span>)
+                                    </span>
+                                </td>
+                            </tr>
                             <tr>
                                 <td class="p-0 pt-1"><strong>Plazos:</strong></td>
                                 <td class="p-0 pt-1 text-end">
@@ -139,17 +150,11 @@
                 </t>
 
                 <!-- ====== CLASIFICACIÓN POR CATEGORÍA ====== -->
-                <!-- Categoría: Placas (Bienes / Placas) -->
                 <t t-set="placas_summary" t-value="{}"/>
-                <!-- Categoría: Formatos (Bienes / Formatos) -->
                 <t t-set="formatos_summary" t-value="{}"/>
-                <!-- Categoría: Adhesivos y Selladores (Bienes / Adhesivos y Selladores) -->
                 <t t-set="adhesivos_summary" t-value="{}"/>
-                <!-- Categoría: Accesorios (Bienes / Accesorios) -->
                 <t t-set="accesorios_summary" t-value="{}"/>
-                <!-- Categoría: Servicios (Indirectos / Servicios + Servicios) -->
                 <t t-set="service_summary" t-value="{}"/>
-                <!-- Categoría: Otros (cualquier línea que no caiga en las anteriores) -->
                 <t t-set="otros_summary" t-value="{}"/>
 
                 <t t-set="gross_total_amount" t-value="0.0"/>
@@ -167,10 +172,8 @@
                     <t t-set="gross_total_amount" t-value="gross_total_amount + line_gross"/>
                     <t t-set="line_discount_total_amount" t-value="line_discount_total_amount + line_discount_amount"/>
 
-                    <!-- Determinar la categoría interna completa -->
                     <t t-set="categ_path" t-value="line.product_id.categ_id.complete_name or ''"/>
 
-                    <!-- Clasificar en el diccionario correspondiente -->
                     <t t-if="'Placas' in categ_path">
                         <t t-set="target_dict" t-value="placas_summary"/>
                         <t t-set="is_placa" t-value="True"/>
@@ -228,9 +231,6 @@
                 </t>
 
                 <t t-set="total_discount_amount" t-value="line_discount_total_amount + global_discount_total_amount"/>
-
-                <!-- ================= MACRO: TABLA DE MATERIALES (con columna Placas) ================= -->
-                <!-- Reutilizable para Placas, Formatos, Adhesivos, Accesorios, Otros -->
 
                 <!-- ======== TABLA: PLACAS ======== -->
                 <t t-if="placas_summary">
@@ -409,7 +409,7 @@
                     </table>
                 </t>
 
-                <!-- ======== TABLA: OTROS MATERIALES (catch-all para bienes sin categoría mapeada) ======== -->
+                <!-- ======== TABLA: OTROS MATERIALES ======== -->
                 <t t-if="otros_summary">
                     <div class="mt-3 mb-1">
                         <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;">Otros Materiales</strong>
@@ -551,14 +551,6 @@
                     <div class="col-6">
                         <table class="table table-sm table-borderless" style="font-size: 9px; border-top: 2px solid #000;">
 
-                            <!-- IMPORTE BRUTO: solo si hay descuento real -->
-                            <tr t-if="total_discount_amount &gt; 0" style="font-weight: bold; color: #555;">
-                                <td class="text-end">IMPORTE BRUTO</td>
-                                <td class="text-end" style="width: 30%;">
-                                    <span t-esc="gross_total_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                </td>
-                            </tr>
-
                             <!-- DESCUENTO EN LÍNEAS: solo si > 0 -->
                             <tr t-if="line_discount_total_amount &gt; 0" style="font-weight: bold; color: #b00020;">
                                 <td class="text-end">DESCUENTO EN LÍNEAS</td>
@@ -590,7 +582,7 @@
                                 </td>
                             </tr>
                             <tr style="font-weight: bold; color: #555;">
-                                <td class="text-end">IMPUESTOS</td>
+                                <td class="text-end">IVA 16%</td>
                                 <td class="text-end">
                                     <span t-field="doc.amount_tax" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                 </td>
@@ -599,6 +591,20 @@
                                 <td class="text-end">TOTAL</td>
                                 <td class="text-end">
                                     <span t-field="doc.amount_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                </td>
+                            </tr>
+
+                            <!-- EQUIVALENTE MXN: Solo cuando la orden es en USD -->
+                            <tr t-if="doc.x_is_usd and doc.x_exchange_rate > 0" style="font-weight: bold; color: #555; border-top: 1px dashed #aaa;">
+                                <td class="text-end" style="padding-top: 6px;">
+                                    EQUIVALENTE MXN
+                                    <div style="font-size: 7px; font-weight: normal; color: #999;">
+                                        TC <span t-esc="'%.4f' % doc.x_exchange_rate"/>
+                                        (<span t-if="doc.x_exchange_rate_source == 'banorte'">Banorte</span><span t-if="doc.x_exchange_rate_source == 'official'">DOF</span>)
+                                    </div>
+                                </td>
+                                <td class="text-end" style="padding-top: 6px;">
+                                    $<span t-esc="'{:,.2f}'.format(doc.amount_total * doc.x_exchange_rate)"/> MXN
                                 </td>
                             </tr>
                         </table>
