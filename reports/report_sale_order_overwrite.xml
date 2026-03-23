@@ -13,6 +13,37 @@
         <xpath expr="//div[hasclass('page')]" position="replace">
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
 
+                <!-- ============================================================
+                     BLOQUE OCULTO: Anchors requeridos por herencias de Odoo
+                     (proforma, portal, etc.) que buscan estos name="" en el DOM.
+                     NO BORRAR.
+                     ============================================================ -->
+                <div style="display: none;">
+                    <table>
+                        <thead><tr>
+                            <th name="th_description"/>
+                            <th name="th_quantity"/>
+                            <th name="th_priceunit"/>
+                            <th name="th_discount"/>
+                            <th name="th_taxes"/>
+                            <th name="th_subtotal"/>
+                            <th name="th_price_unit_display"/>
+                        </tr></thead>
+                        <tbody>
+                            <tr>
+                                <td name="td_name"/>
+                                <td name="td_quantity"/>
+                                <td name="td_priceunit"/>
+                                <td name="td_discount"/>
+                                <td name="td_taxes"/>
+                                <td name="td_subtotal"/>
+                                <td name="td_product_quantity"/>
+                                <td name="td_product_discount"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
                 <!-- ================= ENCABEZADO ================= -->
                 <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                     <div class="col-8">
@@ -222,9 +253,6 @@
                                 <th class="text-center" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">Placas</th>
                                 <th class="text-end" style="color: #fff; width: 11%; padding: 4px 8px; font-weight: bold;">Cantidad</th>
                                 <th class="text-end" style="color: #fff; width: 13%; padding: 4px 8px; font-weight: bold;">Precio Unitario</th>
-                                <th name="th_priceunit" t-if="False"/>
-                                <th name="th_discount" t-if="False"/>
-                                <th name="th_taxes" t-if="False"/>
                                 <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 8%; padding: 4px 8px; font-weight: bold;">% Desc.</th>
                                 <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 10%; padding: 4px 8px; font-weight: bold;">Descuento</th>
                                 <th class="text-end" style="color: #fff; width: 12%; padding: 4px 8px; font-weight: bold;">Subtotal</th>
@@ -242,11 +270,6 @@
                                     </td>
                                     <td class="text-end align-middle"><span t-esc="'{:,.2f}'.format(data['qty_total'])"/> <span t-esc="data['uom']"/></td>
                                     <td class="text-end align-middle"><span t-esc="data['price_unit']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
-                                    <td name="td_priceunit" t-if="False"/>
-                                    <td name="td_discount" t-if="False"/>
-                                    <td name="td_taxes" t-if="False"/>
-                                    <td name="td_product_quantity" t-if="False"/>
-                                    <td name="td_product_discount" t-if="False"/>
                                     <td t-if="has_line_discount_columns" class="text-end align-middle">
                                         <span t-if="data['discount_pct'] &gt; 0" t-esc="'{:,.2f}%'.format(data['discount_pct'])"/>
                                         <span t-else="" style="color: #999;">-</span>
@@ -264,7 +287,7 @@
                     </table>
                 </t>
 
-                <!-- ======== TABLA GENÉRICA PARA CATEGORÍAS SIN DESGLOSE ======== -->
+                <!-- ======== TABLAS GENÉRICAS: Formatos, Adhesivos, Accesorios, Otros ======== -->
                 <t t-foreach="[
                     (formatos_summary, 'Formatos'),
                     (adhesivos_summary, 'Adhesivos y Selladores'),
@@ -387,15 +410,9 @@
                             <t t-foreach="discount_lines" t-as="dline">
                                 <tr>
                                     <td class="align-middle"><span t-esc="dline.name or 'Descuento'"/></td>
-                                    <td class="text-end align-middle" style="color: #b00020; font-weight: 700;">
-                                        <span t-esc="dline.price_subtotal" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                    </td>
-                                    <td class="text-end align-middle" style="color: #b00020; font-weight: 700;">
-                                        <span t-esc="dline.price_tax" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                    </td>
-                                    <td class="text-end align-middle" style="color: #b00020; font-weight: 800;">
-                                        <span t-esc="dline.price_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                    </td>
+                                    <td class="text-end align-middle" style="color: #b00020; font-weight: 700;"><span t-esc="dline.price_subtotal" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td class="text-end align-middle" style="color: #b00020; font-weight: 700;"><span t-esc="dline.price_tax" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    <td class="text-end align-middle" style="color: #b00020; font-weight: 800;"><span t-esc="dline.price_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
                                 </tr>
                             </t>
                         </tbody>
@@ -440,7 +457,7 @@
                     </div>
                 </div>
 
-                <!-- BLOQUE OCULTO -->
+                <!-- BLOQUE OCULTO DE TOTALES -->
                 <div class="clearfix" name="so_total_summary" t-if="False">
                     <div id="total" class="row" name="total"><div class="col-6"></div></div>
                 </div>
