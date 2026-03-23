@@ -13,28 +13,6 @@
         <xpath expr="//div[hasclass('page')]" position="replace">
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
 
-                <!-- Reset estilos heredados del template padre -->
-                <style>
-                    .page .table { margin-bottom: 0 !important; }
-                    .page .row { margin-left: 0 !important; margin-right: 0 !important; }
-                    .page .col-4, .page .col-6, .page .col-8, .page .col-12 {
-                        overflow: hidden;
-                        max-width: 100%;
-                    }
-                    .page #informations .table td {
-                        max-width: 0;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        white-space: nowrap;
-                    }
-                    .page #informations .table td.lbl-cell {
-                        white-space: nowrap;
-                        width: 40%;
-                        max-width: none;
-                        overflow: visible;
-                    }
-                </style>
-
                 <!-- Anchors ocultos para herencias de Odoo (proforma, portal). NO BORRAR. -->
                 <div style="display: none;">
                     <table><thead><tr>
@@ -79,71 +57,85 @@
                 </div>
 
                 <!-- INFORMACIÓN GENERAL -->
-                <div class="row mb-2" id="informations">
-                    <div class="col-4">
-                        <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
-                            <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
-                        </div>
-                        <div style="line-height: 1.2; padding-left: 2px;">
-                            <span style="font-weight: bold; font-size: 12px;" t-field="doc.partner_id.name"/><br/>
-                            <span t-if="doc.partner_id.vat">RFC: <span t-field="doc.partner_id.vat"/></span>
-                        </div>
-                        <div class="mt-1" style="border-top: 1px dotted #9f9f9fff; padding-top: 1px;">
-                            <strong style="font-size: 9px; text-transform: uppercase; color: #555; display: block;">Dirección Fiscal / Entrega:</strong>
-                            <div style="font-size: 9px; color: #333; line-height: 1.1; margin-top: 2px;">
-                                <span t-field="doc.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
+                <table style="width: 100%; font-size: 10px; border-collapse: collapse; margin-bottom: 8px;">
+                    <tr>
+                        <!-- COL 1: CLIENTE (38%) -->
+                        <td style="width: 38%; vertical-align: top; padding-right: 10px;">
+                            <div style="border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 4px;">
+                                <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
                             </div>
-                        </div>
-                    </div>
+                            <div style="line-height: 1.2;">
+                                <span style="font-weight: bold; font-size: 12px;" t-field="doc.partner_id.name"/><br/>
+                                <span t-if="doc.partner_id.vat">RFC: <span t-field="doc.partner_id.vat"/></span>
+                            </div>
+                            <div style="border-top: 1px dotted #9f9f9f; padding-top: 2px; margin-top: 4px;">
+                                <strong style="font-size: 9px; text-transform: uppercase; color: #555;">Dirección Fiscal / Entrega:</strong>
+                                <div style="font-size: 9px; color: #333; line-height: 1.1; margin-top: 2px;">
+                                    <span t-field="doc.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
+                                </div>
+                            </div>
+                        </td>
 
-                    <div class="col-4">
-                        <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
-                            <strong style="font-size: 10px; text-transform: uppercase;">Detalles del Proyecto</strong>
-                        </div>
-                        <table class="table table-borderless table-sm mb-0 p-0" style="width: 100%; table-layout: fixed;">
-                            <tr>
-                                <td class="p-0 lbl-cell"><strong>Proyecto:</strong></td>
-                                <td class="p-0"><span t-if="doc.x_project_id" t-field="doc.x_project_id.name"/><span t-else="">-</span></td>
-                            </tr>
-                            <tr>
-                                <td class="p-0 lbl-cell"><strong>Arquitecto:</strong></td>
-                                <td class="p-0"><span t-if="doc.x_architect_id" t-field="doc.x_architect_id.name"/><span t-else="">-</span></td>
-                            </tr>
-                            <tr t-if="doc.client_order_ref">
-                                <td class="p-0 lbl-cell"><strong>Ref. Cliente:</strong></td>
-                                <td class="p-0"><span t-field="doc.client_order_ref"/></td>
-                            </tr>
-                            <tr>
-                                <td class="p-0 lbl-cell"><strong>Vendedor:</strong></td>
-                                <td class="p-0"><span t-field="doc.user_id.name"/></td>
-                            </tr>
-                        </table>
-                    </div>
+                        <!-- COL 2: DETALLES DEL PROYECTO (30%) -->
+                        <td style="width: 30%; vertical-align: top; padding-right: 10px;">
+                            <div style="border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 4px;">
+                                <strong style="font-size: 10px; text-transform: uppercase;">Detalles del Proyecto</strong>
+                            </div>
+                            <table style="width: 100%; font-size: 10px;">
+                                <tr>
+                                    <td style="padding: 1px 0; white-space: nowrap;"><strong>Proyecto:</strong></td>
+                                    <td style="padding: 1px 0;">
+                                        <span t-if="doc.x_project_id" t-field="doc.x_project_id.name"/>
+                                        <span t-else="">-</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 1px 0; white-space: nowrap;"><strong>Arquitecto:</strong></td>
+                                    <td style="padding: 1px 0;">
+                                        <span t-if="doc.x_architect_id" t-field="doc.x_architect_id.name"/>
+                                        <span t-else="">-</span>
+                                    </td>
+                                </tr>
+                                <tr t-if="doc.client_order_ref">
+                                    <td style="padding: 1px 0; white-space: nowrap;"><strong>Ref. Cliente:</strong></td>
+                                    <td style="padding: 1px 0;"><span t-field="doc.client_order_ref"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 1px 0; white-space: nowrap;"><strong>Vendedor:</strong></td>
+                                    <td style="padding: 1px 0;"><span t-field="doc.user_id.name"/></td>
+                                </tr>
+                            </table>
+                        </td>
 
-                    <div class="col-4">
-                        <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
-                            <strong style="font-size: 10px; text-transform: uppercase;">Estado del Documento</strong>
-                        </div>
-                        <table class="table table-borderless table-sm mb-1 p-0" style="width: 100%; table-layout: fixed;">
-                            <tr>
-                                <td class="p-0 lbl-cell"><strong>Fecha:</strong></td>
-                                <td class="p-0 text-end"><span t-field="doc.date_order" t-options='{"widget": "date"}'/></td>
-                            </tr>
-                            <tr>
-                                <td class="p-0 lbl-cell"><strong>Moneda:</strong></td>
-                                <td class="p-0 text-end"><span t-field="doc.currency_id.name"/></td>
-                            </tr>
-                            <tr t-if="doc.x_is_usd">
-                                <td class="p-0 lbl-cell"><strong>T. Cambio:</strong></td>
-                                <td class="p-0 text-end"><span t-esc="'%.4f' % doc.x_exchange_rate"/> MXN/USD</td>
-                            </tr>
-                            <tr>
-                                <td class="p-0 pt-1 lbl-cell"><strong>Plazos:</strong></td>
-                                <td class="p-0 pt-1 text-end"><span t-if="doc.payment_term_id" t-field="doc.payment_term_id.name"/><span t-else="">-</span></td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
+                        <!-- COL 3: ESTADO DEL DOCUMENTO (32%) -->
+                        <td style="width: 32%; vertical-align: top;">
+                            <div style="border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 4px;">
+                                <strong style="font-size: 10px; text-transform: uppercase;">Estado del Documento</strong>
+                            </div>
+                            <table style="width: 100%; font-size: 10px;">
+                                <tr>
+                                    <td style="padding: 1px 0; white-space: nowrap;"><strong>Fecha:</strong></td>
+                                    <td style="padding: 1px 0; text-align: right;"><span t-field="doc.date_order" t-options='{"widget": "date"}'/></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 1px 0; white-space: nowrap;"><strong>Moneda:</strong></td>
+                                    <td style="padding: 1px 0; text-align: right;"><span t-field="doc.currency_id.name"/></td>
+                                </tr>
+                                <tr t-if="doc.x_is_usd">
+                                    <td style="padding: 1px 0; white-space: nowrap;"><strong>T. Cambio:</strong></td>
+                                    <td style="padding: 1px 0; text-align: right;"><span t-esc="'%.4f' % doc.x_exchange_rate"/> MXN/USD</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 1px 0; white-space: nowrap;"><strong>Plazos:</strong></td>
+                                    <td style="padding: 1px 0; text-align: right; word-wrap: break-word;">
+                                        <span t-if="doc.payment_term_id" t-field="doc.payment_term_id.name"/>
+                                        <span t-else="">-</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
 
                 <!-- LÓGICA -->
                 <t t-set="normal_lines" t-value="doc.order_line.filtered(lambda l: not l.display_type and l.price_subtotal &gt;= 0)"/>
@@ -191,14 +183,14 @@
                     <t t-set="section_lines" t-value="section[0]"/>
                     <t t-set="section_title" t-value="section[1]"/>
                     <t t-if="section_lines">
-                        <div class="mt-3 mb-1">
+                        <div style="margin-top: 12px; margin-bottom: 4px;">
                             <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;" t-esc="section_title"/>
                         </div>
-                        <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000; table-layout: fixed;">
+                        <table class="table table-sm table-striped" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000;">
                             <thead>
                                 <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
                                     <th class="text-center" style="color: #fff; width: 4%; font-weight: bold;">#</th>
-                                    <th style="color: #fff; width: 32%; font-weight: bold; overflow: hidden; text-overflow: ellipsis;">Descripción</th>
+                                    <th style="color: #fff; width: 32%; font-weight: bold;">Descripción</th>
                                     <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">Cantidad</th>
                                     <th class="text-end" style="color: #fff; width: 12%; font-weight: bold;">P. Unitario</th>
                                     <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 7%; font-weight: bold;">% Desc.</th>
@@ -215,7 +207,7 @@
                                     <t t-set="line_discount_amount" t-value="(line_gross - line.price_subtotal) if line_gross &gt;= line.price_subtotal else 0.0"/>
                                     <tr>
                                         <td class="text-center align-middle"><span t-esc="global_seq"/><t t-set="global_seq" t-value="global_seq + 1"/></td>
-                                        <td class="align-middle" style="overflow: hidden; text-overflow: ellipsis;"><span t-field="line.name"/></td>
+                                        <td class="align-middle"><span t-field="line.name"/></td>
                                         <td class="text-end align-middle"><span t-field="line.product_uom_qty"/> <span t-field="line.product_id.uom_id.name"/></td>
                                         <td class="text-end align-middle"><span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
                                         <td t-if="has_line_discount_columns" class="text-end align-middle"><span t-if="line_discount_pct &gt; 0" t-esc="'%.2f%%' % line_discount_pct"/><span t-else="" style="color: #999;">-</span></td>
@@ -235,7 +227,7 @@
                     <div class="mb-1">
                         <strong style="font-size: 10px; text-transform: uppercase; background-color: #ffeaea; padding: 2px 5px; color: #b00020;">Descuentos Aplicados</strong>
                     </div>
-                    <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #b00020; table-layout: fixed;">
+                    <table class="table table-sm" style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #b00020;">
                         <thead>
                             <tr style="border-bottom: 2px solid #b00020; background-color: #b00020; color: #fff;">
                                 <th style="width: 55%; font-weight: bold; color: #fff;">Concepto</th>
@@ -247,7 +239,7 @@
                         <tbody>
                             <t t-foreach="discount_lines" t-as="dline">
                                 <tr>
-                                    <td class="align-middle" style="overflow: hidden; text-overflow: ellipsis;"><span t-esc="dline.name or 'Descuento'"/></td>
+                                    <td class="align-middle"><span t-esc="dline.name or 'Descuento'"/></td>
                                     <td class="text-end align-middle" style="color: #b00020; font-weight: 700;"><span t-esc="dline.price_subtotal" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
                                     <td class="text-end align-middle" style="color: #b00020; font-weight: 700;"><span t-esc="dline.price_tax" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
                                     <td class="text-end align-middle" style="color: #b00020; font-weight: 800;"><span t-esc="dline.price_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
@@ -266,7 +258,7 @@
                         </div>
                     </div>
                     <div class="col-6">
-                        <table class="table table-sm table-borderless" style="font-size: 9px; border-top: 2px solid #000; table-layout: fixed;">
+                        <table class="table table-sm table-borderless" style="font-size: 9px; border-top: 2px solid #000;">
                             <tr t-if="line_discount_total_amount &gt; 0" style="font-weight: bold; color: #b00020;">
                                 <td class="text-end">DESCUENTO EN LÍNEAS</td>
                                 <td class="text-end" style="width: 35%;">-<span t-esc="line_discount_total_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
