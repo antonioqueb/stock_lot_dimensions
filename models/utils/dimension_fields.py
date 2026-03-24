@@ -53,7 +53,7 @@ class LotDimensionFields:
                 string='Tipo',
                 help='Tipo de producto: Placa o Formato'
             ),
-            'x_numero_placa': fields.Integer(
+            'x_numero_placa': fields.Char(
                 string='No. Placa',
                 help='Número consecutivo de la placa'
             ),

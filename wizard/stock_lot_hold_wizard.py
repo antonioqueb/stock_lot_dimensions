@@ -98,7 +98,7 @@ class StockLotHoldWizard(models.TransientModel):
     x_bloque = fields.Char(related='lot_id.x_bloque', readonly=True)
     x_atado = fields.Char(related='lot_id.x_atado', readonly=True)
     x_tipo = fields.Selection(related='lot_id.x_tipo', readonly=True)
-    x_numero_placa = fields.Integer(related='lot_id.x_numero_placa', readonly=True)
+    x_numero_placa = fields.Char(related='lot_id.x_numero_placa', readonly=True)
     x_peso = fields.Float(related='lot_id.x_peso', readonly=True)
 
     def _calcular_dias_habiles(self, fecha_inicio, dias_habiles):
