@@ -26,7 +26,7 @@
                         <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                             <div class="col-8">
                                 <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
-                                    Orden de Reserva (Detalle) <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
+                                    Orden de Reserva <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
                                 </h4>
                             </div>
                             <div class="col-4 text-end">
@@ -341,7 +341,7 @@
                             </div>
 
                             <!-- Información Bancaria Agregada -->
-                            <t t-set="company" t-value="o.company_id"/>
+                            <t t-set="company" t-value="doc.company_id"/>
                             <t t-call="stock_lot_dimensions.company_bank_details_block"/>
 
                             <!-- TÉRMINOS SIMPLIFICADOS (Caja Gris) -->
