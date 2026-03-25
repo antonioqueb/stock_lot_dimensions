@@ -31,7 +31,7 @@ export class HoldStoneButton extends Component {
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     _updateCount(props = this.props) {
-        const ids = this.extractLotIds(props?.record?.data?.lot_ids);
+        const ids = this.getAllLotIds(props);
         this.state.selectedCount = ids.length;
     }
 
@@ -42,6 +42,32 @@ export class HoldStoneButton extends Component {
         if (rawLots.resIds) return rawLots.resIds;
         if (rawLots.records) return rawLots.records.map((r) => r.resId || r.data?.id).filter(Boolean);
         return [];
+    }
+
+    _extractId(field) {
+        if (!field) return 0;
+        if (typeof field === "number") return field;
+        if (Array.isArray(field)) return field[0] || 0;
+        if (field.id) return field.id;
+        return 0;
+    }
+
+    /**
+     * Obtiene TODOS los lot IDs combinando lot_ids (nuevo) y lot_id (legacy)
+     */
+    getAllLotIds(props = this.props) {
+        const data = props?.record?.data;
+        if (!data) return [];
+
+        const lotIdsFromM2M = this.extractLotIds(data.lot_ids);
+        const legacyLotId = this._extractId(data.lot_id);
+
+        // Combinar sin duplicados
+        const allIds = new Set(lotIdsFromM2M);
+        if (legacyLotId && !allIds.has(legacyLotId)) {
+            allIds.add(legacyLotId);
+        }
+        return Array.from(allIds);
     }
 
     getProductId() {
@@ -62,7 +88,7 @@ export class HoldStoneButton extends Component {
     }
 
     getCurrentLotIds() {
-        return this.extractLotIds(this.props.record.data.lot_ids);
+        return this.getAllLotIds();
     }
 
     // ─── Toggle principal ─────────────────────────────────────────────────────
@@ -292,7 +318,6 @@ export class HoldStoneButton extends Component {
         };
 
         let searchTimeout = null;
-
         const showProductFilter = !initialProductId;
 
         root.innerHTML = `
@@ -535,11 +560,8 @@ export class HoldStoneButton extends Component {
                 tr.addEventListener("click", () => {
                     const lotId = parseInt(tr.dataset.lotId);
                     if (!lotId) return;
-                    if (state.pendingIds.has(lotId)) {
-                        state.pendingIds.delete(lotId);
-                    } else {
-                        state.pendingIds.add(lotId);
-                    }
+                    if (state.pendingIds.has(lotId)) { state.pendingIds.delete(lotId); }
+                    else { state.pendingIds.add(lotId); }
                     const sel = state.pendingIds.has(lotId);
                     tr.className = sel ? "row-sel" : "";
                     const chk = tr.querySelector(".stone-chkbox");
@@ -549,10 +571,8 @@ export class HoldStoneButton extends Component {
                     }
                     const tag = tr.querySelector(".stone-tag");
                     if (tag) {
-                        if (sel) {
-                            tag.className = "stone-tag stone-tag-ok";
-                            tag.textContent = "Selec.";
-                        } else {
+                        if (sel) { tag.className = "stone-tag stone-tag-ok"; tag.textContent = "Selec."; }
+                        else {
                             const reserved = tr.dataset.reserved === "1";
                             tag.className = reserved ? "stone-tag stone-tag-warn" : "stone-tag stone-tag-free";
                             tag.textContent = reserved ? "Reservado" : "Libre";
@@ -589,14 +609,32 @@ export class HoldStoneButton extends Component {
             }
 
             try {
+                // Dominio base: libres + los ya seleccionados por esta línea
+                const currentSelected = Array.from(state.pendingIds);
+
                 const domain = [
                     ["location_id.usage", "=", "internal"],
                     ["quantity", ">", 0],
                     ["lot_id", "!=", false],
-                    ["x_tiene_hold", "=", false],
-                    ["reserved_quantity", "=", 0],
                 ];
-                if (state.productId) domain.push(["product_id", "=", state.productId]);
+
+                if (state.productId) {
+                    domain.push(["product_id", "=", state.productId]);
+                }
+
+                // Mostrar: libres O ya seleccionados
+                // Construimos un OR: (sin hold Y sin reserva) O (lot_id en currentSelected)
+                if (currentSelected.length > 0) {
+                    domain.push("|");
+                    domain.push("&");
+                    domain.push(["x_tiene_hold", "=", false]);
+                    domain.push(["reserved_quantity", "=", 0]);
+                    domain.push(["lot_id", "in", currentSelected]);
+                } else {
+                    domain.push(["x_tiene_hold", "=", false]);
+                    domain.push(["reserved_quantity", "=", 0]);
+                }
+
                 if (state.filters.lot_name) domain.push(["lot_id.name", "ilike", state.filters.lot_name]);
                 if (state.filters.bloque) domain.push(["lot_id.x_bloque", "ilike", state.filters.bloque]);
                 if (state.filters.atado) domain.push(["lot_id.x_atado", "ilike", state.filters.atado]);
@@ -614,7 +652,8 @@ export class HoldStoneButton extends Component {
                     limit: PAGE_SIZE, offset, order: "lot_id",
                 });
 
-                if (reset || page === 0) { state.quants = quants; } else { state.quants = [...state.quants, ...quants]; }
+                if (reset || page === 0) { state.quants = quants; }
+                else { state.quants = [...state.quants, ...quants]; }
                 state.totalCount = total;
                 state.page = page;
                 state.hasMore = state.quants.length < total;

@@ -3,6 +3,10 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from .utils.business_days import BusinessDaysCalculator
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 class StockLotHoldOrder(models.Model):
     _name = 'stock.lot.hold.order'
@@ -135,7 +139,6 @@ class StockLotHoldOrder(models.Model):
                 address_parts.append(self.partner_id.street)
             if self.partner_id.street2:
                 address_parts.append(self.partner_id.street2)
-            
             city_parts = []
             if self.partner_id.city:
                 city_parts.append(self.partner_id.city)
@@ -143,13 +146,10 @@ class StockLotHoldOrder(models.Model):
                 city_parts.append(self.partner_id.state_id.name)
             if self.partner_id.zip:
                 city_parts.append(f"C.P. {self.partner_id.zip}")
-            
             if city_parts:
                 address_parts.append(', '.join(city_parts))
-            
             if self.partner_id.country_id:
                 address_parts.append(self.partner_id.country_id.name)
-            
             self.delivery_address = '\n'.join(address_parts) if address_parts else ''
     
     @api.depends('hold_line_ids.cantidad_m2', 'hold_line_ids.precio_total', 'hold_line_ids.lot_ids')
@@ -187,7 +187,14 @@ class StockLotHoldOrder(models.Model):
     
     def _release_related_holds(self):
         for order in self:
-            active_holds = order.hold_line_ids.mapped('hold_ids').filtered(lambda h: h.estado == 'activo')
+            # Buscar holds de ambas fuentes: hold_ids (nuevo) y hold_id (legacy)
+            active_holds = self.env['stock.lot.hold']
+            for line in order.hold_line_ids:
+                if line.hold_ids:
+                    active_holds |= line.hold_ids.filtered(lambda h: h.estado == 'activo')
+                if line.hold_id and line.hold_id.estado == 'activo':
+                    active_holds |= line.hold_id
+            
             if active_holds:
                 active_holds.write({'estado': 'cancelado'})
                 msg = f"Se liberaron {len(active_holds)} apartados automáticamente."
@@ -203,12 +210,26 @@ class StockLotHoldOrder(models.Model):
                 if line.product_id.type == 'service':
                     continue
                 
-                if not line.lot_ids:
+                # Obtener lotes: preferir lot_ids (nuevo), fallback a lot_id (legacy)
+                lots_to_process = line.lot_ids
+                if not lots_to_process and line.lot_id:
+                    lots_to_process = line.lot_id
+                
+                if not lots_to_process:
                     raise UserError(f'La línea de {line.product_id.display_name} no tiene placas seleccionadas.')
                 
-                # Crear un hold por cada lote en la línea
-                for lot in line.lot_ids:
-                    # Buscar quant del lote
+                for lot in lots_to_process:
+                    # Verificar si ya tiene hold creado para este lote
+                    existing_hold_for_lot = line.hold_ids.filtered(
+                        lambda h: h.lot_id.id == lot.id and h.estado == 'activo'
+                    )
+                    if existing_hold_for_lot:
+                        continue
+                    
+                    # Legacy: verificar hold_id
+                    if line.hold_id and line.hold_id.lot_id.id == lot.id and line.hold_id.estado == 'activo':
+                        continue
+                    
                     quant = self.env['stock.quant'].search([
                         ('lot_id', '=', lot.id),
                         ('quantity', '>', 0),
@@ -219,15 +240,14 @@ class StockLotHoldOrder(models.Model):
                     if not quant:
                         raise UserError(f'El lote {lot.name} no tiene stock disponible para reservar.')
                     
-                    # Verificar que no tenga hold activo
-                    existing_hold = self.env['stock.lot.hold'].search([
+                    existing_active = self.env['stock.lot.hold'].search([
                         ('quant_id', '=', quant.id),
                         ('estado', '=', 'activo'),
                         ('company_id', '=', order.company_id.id),
                     ], limit=1)
-                    if existing_hold:
+                    if existing_active:
                         raise UserError(
-                            f'El lote {lot.name} ya tiene una reserva activa para {existing_hold.partner_id.name}.'
+                            f'El lote {lot.name} ya tiene una reserva activa para {existing_active.partner_id.name}.'
                         )
                     
                     notas_hold = f'Orden: {order.name}\n'
@@ -264,7 +284,14 @@ class StockLotHoldOrder(models.Model):
         for order in self:
             if order.state != 'confirmed':
                 raise UserError('Solo puede renovar órdenes confirmadas.')
-            order.hold_line_ids.mapped('hold_ids').filtered(lambda h: h.estado == 'activo').action_renovar_hold()
+            # Renovar holds de ambas fuentes
+            all_holds = self.env['stock.lot.hold']
+            for line in order.hold_line_ids:
+                if line.hold_ids:
+                    all_holds |= line.hold_ids.filtered(lambda h: h.estado == 'activo')
+                if line.hold_id and line.hold_id.estado == 'activo':
+                    all_holds |= line.hold_id
+            all_holds.action_renovar_hold()
             order.fecha_expiracion = BusinessDaysCalculator.get_expiration_date(days=5)
     
     def action_convert_to_sale_order(self):
@@ -272,10 +299,8 @@ class StockLotHoldOrder(models.Model):
         
         if self.state != 'confirmed':
             raise UserError('Solo puede convertir órdenes de reserva confirmadas.')
-        
         if self.sale_order_id:
             raise UserError('Esta orden de reserva ya generó una orden de venta.')
-        
         if not self.hold_line_ids:
             raise UserError('No hay líneas de reserva para convertir.')
         
@@ -283,8 +308,12 @@ class StockLotHoldOrder(models.Model):
         for line in self.hold_line_ids:
             if line.product_id.type == 'service':
                 continue
-            inactive_holds = line.hold_ids.filtered(lambda h: h.estado != 'activo')
-            if inactive_holds:
+            # Verificar ambas fuentes de holds
+            all_line_holds = line.hold_ids
+            if line.hold_id:
+                all_line_holds |= line.hold_id
+            inactive = all_line_holds.filtered(lambda h: h.estado != 'activo')
+            if inactive:
                 raise UserError('Hay reservas que ya no están activas. Renueve antes de convertir.')
         
         product_groups = {}
@@ -308,8 +337,12 @@ class StockLotHoldOrder(models.Model):
                     'price_unit': line.precio_unitario or 0.0,
                 }
             
-            # Agregar quants de cada lote
-            for lot in line.lot_ids:
+            # Obtener lotes de ambas fuentes
+            lots = line.lot_ids
+            if not lots and line.lot_id:
+                lots = line.lot_id
+            
+            for lot in lots:
                 quant = self.env['stock.quant'].search([
                     ('lot_id', '=', lot.id),
                     ('quantity', '>', 0),
@@ -370,15 +403,13 @@ class StockLotHoldOrder(models.Model):
             
             if result.get('success'):
                 sale_order = self.env['sale.order'].browse(result['order_id'])
-                
                 self.write({
                     'sale_order_id': sale_order.id,
                     'state': 'done'
                 })
-                
                 # Liberar holds
                 for line in self.hold_line_ids:
-                    for hold in line.hold_ids.filtered(lambda h: h.estado == 'activo'):
+                    for hold in (line.hold_ids | line.hold_id).filtered(lambda h: h.estado == 'activo'):
                         hold.action_cancelar_hold()
                 
                 return {
@@ -420,7 +451,7 @@ class StockLotHoldOrderLine(models.Model):
         required=True
     )
     
-    # ===== NUEVO: Many2many de lotes (reemplaza lot_id) =====
+    # ===== Many2many de lotes (nuevo) =====
     lot_ids = fields.Many2many(
         'stock.lot',
         'hold_order_line_lot_rel',
@@ -436,12 +467,11 @@ class StockLotHoldOrderLine(models.Model):
         store=True
     )
     
-    # ===== Campos legacy (mantener por compatibilidad con reportes) =====
+    # ===== Campos legacy =====
     lot_id = fields.Many2one(
         'stock.lot', 
         string='Lote', 
-        required=False,
-        help='Campo legacy, usar lot_ids'
+        required=False
     )
     
     quant_id = fields.Many2one(
@@ -480,7 +510,7 @@ class StockLotHoldOrderLine(models.Model):
         currency_field='currency_id'
     )
     
-    # Holds creados para esta línea
+    # Holds creados (nuevo: Many2many)
     hold_ids = fields.Many2many(
         'stock.lot.hold',
         'hold_order_line_hold_rel',
@@ -490,14 +520,14 @@ class StockLotHoldOrderLine(models.Model):
         readonly=True
     )
     
-    # Campo legacy (mantener por compatibilidad)
+    # Hold legacy
     hold_id = fields.Many2one(
         'stock.lot.hold', 
         string='Hold Creado', 
         readonly=True
     )
     
-    # Campos related del lote (vacíos si hay múltiples, muestran el primero)
+    # Campos related del primer lote
     x_color = fields.Char(related='lot_id.x_color', string='Color', readonly=True)
     x_grosor = fields.Char(related='lot_id.x_grosor', string='Grosor (cm)', readonly=True)
     x_alto = fields.Float(related='lot_id.x_alto', string='Alto (m)', readonly=True)
@@ -505,10 +535,15 @@ class StockLotHoldOrderLine(models.Model):
     x_bloque = fields.Char(related='lot_id.x_bloque', string='Bloque', readonly=True)
     x_tipo = fields.Selection(related='lot_id.x_tipo', string='Tipo', readonly=True)
 
-    @api.depends('lot_ids')
+    @api.depends('lot_ids', 'lot_id')
     def _compute_lot_count(self):
         for line in self:
-            line.lot_count = len(line.lot_ids)
+            if line.lot_ids:
+                line.lot_count = len(line.lot_ids)
+            elif line.lot_id:
+                line.lot_count = 1
+            else:
+                line.lot_count = 0
 
     @api.onchange('product_id')
     def _onchange_product_id(self):
@@ -519,10 +554,11 @@ class StockLotHoldOrderLine(models.Model):
             if not self.cantidad_m2:
                 self.cantidad_m2 = 1.0
 
-    @api.depends('lot_ids', 'product_id')
+    @api.depends('lot_ids', 'lot_id', 'quant_id', 'quant_id.quantity', 'product_id')
     def _compute_cantidad_m2(self):
         for line in self:
             if line.lot_ids:
+                # Nuevo: sumar cantidad de todos los lotes
                 total = 0.0
                 for lot in line.lot_ids:
                     quant = self.env['stock.quant'].search([
@@ -532,6 +568,9 @@ class StockLotHoldOrderLine(models.Model):
                     ], limit=1)
                     total += quant.quantity if quant else 0.0
                 line.cantidad_m2 = total
+            elif line.quant_id:
+                # Legacy: usar quant directamente
+                line.cantidad_m2 = line.quant_id.quantity
             elif line.product_id and line.product_id.type == 'service':
                 if not line.cantidad_m2:
                     line.cantidad_m2 = 1.0
@@ -546,17 +585,40 @@ class StockLotHoldOrderLine(models.Model):
     
     @api.onchange('lot_ids')
     def _onchange_lot_ids(self):
-        """Sincronizar lot_id legacy con el primer lote seleccionado"""
+        """Sincronizar lot_id legacy con el primer lote"""
         if self.lot_ids:
             self.lot_id = self.lot_ids[0]
             self.product_id = self.lot_ids[0].product_id
-            # Buscar quant del primer lote
             quant = self.env['stock.quant'].search([
                 ('lot_id', '=', self.lot_ids[0].id),
                 ('quantity', '>', 0),
                 ('location_id.usage', '=', 'internal'),
             ], limit=1)
             self.quant_id = quant.id if quant else False
-        else:
-            self.lot_id = False
-            self.quant_id = False
+    
+    @api.onchange('lot_id')
+    def _onchange_lot_id(self):
+        """Legacy: si cambia lot_id directamente, sincronizar lot_ids"""
+        if self.lot_id:
+            self.product_id = self.lot_id.product_id
+            # Agregar a lot_ids si no está
+            if self.lot_id not in self.lot_ids:
+                self.lot_ids = [(4, self.lot_id.id)]
+            quant = self.env['stock.quant'].search([
+                ('lot_id', '=', self.lot_id.id),
+                ('quantity', '>', 0),
+                ('location_id.usage', '=', 'internal'),
+            ], limit=1)
+            if quant:
+                self.quant_id = quant.id
+    
+    def _get_all_lots(self):
+        """
+        Retorna todos los lotes de esta línea, combinando lot_ids y lot_id legacy.
+        Útil para reportes y lógica de negocio.
+        """
+        self.ensure_one()
+        lots = self.lot_ids
+        if self.lot_id and self.lot_id not in lots:
+            lots |= self.lot_id
+        return lots
