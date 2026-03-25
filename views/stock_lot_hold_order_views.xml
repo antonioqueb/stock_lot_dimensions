@@ -1,16 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- views/stock_lot_hold_order_views.xml -->
 <odoo>
+
+    <!-- ================================================================== -->
+    <!-- LÍNEAS: Vista tree con widget stone                                -->
+    <!-- ================================================================== -->
     <record id="view_stock_lot_hold_order_line_tree" model="ir.ui.view">
         <field name="name">stock.lot.hold.order.line.tree</field>
         <field name="model">stock.lot.hold.order.line</field>
         <field name="arch" type="xml">
             <list editable="bottom">
-                <field name="lot_id" 
-                       required="1" 
-                       domain="[('product_id', '!=', False)]"
-                       options="{'no_create': True}"/>
+                <!-- Botón visual stone (primer columna) -->
+                <field name="lot_id" column_invisible="1"/>
+                <field name="quant_id" column_invisible="1"/>
+
+                <field name="lot_id"
+                       widget="hold_stone_button"
+                       string=" "
+                       width="30px"
+                       nolabel="1"
+                       class="p-0 text-center"/>
+
                 <field name="product_id" readonly="1"/>
+
+                <field name="lot_id" 
+                       string="Lote"
+                       readonly="1"
+                       optional="show"
+                       widget="many2one"/>
+
                 <field name="cantidad_m2" string="m²" sum="Total m²" readonly="1"/>
                 
                 <field name="currency_id" column_invisible="1"/>
@@ -21,12 +39,16 @@
                 <field name="x_alto" string="Alto" optional="show" readonly="1"/>
                 <field name="x_ancho" string="Ancho" optional="show" readonly="1"/>
                 <field name="x_color" string="Color" optional="show" readonly="1"/>
+                <field name="x_bloque" string="Bloque" optional="show" readonly="1"/>
                 <field name="x_tipo" string="Tipo" optional="show" readonly="1"/>
-                <field name="hold_id" string="Hold Creado" readonly="1" optional="hide"/>
+                <field name="hold_id" string="Hold" readonly="1" optional="hide"/>
             </list>
         </field>
     </record>
 
+    <!-- ================================================================== -->
+    <!-- LISTA DE ÓRDENES                                                   -->
+    <!-- ================================================================== -->
     <record id="view_stock_lot_hold_order_tree" model="ir.ui.view">
         <field name="name">stock.lot.hold.order.tree</field>
         <field name="model">stock.lot.hold.order</field>
@@ -50,6 +72,9 @@
         </field>
     </record>
 
+    <!-- ================================================================== -->
+    <!-- FORMULARIO DE ORDEN                                                -->
+    <!-- ================================================================== -->
     <record id="view_stock_lot_hold_order_form" model="ir.ui.view">
         <field name="name">stock.lot.hold.order.form</field>
         <field name="model">stock.lot.hold.order</field>
@@ -146,18 +171,20 @@
                         </page>
                     </notebook>
                 </sheet>
-                <chatter></chatter>
+                <chatter/>
             </form>
         </field>
     </record>
 
+    <!-- ================================================================== -->
+    <!-- ACCIÓN Y MENÚ                                                      -->
+    <!-- ================================================================== -->
     <record id="action_stock_lot_hold_order" model="ir.actions.act_window">
         <field name="name">Órdenes de Reserva</field>
         <field name="res_model">stock.lot.hold.order</field>
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- Menú "Holds" en Ventas (directo a órdenes de reserva) -->
     <menuitem id="menu_holds_root"
               name="Holds"
               parent="sale.sale_menu_root"

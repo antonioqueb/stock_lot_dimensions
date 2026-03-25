@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Atributos Adicionales para Lotes',
-    'version': '19.0.2.0.0',
+    'version': '19.0.2.1.0',
     'category': 'Inventory/Inventory',
     'summary': 'Captura dimensiones, fotografías y gestión de reservas manuales (hold) en lotes',
     'description': """
@@ -12,10 +12,11 @@
         - Mostrar estados de reserva y detalles de placas
         - Gestionar reservas manuales (holds) independientes de órdenes de venta
         - Expiración automática de reservas a los 5 días hábiles (lunes a viernes)
+        - Selección visual de placas en órdenes de reserva (estilo stone grid)
     """,
     'author': 'Alphaqueb Consulting',
     'website': 'https://alphaqueb.com',
-    'depends': ['stock', 'sale', 'web', 'project', 'mail', 'sale_stock'],
+    'depends': ['stock', 'sale', 'web', 'project', 'mail', 'sale_stock', 'sale_stone_selection'],
     'data': [
         'security/stock_lot_hold_security.xml',
         'security/res_company_bank_info_security.xml',
@@ -25,11 +26,11 @@
         'data/stock_lot_hold_order_sequence.xml',
         'reports/company_bank_details_templates.xml',
         'reports/stock_lot_hold_order_report.xml',
-        'reports/stock_lot_hold_order_summary_report.xml', 
+        'reports/stock_lot_hold_order_summary_report.xml',
         'reports/stock_lot_hold_order_detail_report.xml',
         'reports/stock_lot_hold_order_report_no_prices.xml',
         'reports/stock_lot_hold_order_summary_report_no_prices.xml',
-        'reports/stock_lot_hold_order_detail_report_no_prices.xml',  
+        'reports/stock_lot_hold_order_detail_report_no_prices.xml',
         'reports/report_sale_order_overwrite.xml',
         'reports/report_delivery_custom_detail.xml',
         'reports/pick_ticket_report.xml',
@@ -42,12 +43,12 @@
         'views/stock_quant_views.xml',
         'views/stock_lot_image_wizard_views.xml',
         'views/stock_lot_hold_views.xml',
-        'views/stock_lot_hold_order_views.xml',  
+        'views/stock_lot_hold_order_views.xml',
         'views/stock_lot_hold_wizard_views.xml',
         'views/res_partner_views.xml',
         'views/project_project_views.xml',
         'views/product_template_views.xml',
-        'views/stock_lot_image_delete_wizard_views.xml', 
+        'views/stock_lot_image_delete_wizard_views.xml',
         'views/res_company_views.xml',
     ],
     'assets': {
@@ -55,11 +56,13 @@
             'stock_lot_dimensions/static/src/js/image_gallery_widget.js',
             'stock_lot_dimensions/static/src/js/image_preview_widget.js',
             'stock_lot_dimensions/static/src/js/status_icons_widget.js',
+            'stock_lot_dimensions/static/src/js/hold_stone_button.js',
             'stock_lot_dimensions/static/src/css/image_gallery.css',
             'stock_lot_dimensions/static/src/css/image_gallery_view.css',
             'stock_lot_dimensions/static/src/xml/image_gallery.xml',
             'stock_lot_dimensions/static/src/xml/image_preview_widget.xml',
             'stock_lot_dimensions/static/src/xml/status_icons_widget.xml',
+            'stock_lot_dimensions/static/src/xml/hold_stone_button.xml',
         ],
     },
     'installable': True,
