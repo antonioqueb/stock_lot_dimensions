@@ -162,5 +162,5 @@
               name="Holds"
               parent="sale.sale_menu_root"
               action="action_stock_lot_hold_order"
-              sequence="5"/>
+              sequence="3"/>
 </odoo>
