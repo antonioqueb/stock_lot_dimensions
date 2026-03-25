@@ -16,7 +16,7 @@
     """,
     'author': 'Alphaqueb Consulting',
     'website': 'https://alphaqueb.com',
-    'depends': ['stock', 'sale', 'web', 'project', 'mail', 'sale_stock', 'sale_stone_selection'],
+    'depends': ['stock', 'sale', 'web', 'project', 'mail', 'sale_stock'],
     'data': [
         'security/stock_lot_hold_security.xml',
         'security/res_company_bank_info_security.xml',
