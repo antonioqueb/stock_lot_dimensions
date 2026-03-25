@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Atributos Adicionales para Lotes',
-    'version': '19.0.2.1.0',
+    'version': '19.0.2.2.0',
     'category': 'Inventory/Inventory',
     'summary': 'Captura dimensiones, fotografías y gestión de reservas manuales (hold) en lotes',
     'description': """
@@ -24,6 +24,7 @@
         'data/stock_lot_hold_cron.xml',
         'data/res_company_bank_info_defaults.xml',
         'data/stock_lot_hold_order_sequence.xml',
+        'data/migrate_hold_lines.xml',
         'reports/company_bank_details_templates.xml',
         'reports/stock_lot_hold_order_report.xml',
         'reports/stock_lot_hold_order_summary_report.xml', 
@@ -57,6 +58,7 @@
             'stock_lot_dimensions/static/src/js/image_preview_widget.js',
             'stock_lot_dimensions/static/src/js/status_icons_widget.js',
             'stock_lot_dimensions/static/src/js/hold_stone_button.js',
+            'stock_lot_dimensions/static/src/scss/hold_stone_styles.scss',
             'stock_lot_dimensions/static/src/css/image_gallery.css',
             'stock_lot_dimensions/static/src/css/image_gallery_view.css',
             'stock_lot_dimensions/static/src/xml/image_gallery.xml',
