@@ -142,8 +142,8 @@ export class HoldStoneButton extends Component {
                 rows += `<tr>
                     <td class="cell-lot">${lot.name}</td>
                     <td>${lot.x_bloque || "-"}</td><td>${lot.x_atado || "-"}</td>
-                    <td class="col-num">${lot.x_alto ? lot.x_alto.toFixed(0) : "-"}</td>
-                    <td class="col-num">${lot.x_ancho ? lot.x_ancho.toFixed(0) : "-"}</td>
+                    <td class="col-num">${lot.x_alto ? lot.x_alto.toFixed(4) : "-"}</td>
+                    <td class="col-num">${lot.x_ancho ? lot.x_ancho.toFixed(4) : "-"}</td>
                     <td class="col-num">${lot.x_grosor || "-"}</td>
                     <td class="col-num fw-semibold">${qty.toFixed(2)}</td>
                     <td>${lot.x_tipo || "-"}</td><td>${lot.x_color || "-"}</td>
@@ -289,8 +289,8 @@ export class HoldStoneButton extends Component {
                 rows += `<tr class="${sel ? "row-sel" : ""}" data-lid="${lid}" data-rsv="${rsv ? "1" : "0"}">
                     <td class="col-chk"><div class="stone-chkbox ${sel ? "checked" : ""}">${sel ? '<i class="fa fa-check"></i>' : ""}</div></td>
                     <td class="cell-lot">${ln}</td><td>${q.x_bloque || "-"}</td><td>${q.x_atado || "-"}</td>
-                    <td class="col-num">${q.x_alto ? q.x_alto.toFixed(0) : "-"}</td>
-                    <td class="col-num">${q.x_ancho ? q.x_ancho.toFixed(0) : "-"}</td>
+                    <td class="col-num">${q.x_alto ? q.x_alto.toFixed(4) : "-"}</td>
+                    <td class="col-num">${q.x_ancho ? q.x_ancho.toFixed(4) : "-"}</td>
                     <td class="col-num">${q.x_grosor || "-"}</td>
                     <td class="col-num fw-semibold">${q.quantity ? q.quantity.toFixed(2) : "-"}</td>
                     <td>${q.x_tipo || "-"}</td><td>${q.x_color || "-"}</td>
