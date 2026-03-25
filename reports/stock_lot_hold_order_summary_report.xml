@@ -262,7 +262,7 @@
                             </div>
 
                             <!-- Información Bancaria -->
-                            <t t-set="company" t-value="doc.company_id"/>
+                            <t t-set="company" t-value="o.company_id"/>
                             <t t-call="stock_lot_dimensions.company_bank_details_block"/>
 
                             <!-- TÉRMINOS SIMPLIFICADOS -->
