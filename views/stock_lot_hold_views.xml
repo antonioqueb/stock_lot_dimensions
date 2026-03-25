@@ -79,7 +79,4 @@
         <field name="res_model">stock.lot.hold</field>
         <field name="view_mode">list,form</field>
     </record>
-
-    <!-- NOTA: El menú se eliminó de aquí. Ahora vive en stock_lot_hold_order_views.xml
-         bajo el menú raíz "Holds" en Ventas -->
 </odoo>
