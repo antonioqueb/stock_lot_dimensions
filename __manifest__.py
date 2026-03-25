@@ -58,7 +58,7 @@
             'stock_lot_dimensions/static/src/js/image_preview_widget.js',
             'stock_lot_dimensions/static/src/js/status_icons_widget.js',
             'stock_lot_dimensions/static/src/js/hold_stone_button.js',
-            'stock_lot_dimensions/static/src/scss/hold_stone_styles.scss',
+            'stock_lot_dimensions/static/src/scss/hold_stone_styles.css',
             'stock_lot_dimensions/static/src/css/image_gallery.css',
             'stock_lot_dimensions/static/src/css/image_gallery_view.css',
             'stock_lot_dimensions/static/src/xml/image_gallery.xml',
