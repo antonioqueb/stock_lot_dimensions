@@ -80,9 +80,6 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <menuitem id="menu_stock_lot_hold"
-              name="Reservas de Lotes"
-              parent="stock.menu_stock_warehouse_mgmt"
-              action="action_stock_lot_hold"
-              sequence="100"/>
+    <!-- NOTA: El menú se eliminó de aquí. Ahora vive en stock_lot_hold_order_views.xml
+         bajo el menú raíz "Holds" en Ventas -->
 </odoo>

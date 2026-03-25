@@ -157,9 +157,23 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <menuitem id="menu_stock_lot_hold"
-              name="Reservas de Lotes"
-              parent="sale.sale_order_menu"
+    <!-- ============================================= -->
+    <!-- MENÚ RAÍZ "Holds" EN VENTAS                   -->
+    <!-- ============================================= -->
+    <menuitem id="menu_holds_root"
+              name="Holds"
+              parent="sale.sale_menu_root"
+              sequence="5"/>
+
+    <menuitem id="menu_hold_orders"
+              name="Órdenes de Reserva"
+              parent="menu_holds_root"
+              action="action_stock_lot_hold_order"
+              sequence="10"/>
+
+    <menuitem id="menu_hold_individual"
+              name="Reservas Individuales"
+              parent="menu_holds_root"
               action="action_stock_lot_hold"
-              sequence="100"/>
+              sequence="20"/>
 </odoo>
