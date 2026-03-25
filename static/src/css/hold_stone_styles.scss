@@ -1,11 +1,24 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   HOLD STONE SELECTION — Estilos completos para selección de placas
-   en órdenes de reserva (stock.lot.hold.order)
-   ═══════════════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════
+// HOLD STONE SELECTION — Estilos completos para selección de placas
+// en órdenes de reserva (stock.lot.hold.order)
+// ═══════════════════════════════════════════════════════════════════════════
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   BOTÓN TOGGLE EN LA LISTA
-   ═══════════════════════════════════════════════════════════════════════════ */
+// Variables
+$stone-primary: #2c5282;
+$stone-primary-light: #3182ce;
+$stone-accent: #68d391;
+$stone-danger: #fc8181;
+$stone-warn: #f6ad55;
+$stone-bg: #f7fafc;
+$stone-border: #e2e8f0;
+$stone-text: #2d3748;
+$stone-muted: #718096;
+$stone-radius: 8px;
+$stone-radius-sm: 5px;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOTÓN TOGGLE EN LA LISTA
+// ═══════════════════════════════════════════════════════════════════════════
 .stone-field-wrapper {
     display: flex;
     align-items: center;
@@ -19,38 +32,38 @@
     justify-content: center;
     width: 28px;
     height: 28px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 5px;
+    border: 1.5px solid $stone-border;
+    border-radius: $stone-radius-sm;
     background: white;
-    color: #2c5282;
+    color: $stone-primary;
     cursor: pointer;
     transition: all 0.15s ease;
     position: relative;
     padding: 0;
-}
 
-.stone-toggle-btn:hover {
-    border-color: #3182ce;
-    background: #ebf8ff;
-    color: #3182ce;
-    transform: scale(1.08);
-}
+    &:hover {
+        border-color: $stone-primary-light;
+        background: #ebf8ff;
+        color: $stone-primary-light;
+        transform: scale(1.08);
+    }
 
-.stone-toggle-btn.active {
-    background: #2c5282;
-    border-color: #2c5282;
-    color: white;
-}
+    &.active {
+        background: $stone-primary;
+        border-color: $stone-primary;
+        color: white;
+    }
 
-.stone-toggle-btn i {
-    font-size: 13px;
+    i {
+        font-size: 13px;
+    }
 }
 
 .stone-count-badge {
     position: absolute;
     top: -6px;
     right: -6px;
-    background: #68d391;
+    background: $stone-accent;
     color: #1a202c;
     font-size: 9px;
     font-weight: 700;
@@ -65,14 +78,14 @@
     border: 1.5px solid white;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   FILA DE SELECCIONADAS (inline bajo la fila del producto)
-   ═══════════════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════
+// FILA DE SELECCIONADAS (inline bajo la fila del producto)
+// ═══════════════════════════════════════════════════════════════════════════
 .stone-selected-row td.stone-selected-cell {
     padding: 0 !important;
     background: #f0f7ff;
-    border-top: 2px solid #2c5282;
-    border-bottom: 2px solid #e2e8f0;
+    border-top: 2px solid $stone-primary;
+    border-bottom: 2px solid $stone-border;
 }
 
 .stone-selected-container {
@@ -86,27 +99,27 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 14px;
-    background: #f7fafc;
-    border-bottom: 1px solid #e2e8f0;
+    background: $stone-bg;
+    border-bottom: 1px solid $stone-border;
 }
 
 .stone-selected-title {
     font-size: 12px;
     font-weight: 600;
-    color: #2c5282;
+    color: $stone-primary;
     display: flex;
     align-items: center;
-}
 
-.stone-selected-title i {
-    color: #68d391;
+    i {
+        color: $stone-accent;
+    }
 }
 
 .stone-sel-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: #2c5282;
+    background: $stone-primary;
     color: white;
     font-size: 10px;
     font-weight: 700;
@@ -121,7 +134,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: #2c5282;
+    background: $stone-primary;
     color: white;
     font-size: 10px;
     font-weight: 700;
@@ -137,44 +150,44 @@
     align-items: center;
     gap: 4px;
     padding: 5px 12px;
-    background: #2c5282;
+    background: $stone-primary;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: $stone-radius-sm;
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s;
-}
 
-.stone-add-btn:hover {
-    background: #3182ce;
-}
+    &:hover {
+        background: $stone-primary-light;
+    }
 
-.stone-add-btn i {
-    font-size: 10px;
+    i {
+        font-size: 10px;
+    }
 }
 
 .stone-selected-body {
     max-height: 280px;
     overflow-y: auto;
     overflow-x: auto;
-}
 
-.stone-selected-body::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
+    &::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
 
-.stone-selected-body::-webkit-scrollbar-thumb {
-    background: #cbd5e0;
-    border-radius: 3px;
+    &::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 3px;
+    }
 }
 
 .stone-no-selection {
     padding: 16px 14px;
     font-size: 12px;
-    color: #718096;
+    color: $stone-muted;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -183,85 +196,85 @@
 .stone-table-loading {
     padding: 20px;
     text-align: center;
-    color: #718096;
+    color: $stone-muted;
     font-size: 12px;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   TABLA DE LOTES SELECCIONADOS (compacta, inline)
-   ═══════════════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════
+// TABLA DE LOTES SELECCIONADOS (compacta, inline)
+// ═══════════════════════════════════════════════════════════════════════════
 .stone-sel-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 11.5px;
-}
 
-.stone-sel-table thead tr {
-    background: #f8fafc;
-}
+    thead tr {
+        background: #f8fafc;
+    }
 
-.stone-sel-table th {
-    padding: 6px 8px;
-    text-align: left;
-    font-weight: 600;
-    font-size: 10.5px;
-    text-transform: uppercase;
-    color: #718096;
-    border-bottom: 1px solid #e2e8f0;
-    white-space: nowrap;
-}
+    th {
+        padding: 6px 8px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 10.5px;
+        text-transform: uppercase;
+        color: $stone-muted;
+        border-bottom: 1px solid $stone-border;
+        white-space: nowrap;
 
-.stone-sel-table th.col-num {
-    text-align: right;
-}
+        &.col-num {
+            text-align: right;
+        }
 
-.stone-sel-table th.col-act {
-    text-align: center;
-    width: 36px;
-}
+        &.col-act {
+            text-align: center;
+            width: 36px;
+        }
+    }
 
-.stone-sel-table tbody tr {
-    transition: background 0.1s;
-}
+    tbody tr {
+        transition: background 0.1s;
 
-.stone-sel-table tbody tr:hover {
-    background: #f7fafc;
-}
+        &:hover {
+            background: #f7fafc;
+        }
 
-.stone-sel-table tbody tr:not(:last-child) td {
-    border-bottom: 1px solid #f0f4f8;
-}
+        &:not(:last-child) td {
+            border-bottom: 1px solid #f0f4f8;
+        }
+    }
 
-.stone-sel-table td {
-    padding: 6px 8px;
-    color: #2d3748;
-    vertical-align: middle;
-}
+    td {
+        padding: 6px 8px;
+        color: $stone-text;
+        vertical-align: middle;
 
-.stone-sel-table td.col-num {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-}
+        &.col-num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
 
-.stone-sel-table td.col-act {
-    text-align: center;
-}
+        &.col-act {
+            text-align: center;
+        }
+    }
 
-.stone-sel-table .cell-lot {
-    font-family: 'Courier New', monospace;
-    font-size: 11px;
-    font-weight: 600;
-    color: #2c5282;
-}
+    .cell-lot {
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        font-weight: 600;
+        color: $stone-primary;
+    }
 
-.stone-sel-table tfoot .stone-total-row {
-    background: #f7fafc;
-}
+    tfoot .stone-total-row {
+        background: $stone-bg;
 
-.stone-sel-table tfoot .stone-total-row td {
-    padding: 7px 8px;
-    border-top: 2px solid #e2e8f0;
-    font-size: 12px;
+        td {
+            padding: 7px 8px;
+            border-top: 2px solid $stone-border;
+            font-size: 12px;
+        }
+    }
 }
 
 .stone-remove-btn {
@@ -277,25 +290,29 @@
     cursor: pointer;
     transition: all 0.12s;
     padding: 0;
-}
 
-.stone-remove-btn:hover {
-    background: #fc8181;
-    border-color: #fc8181;
-    color: white;
-}
+    &:hover {
+        background: #fc8181;
+        border-color: #fc8181;
+        color: white;
+    }
 
-.stone-remove-btn i {
-    font-size: 10px;
+    i {
+        font-size: 10px;
+    }
 }
 
 .fw-semibold {
     font-weight: 600;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   POPUP FULLSCREEN
-   ═══════════════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════
+// POPUP FULLSCREEN
+// ═══════════════════════════════════════════════════════════════════════════
+.stone-popup-root {
+    // Contenedor raíz inyectado en document.body
+}
+
 .stone-popup-overlay {
     position: fixed;
     inset: 0;
@@ -327,18 +344,20 @@
         opacity: 0;
         transform: scale(0.97) translateY(8px);
     }
+
     to {
         opacity: 1;
         transform: scale(1) translateY(0);
     }
 }
 
+// Header del popup
 .stone-popup-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 14px 20px;
-    background: #2c5282;
+    background: $stone-primary;
     color: white;
     flex: 0 0 auto;
 }
@@ -348,10 +367,10 @@
     font-weight: 700;
     display: flex;
     align-items: center;
-}
 
-.stone-popup-title i {
-    font-size: 16px;
+    i {
+        font-size: 16px;
+    }
 }
 
 .stone-popup-subtitle {
@@ -379,84 +398,84 @@
     gap: 4px;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   BOTONES DEL POPUP
-   ═══════════════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════
+// BOTONES DEL POPUP
+// ═══════════════════════════════════════════════════════════════════════════
 .stone-btn {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     padding: 7px 14px;
-    border-radius: 5px;
+    border-radius: $stone-radius-sm;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s;
     border: none;
+
+    i {
+        font-size: 11px;
+    }
+
+    &.stone-btn-primary {
+        background: $stone-accent;
+        color: #1a202c;
+
+        &:hover {
+            background: darken(#68d391, 8%);
+        }
+    }
+
+    &.stone-btn-accent {
+        background: $stone-accent;
+        color: #1a202c;
+
+        &:hover {
+            background: darken(#68d391, 8%);
+        }
+    }
+
+    &.stone-btn-ghost {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+    }
+
+    &.stone-btn-outline {
+        background: white;
+        color: $stone-muted;
+        border: 1.5px solid $stone-border;
+
+        &:hover {
+            background: $stone-bg;
+            color: $stone-text;
+        }
+    }
+
+    &.stone-btn-primary-dark {
+        background: $stone-primary;
+        color: white;
+
+        &:hover {
+            background: $stone-primary-light;
+        }
+    }
 }
 
-.stone-btn i {
-    font-size: 11px;
-}
-
-.stone-btn.stone-btn-primary {
-    background: #68d391;
-    color: #1a202c;
-}
-
-.stone-btn.stone-btn-primary:hover {
-    background: #45c474;
-}
-
-.stone-btn.stone-btn-accent {
-    background: #68d391;
-    color: #1a202c;
-}
-
-.stone-btn.stone-btn-accent:hover {
-    background: #45c474;
-}
-
-.stone-btn.stone-btn-ghost {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.stone-btn.stone-btn-ghost:hover {
-    background: rgba(255, 255, 255, 0.25);
-}
-
-.stone-btn.stone-btn-outline {
-    background: white;
-    color: #718096;
-    border: 1.5px solid #e2e8f0;
-}
-
-.stone-btn.stone-btn-outline:hover {
-    background: #f7fafc;
-    color: #2d3748;
-}
-
-.stone-btn.stone-btn-primary-dark {
-    background: #2c5282;
-    color: white;
-}
-
-.stone-btn.stone-btn-primary-dark:hover {
-    background: #3182ce;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   FILTROS DEL POPUP
-   ═══════════════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTROS DEL POPUP
+// ═══════════════════════════════════════════════════════════════════════════
 .stone-popup-filters {
     display: flex;
     align-items: flex-end;
     gap: 10px;
     padding: 10px 16px;
-    background: #f7fafc;
-    border-bottom: 1px solid #e2e8f0;
+    background: $stone-bg;
+    border-bottom: 1px solid $stone-border;
     flex: 0 0 auto;
     flex-wrap: wrap;
 }
@@ -465,39 +484,39 @@
     display: flex;
     flex-direction: column;
     gap: 3px;
-}
 
-.stone-filter-group label {
-    font-size: 9.5px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #718096;
-    letter-spacing: 0.03em;
+    label {
+        font-size: 9.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: $stone-muted;
+        letter-spacing: 0.03em;
+    }
 }
 
 .stone-filter-input {
     padding: 5px 8px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 5px;
+    border: 1.5px solid $stone-border;
+    border-radius: $stone-radius-sm;
     font-size: 12px;
     width: 130px;
-    color: #2d3748;
+    color: $stone-text;
     transition: border-color 0.15s;
     background: white;
-}
 
-.stone-filter-input.stone-filter-sm {
-    width: 70px;
-}
+    &.stone-filter-sm {
+        width: 70px;
+    }
 
-.stone-filter-input:focus {
-    outline: none;
-    border-color: #3182ce;
-    box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2);
-}
+    &:focus {
+        outline: none;
+        border-color: $stone-primary-light;
+        box-shadow: 0 0 0 2px rgba($stone-primary-light, 0.2);
+    }
 
-.stone-filter-input::placeholder {
-    color: #a0aec0;
+    &::placeholder {
+        color: #a0aec0;
+    }
 }
 
 .stone-filter-spacer {
@@ -513,14 +532,14 @@
 .stone-filter-stat-loading,
 .stone-filter-stat-count {
     font-size: 11.5px;
-    color: #718096;
+    color: $stone-muted;
     display: flex;
     align-items: center;
     gap: 4px;
 }
 
 .stone-filter-stat-count {
-    color: #2c5282;
+    color: $stone-primary;
     font-weight: 600;
 }
 
@@ -544,40 +563,39 @@
     transition: all 0.15s;
     border: 1.5px solid;
     white-space: nowrap;
-}
 
-.stone-btn-select-all i,
-.stone-btn-clear-all i {
-    font-size: 11px;
+    i {
+        font-size: 11px;
+    }
 }
 
 .stone-btn-select-all {
     background: #ebf8ff;
     color: #2c5282;
     border-color: #bee3f8;
-}
 
-.stone-btn-select-all:hover {
-    background: #2c5282;
-    color: white;
-    border-color: #2c5282;
+    &:hover {
+        background: #2c5282;
+        color: white;
+        border-color: #2c5282;
+    }
 }
 
 .stone-btn-clear-all {
     background: #fff5f5;
     color: #c53030;
     border-color: #fed7d7;
+
+    &:hover {
+        background: #c53030;
+        color: white;
+        border-color: #c53030;
+    }
 }
 
-.stone-btn-clear-all:hover {
-    background: #c53030;
-    color: white;
-    border-color: #c53030;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   BODY DEL POPUP (scrolleable)
-   ═══════════════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════
+// BODY DEL POPUP (scrolleable)
+// ═══════════════════════════════════════════════════════════════════════════
 .stone-popup-body {
     flex: 1 1 auto;
     overflow-y: auto;
@@ -585,20 +603,20 @@
     min-height: 0;
     background: white;
     position: relative;
-}
 
-.stone-popup-body::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
+    &::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
 
-.stone-popup-body::-webkit-scrollbar-thumb {
-    background: #cbd5e0;
-    border-radius: 4px;
-}
+    &::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 4px;
+    }
 
-.stone-popup-body::-webkit-scrollbar-track {
-    background: #f7fafc;
+    &::-webkit-scrollbar-track {
+        background: #f7fafc;
+    }
 }
 
 .stone-empty-state {
@@ -610,113 +628,115 @@
     min-height: 250px;
     color: #a0aec0;
     gap: 12px;
-}
 
-.stone-empty-state i {
-    font-size: 40px;
+    i {
+        font-size: 40px;
+    }
 }
 
 .stone-empty-text {
     font-size: 14px;
-    color: #718096;
+    color: $stone-muted;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   TABLA DEL POPUP
-   ═══════════════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════
+// TABLA DEL POPUP
+// ═══════════════════════════════════════════════════════════════════════════
 .stone-popup-table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
     font-size: 12px;
+
+    thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+
+        tr {
+            background: $stone-bg;
+        }
+
+        th {
+            padding: 9px 10px;
+            text-align: left;
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: $stone-muted;
+            letter-spacing: 0.04em;
+            border-bottom: 2px solid $stone-border;
+            white-space: nowrap;
+            background: $stone-bg;
+
+            &.col-chk {
+                width: 44px;
+                text-align: center;
+            }
+
+            &.col-num {
+                text-align: right;
+                width: 60px;
+            }
+        }
+    }
+
+    tbody {
+        tr {
+            cursor: pointer;
+            transition: background 0.08s;
+
+            &:hover {
+                background: #f0f7ff;
+            }
+
+            &.row-sel {
+                background: #ebfaf1;
+
+                &:hover {
+                    background: #d4f4e0;
+                }
+
+                td:first-child {
+                    border-left: 3px solid $stone-accent;
+                }
+            }
+
+            td {
+                padding: 8px 10px;
+                border-bottom: 1px solid #f0f4f8;
+                vertical-align: middle;
+                color: $stone-text;
+
+                &.col-chk {
+                    text-align: center;
+                    width: 44px;
+                }
+
+                &.col-num {
+                    text-align: right;
+                    font-variant-numeric: tabular-nums;
+                }
+
+                &.cell-lot {
+                    font-family: 'Courier New', monospace;
+                    font-size: 11.5px;
+                    font-weight: 700;
+                    color: $stone-primary;
+                }
+
+                &.cell-loc {
+                    color: $stone-muted;
+                    font-size: 11px;
+                }
+            }
+        }
+    }
 }
 
-.stone-popup-table thead {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.stone-popup-table thead tr {
-    background: #f7fafc;
-}
-
-.stone-popup-table thead th {
-    padding: 9px 10px;
-    text-align: left;
-    font-size: 10.5px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #718096;
-    letter-spacing: 0.04em;
-    border-bottom: 2px solid #e2e8f0;
-    white-space: nowrap;
-    background: #f7fafc;
-}
-
-.stone-popup-table thead th.col-chk {
-    width: 44px;
-    text-align: center;
-}
-
-.stone-popup-table thead th.col-num {
-    text-align: right;
-    width: 60px;
-}
-
-.stone-popup-table tbody tr {
-    cursor: pointer;
-    transition: background 0.08s;
-}
-
-.stone-popup-table tbody tr:hover {
-    background: #f0f7ff;
-}
-
-.stone-popup-table tbody tr.row-sel {
-    background: #ebfaf1;
-}
-
-.stone-popup-table tbody tr.row-sel:hover {
-    background: #d4f4e0;
-}
-
-.stone-popup-table tbody tr.row-sel td:first-child {
-    border-left: 3px solid #68d391;
-}
-
-.stone-popup-table tbody td {
-    padding: 8px 10px;
-    border-bottom: 1px solid #f0f4f8;
-    vertical-align: middle;
-    color: #2d3748;
-}
-
-.stone-popup-table tbody td.col-chk {
-    text-align: center;
-    width: 44px;
-}
-
-.stone-popup-table tbody td.col-num {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-}
-
-.stone-popup-table tbody td.cell-lot {
-    font-family: 'Courier New', monospace;
-    font-size: 11.5px;
-    font-weight: 700;
-    color: #2c5282;
-}
-
-.stone-popup-table tbody td.cell-loc {
-    color: #718096;
-    font-size: 11px;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   CHECKBOX PERSONALIZADO EN POPUP
-   ═══════════════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════
+// CHECKBOX PERSONALIZADO EN POPUP
+// ═══════════════════════════════════════════════════════════════════════════
 .stone-chkbox {
     width: 18px;
     height: 18px;
@@ -728,21 +748,21 @@
     margin: 0 auto;
     transition: all 0.12s;
     background: white;
+
+    i {
+        font-size: 10px;
+        color: white;
+    }
+
+    &.checked {
+        background: $stone-accent;
+        border-color: darken(#68d391, 10%);
+    }
 }
 
-.stone-chkbox i {
-    font-size: 10px;
-    color: white;
-}
-
-.stone-chkbox.checked {
-    background: #68d391;
-    border-color: #3bbe6b;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   TAGS DE ESTADO
-   ═══════════════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════
+// TAGS DE ESTADO
+// ═══════════════════════════════════════════════════════════════════════════
 .stone-tag {
     display: inline-block;
     padding: 2px 7px;
@@ -750,27 +770,27 @@
     font-size: 10px;
     font-weight: 600;
     white-space: nowrap;
+
+    &.stone-tag-ok {
+        background: #c6f6d5;
+        color: #276749;
+    }
+
+    &.stone-tag-warn {
+        background: #fefcbf;
+        color: #744210;
+    }
+
+    &.stone-tag-free {
+        background: #edf2f7;
+        color: #718096;
+        border: 1px solid #e2e8f0;
+    }
 }
 
-.stone-tag.stone-tag-ok {
-    background: #c6f6d5;
-    color: #276749;
-}
-
-.stone-tag.stone-tag-warn {
-    background: #fefcbf;
-    color: #744210;
-}
-
-.stone-tag.stone-tag-free {
-    background: #edf2f7;
-    color: #718096;
-    border: 1px solid #e2e8f0;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   INFINITE SCROLL SENTINEL
-   ═══════════════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════
+// INFINITE SCROLL SENTINEL
+// ═══════════════════════════════════════════════════════════════════════════
 .stone-scroll-sentinel {
     padding: 16px;
     text-align: center;
@@ -781,7 +801,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    color: #718096;
+    color: $stone-muted;
     font-size: 12px;
     padding: 8px;
 }
@@ -797,28 +817,29 @@
         opacity: 0.5;
         transform: translateY(0);
     }
+
     50% {
         opacity: 1;
         transform: translateY(3px);
     }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   FOOTER DEL POPUP
-   ═══════════════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════
+// FOOTER DEL POPUP
+// ═══════════════════════════════════════════════════════════════════════════
 .stone-popup-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 12px 20px;
-    background: #f7fafc;
-    border-top: 1px solid #e2e8f0;
+    background: $stone-bg;
+    border-top: 1px solid $stone-border;
     flex: 0 0 auto;
 }
 
 .stone-footer-info {
     font-size: 12px;
-    color: #718096;
+    color: $stone-muted;
 }
 
 .stone-footer-actions {
