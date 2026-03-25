@@ -8,8 +8,6 @@ class StockLotHoldOrder(models.Model):
     _name = 'stock.lot.hold.order'
     _description = 'Orden de Reserva de Lotes'
     _order = 'create_date desc'
-    # Al heredar estos mixins, Odoo crea automáticamente los campos del chatter
-    # con la configuración correcta para la interfaz visual.
     _inherit = ['mail.thread', 'mail.activity.mixin']
     
     name = fields.Char(
@@ -131,7 +129,6 @@ class StockLotHoldOrder(models.Model):
     
     @api.onchange('partner_id')
     def _onchange_partner_id(self):
-        """Actualiza dirección de entrega al cambiar cliente"""
         if self.partner_id:
             address_parts = []
             if self.partner_id.street:
@@ -155,14 +152,19 @@ class StockLotHoldOrder(models.Model):
             
             self.delivery_address = '\n'.join(address_parts) if address_parts else ''
     
-    @api.depends('hold_line_ids.cantidad_m2', 'hold_line_ids.precio_total')
+    @api.depends('hold_line_ids.cantidad_m2', 'hold_line_ids.precio_total', 'hold_line_ids.lot_ids')
     def _compute_totals(self):
         for order in self:
-            # Contamos solo placas físicas (lotes) para 'total_placas'
-            physical_lines = order.hold_line_ids.filtered(lambda l: l.lot_id)
-            order.total_placas = len(physical_lines)
-            order.total_m2 = sum(order.hold_line_ids.mapped('cantidad_m2'))
-            order.total_con_precio = sum(order.hold_line_ids.mapped('precio_total'))
+            total_placas = 0
+            total_m2 = 0.0
+            total_precio = 0.0
+            for line in order.hold_line_ids:
+                total_placas += len(line.lot_ids)
+                total_m2 += line.cantidad_m2
+                total_precio += line.precio_total
+            order.total_placas = total_placas
+            order.total_m2 = total_m2
+            order.total_con_precio = total_precio
     
     @api.depends('fecha_expiracion', 'state')
     def _compute_dias_restantes(self):
@@ -184,20 +186,10 @@ class StockLotHoldOrder(models.Model):
         return super().create(vals_list)
     
     def _release_related_holds(self):
-        """
-        Método auxiliar para liberar masivamente los holds activos 
-        vinculados a las líneas de esta orden.
-        """
         for order in self:
-            # 1. Obtenemos todos los holds activos de un solo golpe
-            active_holds = order.hold_line_ids.mapped('hold_id').filtered(lambda h: h.estado == 'activo')
-            
+            active_holds = order.hold_line_ids.mapped('hold_ids').filtered(lambda h: h.estado == 'activo')
             if active_holds:
-                # 2. Realizamos una escritura masiva (Batch write)
-                # Esto libera todos los lotes inmediatamente sin iterar
                 active_holds.write({'estado': 'cancelado'})
-                
-                # 3. Registrar en el chatter (opcional)
                 msg = f"Se liberaron {len(active_holds)} apartados automáticamente."
                 order.message_post(body=msg)
 
@@ -205,48 +197,66 @@ class StockLotHoldOrder(models.Model):
         for order in self:
             if not order.hold_line_ids:
                 raise UserError('Debe agregar al menos una línea a la reserva.')
-                
+            
             for line in order.hold_line_ids:
-                if line.hold_id:
+                # Servicios: no necesitan hold físico
+                if line.product_id.type == 'service':
                     continue
                 
-                # ✅ LOGICA ACTUALIZADA: Si es un servicio o no tiene lote, no creamos Hold físico
-                if line.product_id.type == 'service' or not line.lot_id:
-                    continue
+                if not line.lot_ids:
+                    raise UserError(f'La línea de {line.product_id.display_name} no tiene placas seleccionadas.')
                 
-                notas_hold = f'Orden: {order.name}\n'
-                if line.precio_unitario and line.currency_id:
-                    notas_hold += f'Precio: {line.precio_unitario:.2f} {line.currency_id.name}/m²\n'
-                    notas_hold += f'Total: {line.precio_total:.2f} {line.currency_id.name}\n'
-                if order.notas:
-                    notas_hold += f'\n{order.notas}'
-                
-                # Validación de stock físico solo para productos almacenables
-                if not line.quant_id:
-                     raise UserError(f'El lote {line.lot_id.name} no tiene stock disponible para reservar.')
-
-                hold = self.env['stock.lot.hold'].create({
-                    'lot_id': line.lot_id.id,
-                    'quant_id': line.quant_id.id,
-                    'partner_id': order.partner_id.id,
-                    'user_id': order.user_id.id,
-                    'project_id': order.project_id.id if order.project_id else False,
-                    'arquitecto_id': order.arquitecto_id.id if order.arquitecto_id else False,
-                    'fecha_inicio': order.fecha_orden,
-                    'fecha_expiracion': order.fecha_expiracion,
-                    'notas': notas_hold,
-                    'company_id': order.company_id.id,
-                })
-                line.hold_id = hold.id
+                # Crear un hold por cada lote en la línea
+                for lot in line.lot_ids:
+                    # Buscar quant del lote
+                    quant = self.env['stock.quant'].search([
+                        ('lot_id', '=', lot.id),
+                        ('quantity', '>', 0),
+                        ('location_id.usage', '=', 'internal'),
+                        ('company_id', '=', order.company_id.id),
+                    ], limit=1)
+                    
+                    if not quant:
+                        raise UserError(f'El lote {lot.name} no tiene stock disponible para reservar.')
+                    
+                    # Verificar que no tenga hold activo
+                    existing_hold = self.env['stock.lot.hold'].search([
+                        ('quant_id', '=', quant.id),
+                        ('estado', '=', 'activo'),
+                        ('company_id', '=', order.company_id.id),
+                    ], limit=1)
+                    if existing_hold:
+                        raise UserError(
+                            f'El lote {lot.name} ya tiene una reserva activa para {existing_hold.partner_id.name}.'
+                        )
+                    
+                    notas_hold = f'Orden: {order.name}\n'
+                    if line.precio_unitario and line.currency_id:
+                        notas_hold += f'Precio: {line.precio_unitario:.2f} {line.currency_id.name}/m²\n'
+                    if order.notas:
+                        notas_hold += f'\n{order.notas}'
+                    
+                    hold = self.env['stock.lot.hold'].create({
+                        'lot_id': lot.id,
+                        'quant_id': quant.id,
+                        'partner_id': order.partner_id.id,
+                        'user_id': order.user_id.id,
+                        'project_id': order.project_id.id if order.project_id else False,
+                        'arquitecto_id': order.arquitecto_id.id if order.arquitecto_id else False,
+                        'fecha_inicio': order.fecha_orden,
+                        'fecha_expiracion': order.fecha_expiracion,
+                        'notas': notas_hold,
+                        'company_id': order.company_id.id,
+                    })
+                    line.write({'hold_ids': [(4, hold.id)]})
+            
             order.state = 'confirmed'
     
     def action_cancel(self):
-        """Cancela la orden y libera los apartados inmediatamente"""
         self._release_related_holds()
         self.write({'state': 'cancel'})
     
     def action_done(self):
-        """Finaliza la orden y libera los apartados inmediatamente"""
         self._release_related_holds()
         self.write({'state': 'done'})
     
@@ -254,11 +264,10 @@ class StockLotHoldOrder(models.Model):
         for order in self:
             if order.state != 'confirmed':
                 raise UserError('Solo puede renovar órdenes confirmadas.')
-            order.hold_line_ids.mapped('hold_id').filtered(lambda h: h.estado == 'activo').action_renovar_hold()
+            order.hold_line_ids.mapped('hold_ids').filtered(lambda h: h.estado == 'activo').action_renovar_hold()
             order.fecha_expiracion = BusinessDaysCalculator.get_expiration_date(days=5)
     
     def action_convert_to_sale_order(self):
-        """Convierte la orden de reserva en orden de venta incluyendo servicios"""
         self.ensure_one()
         
         if self.state != 'confirmed':
@@ -270,27 +279,25 @@ class StockLotHoldOrder(models.Model):
         if not self.hold_line_ids:
             raise UserError('No hay líneas de reserva para convertir.')
         
-        # Verificar expiración solo de holds físicos
-        inactive_holds = self.hold_line_ids.filtered(lambda l: l.hold_id and l.hold_id.estado != 'activo')
-        if inactive_holds:
-            raise UserError('Hay reservas físicas que ya no están activas. Renueve las reservas antes de convertir.')
+        # Verificar holds activos
+        for line in self.hold_line_ids:
+            if line.product_id.type == 'service':
+                continue
+            inactive_holds = line.hold_ids.filtered(lambda h: h.estado != 'activo')
+            if inactive_holds:
+                raise UserError('Hay reservas que ya no están activas. Renueve antes de convertir.')
         
         product_groups = {}
         services_list = []
 
         for line in self.hold_line_ids:
-            # ✅ LOGICA PARA SERVICIOS
             if line.product_id.type == 'service':
                 services_list.append({
                     'product_id': line.product_id.id,
-                    'quantity': line.cantidad_m2, # Usamos el campo cantidad_m2 como cantidad general
+                    'quantity': line.cantidad_m2,
                     'price_unit': line.precio_unitario or 0.0
                 })
                 continue
-
-            # ✅ LOGICA PARA PRODUCTOS FÍSICOS
-            if not line.quant_id:
-                 raise UserError(f'El lote {line.lot_id.name} ya no tiene stock disponible (fue vendido o movido).')
 
             pid = line.product_id.id
             if pid not in product_groups:
@@ -300,8 +307,19 @@ class StockLotHoldOrder(models.Model):
                     'selected_lots': [],
                     'price_unit': line.precio_unitario or 0.0,
                 }
-            product_groups[pid]['quantity'] += line.cantidad_m2
-            product_groups[pid]['selected_lots'].append(line.quant_id.id)
+            
+            # Agregar quants de cada lote
+            for lot in line.lot_ids:
+                quant = self.env['stock.quant'].search([
+                    ('lot_id', '=', lot.id),
+                    ('quantity', '>', 0),
+                    ('location_id.usage', '=', 'internal'),
+                    ('company_id', '=', self.company_id.id),
+                ], limit=1)
+                if not quant:
+                    raise UserError(f'El lote {lot.name} ya no tiene stock disponible.')
+                product_groups[pid]['quantity'] += quant.quantity
+                product_groups[pid]['selected_lots'].append(quant.id)
         
         products = list(product_groups.values())
         
@@ -324,14 +342,13 @@ class StockLotHoldOrder(models.Model):
             raise UserError(f'No se encontró lista de precios para {self.currency_id.name}')
         
         try:
-            # Pasamos services_list al método de creación
             result = self.env['sale.order'].with_context(
                 from_hold_order=True,
                 hold_order_id=self.id
             ).create_from_shopping_cart(
                 partner_id=self.partner_id.id,
                 products=products,
-                services=services_list, # ✅ Pasamos los servicios aquí
+                services=services_list,
                 notes=notes,
                 pricelist_id=pricelist.id,
                 apply_tax=True,
@@ -354,17 +371,15 @@ class StockLotHoldOrder(models.Model):
             if result.get('success'):
                 sale_order = self.env['sale.order'].browse(result['order_id'])
                 
-                # Al crear la venta, finalizamos la orden y liberamos los holds
-                # Usamos _release_related_holds aquí también implícitamente al no renovar
                 self.write({
                     'sale_order_id': sale_order.id,
                     'state': 'done'
                 })
                 
-                # Liberación explícita de holds
+                # Liberar holds
                 for line in self.hold_line_ids:
-                    if line.hold_id and line.hold_id.estado == 'activo':
-                        line.hold_id.action_cancelar_hold()
+                    for hold in line.hold_ids.filtered(lambda h: h.estado == 'activo'):
+                        hold.action_cancelar_hold()
                 
                 return {
                     'type': 'ir.actions.client',
@@ -399,9 +414,36 @@ class StockLotHoldOrderLine(models.Model):
         ondelete='cascade'
     )
     
-    # === MODIFICACIÓN: CAMPO OPTIONAL ===
-    # Se cambia required=False y ondelete='set null'
-    # Esto permite servicios que no tienen stock.quant
+    product_id = fields.Many2one(
+        'product.product', 
+        string='Producto', 
+        required=True
+    )
+    
+    # ===== NUEVO: Many2many de lotes (reemplaza lot_id) =====
+    lot_ids = fields.Many2many(
+        'stock.lot',
+        'hold_order_line_lot_rel',
+        'line_id',
+        'lot_id',
+        string='Placas Seleccionadas',
+        domain="[('product_id', '=', product_id)]",
+    )
+    
+    lot_count = fields.Integer(
+        string='# Placas',
+        compute='_compute_lot_count',
+        store=True
+    )
+    
+    # ===== Campos legacy (mantener por compatibilidad con reportes) =====
+    lot_id = fields.Many2one(
+        'stock.lot', 
+        string='Lote', 
+        required=False,
+        help='Campo legacy, usar lot_ids'
+    )
+    
     quant_id = fields.Many2one(
         'stock.quant', 
         string='Quant', 
@@ -410,29 +452,10 @@ class StockLotHoldOrderLine(models.Model):
         index=True
     )
     
-    # === MODIFICACIÓN: LOTE OPCIONAL ===
-    # Para permitir servicios, el lote no es obligatorio
-    lot_id = fields.Many2one(
-        'stock.lot', 
-        string='Lote', 
-        required=False
-    )
-    
-    # === MODIFICACIÓN: PRODUCTO EDITABLE ===
-    # Rompemos la relación de solo lectura para permitir seleccionar servicios manualmente
-    product_id = fields.Many2one(
-        'product.product', 
-        string='Producto', 
-        required=True, 
-        store=True, 
-        readonly=False
-    )
-    
-    # === MODIFICACIÓN: CAMPO COMPUTADO + EDITABLE ===
     cantidad_m2 = fields.Float(
         string='Cantidad (m²)', 
         store=True, 
-        readonly=False, # Editable para servicios
+        readonly=False,
         compute='_compute_cantidad_m2',
         precompute=True
     )
@@ -457,69 +480,61 @@ class StockLotHoldOrderLine(models.Model):
         currency_field='currency_id'
     )
     
-    # Campos relacionados del lote (solo lectura, vacíos si no hay lote)
-    x_color = fields.Char(related='lot_id.x_color', string='Color', readonly=True)
-    x_grosor = fields.Char(related='lot_id.x_grosor', string='Grosor (cm)', readonly=True)
-    x_alto = fields.Float(related='lot_id.x_alto', string='Alto (m)', readonly=True)
-    x_ancho = fields.Float(related='lot_id.x_ancho', string='Ancho (m)', readonly=True)
-    x_bloque = fields.Char(related='lot_id.x_bloque', string='Bloque', readonly=True)
-    x_tipo = fields.Selection(related='lot_id.x_tipo', string='Tipo', readonly=True)
+    # Holds creados para esta línea
+    hold_ids = fields.Many2many(
+        'stock.lot.hold',
+        'hold_order_line_hold_rel',
+        'line_id',
+        'hold_id',
+        string='Holds Creados',
+        readonly=True
+    )
     
+    # Campo legacy (mantener por compatibilidad)
     hold_id = fields.Many2one(
         'stock.lot.hold', 
         string='Hold Creado', 
         readonly=True
     )
     
-    # === ONCHANGE PARA LLENAR PRODUCTO DESDE LOTE ===
-    @api.onchange('lot_id')
-    def _onchange_lot_id(self):
-        if self.lot_id:
-            self.product_id = self.lot_id.product_id
-            
-            # Buscar stock disponible
-            domain = [
-                ('lot_id', '=', self.lot_id.id),
-                ('quantity', '>', 0),
-                ('location_id.usage', '=', 'internal')
-            ]
-            if self.order_id and self.order_id.company_id:
-                domain.append(('company_id', '=', self.order_id.company_id.id))
-            
-            quant = self.env['stock.quant'].search(domain, limit=1)
-            
-            if quant:
-                self.quant_id = quant.id
-            else:
-                return {
-                    'warning': {
-                        'title': 'Advertencia', 
-                        'message': f'No se encontró stock disponible para el lote {self.lot_id.name}'
-                    }
-                }
+    # Campos related del lote (vacíos si hay múltiples, muestran el primero)
+    x_color = fields.Char(related='lot_id.x_color', string='Color', readonly=True)
+    x_grosor = fields.Char(related='lot_id.x_grosor', string='Grosor (cm)', readonly=True)
+    x_alto = fields.Float(related='lot_id.x_alto', string='Alto (m)', readonly=True)
+    x_ancho = fields.Float(related='lot_id.x_ancho', string='Ancho (m)', readonly=True)
+    x_bloque = fields.Char(related='lot_id.x_bloque', string='Bloque', readonly=True)
+    x_tipo = fields.Selection(related='lot_id.x_tipo', string='Tipo', readonly=True)
 
-    # === ONCHANGE PARA VALIDAR SERVICIOS ===
+    @api.depends('lot_ids')
+    def _compute_lot_count(self):
+        for line in self:
+            line.lot_count = len(line.lot_ids)
+
     @api.onchange('product_id')
     def _onchange_product_id(self):
         if self.product_id and self.product_id.type == 'service':
+            self.lot_ids = [(5, 0, 0)]
             self.lot_id = False
             self.quant_id = False
-            # Valor por defecto para servicios
             if not self.cantidad_m2:
                 self.cantidad_m2 = 1.0
 
-    # === LÓGICA HÍBRIDA PARA CANTIDAD ===
-    @api.depends('quant_id', 'quant_id.quantity', 'product_id')
+    @api.depends('lot_ids', 'product_id')
     def _compute_cantidad_m2(self):
         for line in self:
-            if line.quant_id:
-                # Si hay quant (producto físico), manda el stock
-                line.cantidad_m2 = line.quant_id.quantity
+            if line.lot_ids:
+                total = 0.0
+                for lot in line.lot_ids:
+                    quant = self.env['stock.quant'].search([
+                        ('lot_id', '=', lot.id),
+                        ('quantity', '>', 0),
+                        ('location_id.usage', '=', 'internal'),
+                    ], limit=1)
+                    total += quant.quantity if quant else 0.0
+                line.cantidad_m2 = total
             elif line.product_id and line.product_id.type == 'service':
-                # Si es servicio, mantenemos el valor actual o ponemos 1 por defecto
                 if not line.cantidad_m2:
                     line.cantidad_m2 = 1.0
-            # Si se borró el quant pero no es servicio, mantenemos el valor histórico (store=True)
 
     @api.depends('cantidad_m2', 'precio_unitario')
     def _compute_precio_total(self):
@@ -528,3 +543,20 @@ class StockLotHoldOrderLine(models.Model):
                 line.precio_total = line.cantidad_m2 * line.precio_unitario
             else:
                 line.precio_total = 0.0
+    
+    @api.onchange('lot_ids')
+    def _onchange_lot_ids(self):
+        """Sincronizar lot_id legacy con el primer lote seleccionado"""
+        if self.lot_ids:
+            self.lot_id = self.lot_ids[0]
+            self.product_id = self.lot_ids[0].product_id
+            # Buscar quant del primer lote
+            quant = self.env['stock.quant'].search([
+                ('lot_id', '=', self.lot_ids[0].id),
+                ('quantity', '>', 0),
+                ('location_id.usage', '=', 'internal'),
+            ], limit=1)
+            self.quant_id = quant.id if quant else False
+        else:
+            self.lot_id = False
+            self.quant_id = False

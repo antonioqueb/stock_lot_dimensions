@@ -4,13 +4,6 @@ import { standardFieldProps } from "@web/views/fields/standard_field_props";
 import { Component, useState, onWillStart, onWillUpdateProps, onWillUnmount } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
-/**
- * HoldStoneButton — Widget para seleccionar placas en stock.lot.hold.order.line
- * 
- * Replica el UX de StoneExpandButton (sale_stone_selection) pero adaptado al modelo
- * de órdenes de reserva. Al seleccionar un lote, se escribe lot_id, product_id,
- * quant_id y cantidad_m2 directamente en la línea.
- */
 export class HoldStoneButton extends Component {
     static template = "stock_lot_dimensions.HoldStoneButton";
     static props = { ...standardFieldProps };
@@ -24,48 +17,52 @@ export class HoldStoneButton extends Component {
 
         this.state = useState({
             isExpanded: false,
-            hasLot: false,
+            selectedCount: 0,
         });
 
-        onWillStart(() => this._updateState());
-        onWillUpdateProps(() => this._updateState());
+        onWillStart(() => this._updateCount());
+        onWillUpdateProps((nextProps) => this._updateCount(nextProps));
         onWillUnmount(() => {
             this.removeDetailsRow();
             this.destroyPopup();
         });
     }
 
-    _updateState() {
-        const data = this.props.record.data;
-        this.state.hasLot = !!(data.lot_id && this._extractId(data.lot_id));
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    _updateCount(props = this.props) {
+        const ids = this.extractLotIds(props?.record?.data?.lot_ids);
+        this.state.selectedCount = ids.length;
     }
 
-    _extractId(field) {
-        if (!field) return 0;
-        if (typeof field === "number") return field;
-        if (Array.isArray(field)) return field[0] || 0;
-        if (field.id) return field.id;
-        return 0;
-    }
-
-    _extractName(field) {
-        if (!field) return "";
-        if (Array.isArray(field)) return field[1] || "";
-        if (field.display_name) return field.display_name;
-        if (field.name) return field.name;
-        return "";
+    extractLotIds(rawLots) {
+        if (!rawLots) return [];
+        if (Array.isArray(rawLots)) return rawLots.filter((x) => typeof x === "number");
+        if (rawLots.currentIds) return rawLots.currentIds;
+        if (rawLots.resIds) return rawLots.resIds;
+        if (rawLots.records) return rawLots.records.map((r) => r.resId || r.data?.id).filter(Boolean);
+        return [];
     }
 
     getProductId() {
-        return this._extractId(this.props.record.data.product_id);
+        const pd = this.props.record.data.product_id;
+        if (!pd) return 0;
+        if (Array.isArray(pd)) return pd[0];
+        if (typeof pd === "number") return pd;
+        if (pd.id) return pd.id;
+        return 0;
     }
 
     getProductName() {
-        return this._extractName(this.props.record.data.product_id);
+        const pd = this.props.record.data.product_id;
+        if (!pd) return "";
+        if (Array.isArray(pd)) return pd[1] || "";
+        if (pd.display_name) return pd.display_name;
+        return "";
     }
 
-    getLotId() {
-        return this._extractId(this.props.record.data.lot_id);
+    getCurrentLotIds() {
+        return this.extractLotIds(this.props.record.data.lot_ids);
     }
 
     // ─── Toggle principal ─────────────────────────────────────────────────────
@@ -79,19 +76,18 @@ export class HoldStoneButton extends Component {
             return;
         }
 
-        // Cerrar otros expandidos
         document.querySelectorAll(".hold-stone-selected-row").forEach((e) => e.remove());
 
         const tr = ev.currentTarget.closest("tr");
         if (!tr) return;
 
         this.state.isExpanded = true;
-        await this.injectSelectedInfo(tr);
+        await this.injectSelectedTable(tr);
     }
 
-    // ─── Info inline del lote seleccionado ─────────────────────────────────────
+    // ─── Tabla de seleccionadas (inline bajo la fila) ─────────────────────────
 
-    async injectSelectedInfo(currentRow) {
+    async injectSelectedTable(currentRow) {
         const newTr = document.createElement("tr");
         newTr.className = "hold-stone-selected-row stone-selected-row";
 
@@ -105,23 +101,15 @@ export class HoldStoneButton extends Component {
 
         const header = document.createElement("div");
         header.className = "stone-selected-header";
-        
-        const lotId = this.getLotId();
-        const lotLabel = lotId ? "1 placa seleccionada" : "Sin placa seleccionada";
-        
         header.innerHTML = `
             <span class="stone-selected-title">
                 <i class="fa fa-check-circle me-2"></i>
-                ${lotLabel}
+                Placas seleccionadas
+                <span class="stone-sel-badge" id="hold-sel-badge">${this.getCurrentLotIds().length}</span>
             </span>
-            <div style="display:flex;gap:6px;">
-                <button class="stone-add-btn hold-change-btn">
-                    <i class="fa fa-th-large me-1"></i> ${lotId ? "Cambiar placa" : "Seleccionar placa"}
-                </button>
-                ${lotId ? `<button class="stone-add-btn hold-remove-btn" style="background:#e53e3e;">
-                    <i class="fa fa-times me-1"></i> Quitar
-                </button>` : ""}
-            </div>
+            <button class="stone-add-btn hold-add-btn-trigger">
+                <i class="fa fa-plus me-1"></i> Agregar placa
+            </button>
         `;
 
         const body = document.createElement("div");
@@ -134,58 +122,56 @@ export class HoldStoneButton extends Component {
         currentRow.after(newTr);
         this._detailsRow = newTr;
 
-        if (lotId) {
-            await this.renderLotInfo(body, lotId);
-        } else {
-            body.innerHTML = `
-                <div class="stone-no-selection">
-                    <i class="fa fa-info-circle me-2 text-muted"></i>
-                    <span class="text-muted">Usa <strong>Seleccionar placa</strong> para elegir un lote del inventario.</span>
-                </div>`;
-        }
+        await this.renderSelectedTable(body, this.getCurrentLotIds());
 
-        header.querySelector(".hold-change-btn").addEventListener("click", (e) => {
+        header.querySelector(".hold-add-btn-trigger").addEventListener("click", (e) => {
             e.stopPropagation();
             this.openPopup();
         });
-
-        const removeBtn = header.querySelector(".hold-remove-btn");
-        if (removeBtn) {
-            removeBtn.addEventListener("click", async (e) => {
-                e.stopPropagation();
-                await this.clearLot();
-            });
-        }
     }
 
-    async renderLotInfo(container, lotId) {
+    async renderSelectedTable(container, lotIds) {
+        if (!lotIds || lotIds.length === 0) {
+            container.innerHTML = `
+                <div class="stone-no-selection">
+                    <i class="fa fa-info-circle me-2 text-muted"></i>
+                    <span class="text-muted">Sin placas seleccionadas. Usa <strong>Agregar placa</strong> para comenzar.</span>
+                </div>`;
+            return;
+        }
+
         container.innerHTML = `<div class="stone-table-loading"><i class="fa fa-circle-o-notch fa-spin me-2"></i> Cargando datos...</div>`;
 
         try {
             const [lotsData, quants] = await Promise.all([
                 this.orm.searchRead(
                     "stock.lot",
-                    [["id", "=", lotId]],
-                    ["name", "x_bloque", "x_atado", "x_alto", "x_ancho", "x_grosor", "x_tipo", "x_color", "x_pedimento", "x_contenedor"],
-                    { limit: 1 }
+                    [["id", "in", lotIds]],
+                    ["name", "x_bloque", "x_atado", "x_alto", "x_ancho", "x_grosor", "x_tipo", "x_color"],
+                    { limit: lotIds.length }
                 ),
                 this.orm.searchRead(
                     "stock.quant",
-                    [["lot_id", "=", lotId], ["location_id.usage", "=", "internal"], ["quantity", ">", 0]],
-                    ["lot_id", "quantity"],
-                    { limit: 1 }
+                    [
+                        ["lot_id", "in", lotIds],
+                        ["location_id.usage", "=", "internal"],
+                        ["quantity", ">", 0],
+                    ],
+                    ["lot_id", "quantity"]
                 ),
             ]);
 
-            if (!lotsData.length) {
-                container.innerHTML = `<div class="p-2 text-muted">Lote no encontrado</div>`;
-                return;
+            const qtyMap = {};
+            for (const q of quants) {
+                const lid = q.lot_id[0];
+                qtyMap[lid] = (qtyMap[lid] || 0) + q.quantity;
             }
 
-            const lot = lotsData[0];
-            const qty = quants.length ? quants[0].quantity : 0;
+            const lotMap = {};
+            for (const l of lotsData) lotMap[l.id] = l;
 
-            container.innerHTML = `
+            let totalQty = 0;
+            let html = `
                 <table class="stone-sel-table">
                     <thead>
                         <tr>
@@ -198,37 +184,75 @@ export class HoldStoneButton extends Component {
                             <th class="col-num">M²</th>
                             <th>Tipo</th>
                             <th>Color</th>
+                            <th class="col-act"></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td class="cell-lot">${lot.name}</td>
-                            <td>${lot.x_bloque || "-"}</td>
-                            <td>${lot.x_atado || "-"}</td>
-                            <td class="col-num">${lot.x_alto ? lot.x_alto.toFixed(0) : "-"}</td>
-                            <td class="col-num">${lot.x_ancho ? lot.x_ancho.toFixed(0) : "-"}</td>
-                            <td class="col-num">${lot.x_grosor || "-"}</td>
-                            <td class="col-num fw-semibold">${qty.toFixed(2)}</td>
-                            <td>${lot.x_tipo || "-"}</td>
-                            <td>${lot.x_color || "-"}</td>
-                        </tr>
+                    <tbody>`;
+
+            for (const lid of lotIds) {
+                const lot = lotMap[lid];
+                if (!lot) continue;
+                const qty = qtyMap[lid] || 0;
+                totalQty += qty;
+                html += `
+                    <tr>
+                        <td class="cell-lot">${lot.name}</td>
+                        <td>${lot.x_bloque || "-"}</td>
+                        <td>${lot.x_atado || "-"}</td>
+                        <td class="col-num">${lot.x_alto ? lot.x_alto.toFixed(0) : "-"}</td>
+                        <td class="col-num">${lot.x_ancho ? lot.x_ancho.toFixed(0) : "-"}</td>
+                        <td class="col-num">${lot.x_grosor || "-"}</td>
+                        <td class="col-num fw-semibold">${qty.toFixed(2)}</td>
+                        <td>${lot.x_tipo || "-"}</td>
+                        <td>${lot.x_color || "-"}</td>
+                        <td class="col-act">
+                            <button class="stone-remove-btn" data-lot-id="${lid}" title="Quitar">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+            }
+
+            html += `
                     </tbody>
+                    <tfoot>
+                        <tr class="stone-total-row">
+                            <td colspan="6" class="text-end fw-bold text-muted">Total:</td>
+                            <td class="col-num fw-bold">${totalQty.toFixed(2)}</td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
                 </table>`;
+
+            container.innerHTML = html;
+
+            container.querySelectorAll(".stone-remove-btn").forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    this.removeLot(parseInt(btn.dataset.lotId));
+                });
+            });
         } catch (err) {
-            console.error("[HOLD STONE] Error:", err);
+            console.error("[HOLD STONE] Error renderizando seleccionadas:", err);
             container.innerHTML = `<div class="text-danger p-2">Error: ${err.message}</div>`;
         }
     }
 
-    async clearLot() {
-        await this.props.record.update({
-            lot_id: false,
-            quant_id: false,
-            cantidad_m2: 0,
-        });
-        this._updateState();
-        this.removeDetailsRow();
-        this.state.isExpanded = false;
+    async removeLot(lotId) {
+        const newIds = this.getCurrentLotIds().filter((id) => id !== lotId);
+        await this.props.record.update({ lot_ids: [[6, 0, newIds]] });
+        this._updateCount();
+        await this.refreshSelectedTable();
+    }
+
+    async refreshSelectedTable() {
+        if (!this._detailsRow) return;
+        const body = this._detailsRow.querySelector(".stone-selected-body");
+        if (!body) return;
+        const lots = this.getCurrentLotIds();
+        const badge = this._detailsRow.querySelector(".stone-sel-badge");
+        if (badge) badge.textContent = lots.length;
+        await this.renderSelectedTable(body, lots);
     }
 
     removeDetailsRow() {
@@ -242,10 +266,7 @@ export class HoldStoneButton extends Component {
 
     openPopup() {
         this.destroyPopup();
-
-        // Intentar obtener product_id del contexto de la orden (parent)
-        // En hold.order.line no siempre hay product_id pre-seleccionado
-        let productId = this.getProductId();
+        const productId = this.getProductId();
 
         this._popupRoot = document.createElement("div");
         this._popupRoot.className = "stone-popup-root";
@@ -258,20 +279,21 @@ export class HoldStoneButton extends Component {
         const root = this._popupRoot;
         const PAGE_SIZE = 35;
 
-        const popupState = {
+        const state = {
             quants: [],
             totalCount: 0,
             hasMore: false,
             isLoading: false,
             isLoadingMore: false,
             page: 0,
-            selectedLotId: this.getLotId() || null,
+            pendingIds: new Set(this.getCurrentLotIds()),
             filters: { lot_name: "", bloque: "", atado: "", alto_min: "", ancho_min: "" },
             productId: initialProductId,
-            products: [],
         };
 
         let searchTimeout = null;
+
+        const showProductFilter = !initialProductId;
 
         root.innerHTML = `
             <div class="stone-popup-overlay" id="hold-overlay">
@@ -279,12 +301,13 @@ export class HoldStoneButton extends Component {
                     <div class="stone-popup-header">
                         <div class="stone-popup-title">
                             <i class="fa fa-th me-2"></i>
-                            Seleccionar Placa para Reserva
+                            Seleccionar Placas
+                            <span class="stone-popup-subtitle">${this.getProductName() ? "— " + this.getProductName() : ""}</span>
                         </div>
                         <div class="stone-popup-header-actions">
                             <span class="stone-badge-selected">
                                 <i class="fa fa-check-circle me-1"></i>
-                                <span id="hp-badge">${popupState.selectedLotId ? "1" : "0"}</span> seleccionada
+                                <span id="hp-badge-count">${state.pendingIds.size}</span> seleccionadas
                             </span>
                             <button class="stone-btn stone-btn-accent" id="hp-confirm-top">
                                 <i class="fa fa-check me-1"></i> Confirmar
@@ -296,12 +319,13 @@ export class HoldStoneButton extends Component {
                     </div>
 
                     <div class="stone-popup-filters">
+                        ${showProductFilter ? `
                         <div class="stone-filter-group">
                             <label>Producto</label>
                             <select class="stone-filter-input" id="hf-product" style="width:220px;">
                                 <option value="">Todos los productos</option>
                             </select>
-                        </div>
+                        </div>` : ""}
                         <div class="stone-filter-group">
                             <label>Lote</label>
                             <input type="text" class="stone-filter-input" id="hf-lot" placeholder="Buscar lote..."/>
@@ -321,6 +345,14 @@ export class HoldStoneButton extends Component {
                         <div class="stone-filter-group">
                             <label>Ancho mín.</label>
                             <input type="number" class="stone-filter-input stone-filter-sm" id="hf-ancho" placeholder="0"/>
+                        </div>
+                        <div class="stone-filter-actions">
+                            <button class="stone-btn stone-btn-select-all" id="hp-select-all">
+                                <i class="fa fa-check-square-o me-1"></i> Seleccionar todo
+                            </button>
+                            <button class="stone-btn stone-btn-clear-all" id="hp-clear-all">
+                                <i class="fa fa-square-o me-1"></i> Borrar selección
+                            </button>
                         </div>
                         <div class="stone-filter-spacer"></div>
                         <div class="stone-filter-stats">
@@ -342,7 +374,7 @@ export class HoldStoneButton extends Component {
                         <div class="stone-footer-actions">
                             <button class="stone-btn stone-btn-outline" id="hp-cancel">Cancelar</button>
                             <button class="stone-btn stone-btn-primary-dark" id="hp-confirm-bottom">
-                                <i class="fa fa-check me-1"></i> Confirmar selección
+                                <i class="fa fa-check me-1"></i> Agregar selección
                             </button>
                         </div>
                     </div>
@@ -354,18 +386,18 @@ export class HoldStoneButton extends Component {
         const body = root.querySelector("#hp-body");
         const stat = root.querySelector("#hp-stat");
         const footerInfo = root.querySelector("#hp-footer-info");
-        const badge = root.querySelector("#hp-badge");
+        const badgeCount = root.querySelector("#hp-badge-count");
         const productSelect = root.querySelector("#hf-product");
 
-        const updateBadge = () => { badge.textContent = popupState.selectedLotId ? "1" : "0"; };
+        const updateBadge = () => { badgeCount.textContent = state.pendingIds.size; };
         const updateStats = () => {
             stat.className = "stone-filter-stat-count";
-            stat.innerHTML = `${popupState.totalCount} placas disponibles`;
-            footerInfo.innerHTML = `Mostrando <strong>${popupState.quants.length}</strong> de <strong>${popupState.totalCount}</strong>`;
+            stat.innerHTML = `${state.totalCount} placas disponibles`;
+            footerInfo.innerHTML = `Mostrando <strong>${state.quants.length}</strong> de <strong>${state.totalCount}</strong>`;
         };
 
-        // Cargar lista de productos con stock
         const loadProducts = async () => {
+            if (!productSelect) return;
             try {
                 const products = await this.orm.searchRead(
                     "stock.quant",
@@ -374,21 +406,18 @@ export class HoldStoneButton extends Component {
                     { limit: 500 }
                 );
                 const seen = new Set();
-                popupState.products = [];
+                const items = [];
                 for (const q of products) {
                     if (q.product_id && !seen.has(q.product_id[0])) {
                         seen.add(q.product_id[0]);
-                        popupState.products.push({ id: q.product_id[0], name: q.product_id[1] });
+                        items.push({ id: q.product_id[0], name: q.product_id[1] });
                     }
                 }
-                popupState.products.sort((a, b) => a.name.localeCompare(b.name));
-                
-                productSelect.innerHTML = `<option value="">Todos los productos</option>`;
-                for (const p of popupState.products) {
+                items.sort((a, b) => a.name.localeCompare(b.name));
+                for (const p of items) {
                     const opt = document.createElement("option");
                     opt.value = p.id;
                     opt.textContent = p.name;
-                    if (p.id === popupState.productId) opt.selected = true;
                     productSelect.appendChild(opt);
                 }
             } catch (e) {
@@ -396,8 +425,39 @@ export class HoldStoneButton extends Component {
             }
         };
 
+        const doSelectAll = () => {
+            for (const q of state.quants) {
+                const lotId = q.lot_id ? q.lot_id[0] : 0;
+                if (lotId) state.pendingIds.add(lotId);
+            }
+            updateBadge();
+            body.querySelectorAll("tr[data-lot-id]").forEach((tr) => {
+                tr.className = "row-sel";
+                const chk = tr.querySelector(".stone-chkbox");
+                if (chk) { chk.className = "stone-chkbox checked"; chk.innerHTML = '<i class="fa fa-check"></i>'; }
+                const tag = tr.querySelector(".stone-tag");
+                if (tag) { tag.className = "stone-tag stone-tag-ok"; tag.textContent = "Selec."; }
+            });
+        };
+
+        const doClearAll = () => {
+            state.pendingIds.clear();
+            updateBadge();
+            body.querySelectorAll("tr[data-lot-id]").forEach((tr) => {
+                tr.className = "";
+                const chk = tr.querySelector(".stone-chkbox");
+                if (chk) { chk.className = "stone-chkbox"; chk.innerHTML = ""; }
+                const tag = tr.querySelector(".stone-tag");
+                if (tag) {
+                    const reserved = tr.dataset.reserved === "1";
+                    tag.className = reserved ? "stone-tag stone-tag-warn" : "stone-tag stone-tag-free";
+                    tag.textContent = reserved ? "Reservado" : "Libre";
+                }
+            });
+        };
+
         const renderTable = () => {
-            if (popupState.quants.length === 0 && !popupState.isLoading) {
+            if (state.quants.length === 0 && !state.isLoading) {
                 body.innerHTML = `
                     <div class="stone-empty-state">
                         <i class="fa fa-inbox fa-3x text-muted"></i>
@@ -408,12 +468,11 @@ export class HoldStoneButton extends Component {
             }
 
             let rows = "";
-            for (const q of popupState.quants) {
+            for (const q of state.quants) {
                 const lotId = q.lot_id ? q.lot_id[0] : 0;
                 const lotName = q.lot_id ? q.lot_id[1] : "-";
-                const productName = q.product_name || "";
                 const loc = q.location_id ? q.location_id[1].split("/").pop() : "-";
-                const sel = popupState.selectedLotId === lotId;
+                const sel = state.pendingIds.has(lotId);
                 const reserved = q.reserved_quantity > 0;
 
                 let statusBadge = `<span class="stone-tag stone-tag-free">Libre</span>`;
@@ -421,14 +480,13 @@ export class HoldStoneButton extends Component {
                 else if (reserved) statusBadge = `<span class="stone-tag stone-tag-warn">Reservado</span>`;
 
                 rows += `
-                    <tr class="${sel ? "row-sel" : ""}" data-lot-id="${lotId}" data-quant-id="${q.id}" data-product-id="${q.product_id}" data-qty="${q.quantity || 0}">
+                    <tr class="${sel ? "row-sel" : ""}" data-lot-id="${lotId}" data-reserved="${reserved ? "1" : "0"}">
                         <td class="col-chk">
                             <div class="stone-chkbox ${sel ? "checked" : ""}">
                                 ${sel ? '<i class="fa fa-check"></i>' : ""}
                             </div>
                         </td>
                         <td class="cell-lot">${lotName}</td>
-                        <td class="small text-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${productName}</td>
                         <td>${q.x_bloque || "-"}</td>
                         <td>${q.x_atado || "-"}</td>
                         <td class="col-num">${q.x_alto ? q.x_alto.toFixed(0) : "-"}</td>
@@ -444,8 +502,8 @@ export class HoldStoneButton extends Component {
 
             const sentinel = `
                 <div id="hp-sentinel" class="stone-scroll-sentinel">
-                    ${popupState.isLoadingMore ? '<div class="stone-loading-more"><i class="fa fa-circle-o-notch fa-spin me-2"></i> Cargando más...</div>' : ""}
-                    ${popupState.hasMore && !popupState.isLoadingMore ? '<div class="stone-scroll-hint"><i class="fa fa-chevron-down me-1"></i> Desplázate para cargar más</div>' : ""}
+                    ${state.isLoadingMore ? '<div class="stone-loading-more"><i class="fa fa-circle-o-notch fa-spin me-2"></i> Cargando más...</div>' : ""}
+                    ${state.hasMore && !state.isLoadingMore ? '<div class="stone-scroll-hint"><i class="fa fa-chevron-down me-1"></i> Desplázate para cargar más</div>' : ""}
                 </div>`;
 
             body.innerHTML = `
@@ -454,7 +512,6 @@ export class HoldStoneButton extends Component {
                         <tr>
                             <th class="col-chk">✓</th>
                             <th>Lote</th>
-                            <th>Producto</th>
                             <th>Bloque</th>
                             <th>Atado</th>
                             <th class="col-num">Alto</th>
@@ -473,60 +530,45 @@ export class HoldStoneButton extends Component {
 
             updateStats();
 
-            // Click en filas — selección ÚNICA (radio, no checkbox)
             body.querySelectorAll("tr[data-lot-id]").forEach((tr) => {
                 tr.style.cursor = "pointer";
                 tr.addEventListener("click", () => {
                     const lotId = parseInt(tr.dataset.lotId);
                     if (!lotId) return;
-
-                    // Toggle: si ya está seleccionado, deseleccionar
-                    if (popupState.selectedLotId === lotId) {
-                        popupState.selectedLotId = null;
+                    if (state.pendingIds.has(lotId)) {
+                        state.pendingIds.delete(lotId);
                     } else {
-                        popupState.selectedLotId = lotId;
+                        state.pendingIds.add(lotId);
                     }
-                    popupState._selectedQuantId = parseInt(tr.dataset.quantId) || 0;
-                    popupState._selectedProductId = parseInt(tr.dataset.productId) || 0;
-                    popupState._selectedQty = parseFloat(tr.dataset.qty) || 0;
-
-                    // Actualizar visual de TODAS las filas
-                    body.querySelectorAll("tr[data-lot-id]").forEach((row) => {
-                        const rid = parseInt(row.dataset.lotId);
-                        const isSel = popupState.selectedLotId === rid;
-                        row.className = isSel ? "row-sel" : "";
-                        const chk = row.querySelector(".stone-chkbox");
-                        if (chk) {
-                            chk.className = "stone-chkbox" + (isSel ? " checked" : "");
-                            chk.innerHTML = isSel ? '<i class="fa fa-check"></i>' : "";
+                    const sel = state.pendingIds.has(lotId);
+                    tr.className = sel ? "row-sel" : "";
+                    const chk = tr.querySelector(".stone-chkbox");
+                    if (chk) {
+                        chk.className = "stone-chkbox" + (sel ? " checked" : "");
+                        chk.innerHTML = sel ? '<i class="fa fa-check"></i>' : "";
+                    }
+                    const tag = tr.querySelector(".stone-tag");
+                    if (tag) {
+                        if (sel) {
+                            tag.className = "stone-tag stone-tag-ok";
+                            tag.textContent = "Selec.";
+                        } else {
+                            const reserved = tr.dataset.reserved === "1";
+                            tag.className = reserved ? "stone-tag stone-tag-warn" : "stone-tag stone-tag-free";
+                            tag.textContent = reserved ? "Reservado" : "Libre";
                         }
-                        const tag = row.querySelector(".stone-tag");
-                        if (tag) {
-                            if (isSel) {
-                                tag.className = "stone-tag stone-tag-ok";
-                                tag.textContent = "Selec.";
-                            } else {
-                                const reserved = row.dataset.reserved === "1";
-                                tag.className = reserved ? "stone-tag stone-tag-warn" : "stone-tag stone-tag-free";
-                                tag.textContent = reserved ? "Reservado" : "Libre";
-                            }
-                        }
-                    });
+                    }
                     updateBadge();
                 });
             });
 
-            // Infinite scroll
-            if (this._popupObserver) {
-                this._popupObserver.disconnect();
-                this._popupObserver = null;
-            }
+            if (this._popupObserver) { this._popupObserver.disconnect(); this._popupObserver = null; }
             const sentinelEl = body.querySelector("#hp-sentinel");
-            if (sentinelEl && popupState.hasMore) {
+            if (sentinelEl && state.hasMore) {
                 this._popupObserver = new IntersectionObserver(
                     (entries) => {
-                        if (entries[0].isIntersecting && popupState.hasMore && !popupState.isLoadingMore) {
-                            loadPage(popupState.page + 1, false);
+                        if (entries[0].isIntersecting && state.hasMore && !state.isLoadingMore) {
+                            loadPage(state.page + 1, false);
                         }
                     },
                     { root: body, rootMargin: "100px", threshold: 0.1 }
@@ -537,161 +579,86 @@ export class HoldStoneButton extends Component {
 
         const loadPage = async (page, reset) => {
             if (reset) {
-                popupState.isLoading = true;
-                popupState.quants = [];
-                body.innerHTML = `
-                    <div class="stone-empty-state">
-                        <i class="fa fa-circle-o-notch fa-spin fa-2x text-muted"></i>
-                        <div class="stone-empty-text mt-2">Buscando...</div>
-                    </div>`;
+                state.isLoading = true;
+                state.quants = [];
+                body.innerHTML = `<div class="stone-empty-state"><i class="fa fa-circle-o-notch fa-spin fa-2x text-muted"></i><div class="stone-empty-text mt-2">Buscando...</div></div>`;
                 stat.className = "stone-filter-stat-loading";
                 stat.innerHTML = `<i class="fa fa-circle-o-notch fa-spin me-1"></i> Buscando...`;
             } else {
-                popupState.isLoadingMore = true;
+                state.isLoadingMore = true;
             }
 
             try {
-                // Construir dominio directo en stock.quant
                 const domain = [
                     ["location_id.usage", "=", "internal"],
                     ["quantity", ">", 0],
                     ["lot_id", "!=", false],
+                    ["x_tiene_hold", "=", false],
+                    ["reserved_quantity", "=", 0],
                 ];
-
-                if (popupState.productId) {
-                    domain.push(["product_id", "=", popupState.productId]);
-                }
-                if (popupState.filters.lot_name) {
-                    domain.push(["lot_id.name", "ilike", popupState.filters.lot_name]);
-                }
-                if (popupState.filters.bloque) {
-                    domain.push(["lot_id.x_bloque", "ilike", popupState.filters.bloque]);
-                }
-                if (popupState.filters.atado) {
-                    domain.push(["lot_id.x_atado", "ilike", popupState.filters.atado]);
-                }
-                if (popupState.filters.alto_min) {
-                    domain.push(["lot_id.x_alto", ">=", parseFloat(popupState.filters.alto_min)]);
-                }
-                if (popupState.filters.ancho_min) {
-                    domain.push(["lot_id.x_ancho", ">=", parseFloat(popupState.filters.ancho_min)]);
-                }
-
-                // Excluir quants con hold activo
-                domain.push(["x_tiene_hold", "=", false]);
-                // Excluir reservados por sistema
-                domain.push(["reserved_quantity", "=", 0]);
+                if (state.productId) domain.push(["product_id", "=", state.productId]);
+                if (state.filters.lot_name) domain.push(["lot_id.name", "ilike", state.filters.lot_name]);
+                if (state.filters.bloque) domain.push(["lot_id.x_bloque", "ilike", state.filters.bloque]);
+                if (state.filters.atado) domain.push(["lot_id.x_atado", "ilike", state.filters.atado]);
+                if (state.filters.alto_min) domain.push(["lot_id.x_alto", ">=", parseFloat(state.filters.alto_min)]);
+                if (state.filters.ancho_min) domain.push(["lot_id.x_ancho", ">=", parseFloat(state.filters.ancho_min)]);
 
                 const fields = [
                     "lot_id", "product_id", "location_id", "quantity", "reserved_quantity",
-                    "x_grosor", "x_alto", "x_ancho", "x_bloque", "x_atado",
-                    "x_tipo", "x_color", "x_pedimento", "x_contenedor",
+                    "x_grosor", "x_alto", "x_ancho", "x_bloque", "x_atado", "x_tipo", "x_color",
                 ];
 
                 const total = await this.orm.searchCount("stock.quant", domain);
                 const offset = page * PAGE_SIZE;
                 const quants = await this.orm.searchRead("stock.quant", domain, fields, {
-                    limit: PAGE_SIZE,
-                    offset,
-                    order: "lot_id",
+                    limit: PAGE_SIZE, offset, order: "lot_id",
                 });
 
-                const items = quants.map((q) => ({
-                    ...q,
-                    product_id: q.product_id ? q.product_id[0] : 0,
-                    product_name: q.product_id ? q.product_id[1] : "",
-                }));
-
-                if (reset || page === 0) {
-                    popupState.quants = items;
-                } else {
-                    popupState.quants = [...popupState.quants, ...items];
-                }
-                popupState.totalCount = total;
-                popupState.page = page;
-                popupState.hasMore = popupState.quants.length < total;
+                if (reset || page === 0) { state.quants = quants; } else { state.quants = [...state.quants, ...quants]; }
+                state.totalCount = total;
+                state.page = page;
+                state.hasMore = state.quants.length < total;
             } catch (err) {
                 console.error("[HOLD STONE POPUP] Error:", err);
-                body.innerHTML = `
-                    <div class="stone-empty-state">
-                        <i class="fa fa-exclamation-triangle fa-2x text-danger"></i>
-                        <div class="stone-empty-text mt-2 text-danger">Error: ${err.message}</div>
-                    </div>`;
+                body.innerHTML = `<div class="stone-empty-state"><i class="fa fa-exclamation-triangle fa-2x text-danger"></i><div class="stone-empty-text mt-2 text-danger">Error: ${err.message}</div></div>`;
                 return;
             } finally {
-                popupState.isLoading = false;
-                popupState.isLoadingMore = false;
+                state.isLoading = false;
+                state.isLoadingMore = false;
             }
-
             renderTable();
         };
 
-        // ─── Confirm / Close ─────────────────────────────────────────────────
         const doConfirm = async () => {
-            if (popupState.selectedLotId) {
-                // Buscar el quant para obtener datos completos
-                const quantData = popupState.quants.find(
-                    (q) => q.lot_id && q.lot_id[0] === popupState.selectedLotId
-                );
-
-                const updateVals = {
-                    lot_id: popupState.selectedLotId,
-                };
-
-                if (quantData) {
-                    updateVals.product_id = quantData.product_id || popupState._selectedProductId;
-                    updateVals.quant_id = quantData.id || popupState._selectedQuantId;
-                    updateVals.cantidad_m2 = quantData.quantity || popupState._selectedQty;
-                } else {
-                    // Fallback: datos del tr
-                    if (popupState._selectedProductId) updateVals.product_id = popupState._selectedProductId;
-                    if (popupState._selectedQuantId) updateVals.quant_id = popupState._selectedQuantId;
-                    if (popupState._selectedQty) updateVals.cantidad_m2 = popupState._selectedQty;
-                }
-
-                await this.props.record.update(updateVals);
-            }
             this.destroyPopup();
-            this._updateState();
-            
-            // Refrescar la info inline si está abierta
-            if (this._detailsRow) {
-                this.removeDetailsRow();
-                const tr = document.querySelector(`tr[data-id="${this.props.record.id}"]`) 
-                    || document.querySelector(`.o_data_row`);
-                if (tr) {
-                    // Re-inject
-                }
-            }
-            this.state.isExpanded = false;
+            const newIds = Array.from(state.pendingIds);
+            await this.props.record.update({ lot_ids: [[6, 0, newIds]] });
+            this._updateCount();
+            await this.refreshSelectedTable();
         };
 
         const doClose = () => this.destroyPopup();
 
-        // ─── Event listeners ─────────────────────────────────────────────────
         root.querySelector("#hp-close").addEventListener("click", doClose);
         root.querySelector("#hp-cancel").addEventListener("click", doClose);
         root.querySelector("#hp-confirm-top").addEventListener("click", doConfirm);
         root.querySelector("#hp-confirm-bottom").addEventListener("click", doConfirm);
+        root.querySelector("#hp-select-all").addEventListener("click", doSelectAll);
+        root.querySelector("#hp-clear-all").addEventListener("click", doClearAll);
         overlay.addEventListener("click", (e) => { if (e.target === overlay) doClose(); });
 
         const onKeyDown = (e) => { if (e.key === "Escape") doClose(); };
         document.addEventListener("keydown", onKeyDown);
         this._popupKeyHandler = onKeyDown;
 
-        // Filtros
         const scheduleSearch = () => {
             if (searchTimeout) clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => loadPage(0, true), 350);
         };
-
         const bindFilter = (id, key) => {
             const input = root.querySelector(`#${id}`);
             if (!input) return;
-            input.addEventListener("input", (e) => {
-                popupState.filters[key] = e.target.value;
-                scheduleSearch();
-            });
+            input.addEventListener("input", (e) => { state.filters[key] = e.target.value; scheduleSearch(); });
         };
         bindFilter("hf-lot", "lot_name");
         bindFilter("hf-bloque", "bloque");
@@ -699,30 +666,24 @@ export class HoldStoneButton extends Component {
         bindFilter("hf-alto", "alto_min");
         bindFilter("hf-ancho", "ancho_min");
 
-        productSelect.addEventListener("change", (e) => {
-            popupState.productId = e.target.value ? parseInt(e.target.value) : 0;
-            loadPage(0, true);
-        });
+        if (productSelect) {
+            productSelect.addEventListener("change", (e) => {
+                state.productId = e.target.value ? parseInt(e.target.value) : 0;
+                loadPage(0, true);
+            });
+        }
 
-        // Carga inicial
         loadProducts().then(() => loadPage(0, true));
     }
 
     destroyPopup() {
-        if (this._popupObserver) {
-            this._popupObserver.disconnect();
-            this._popupObserver = null;
-        }
-        if (this._popupKeyHandler) {
-            document.removeEventListener("keydown", this._popupKeyHandler);
-            this._popupKeyHandler = null;
-        }
-        if (this._popupRoot) {
-            this._popupRoot.remove();
-            this._popupRoot = null;
-        }
+        if (this._popupObserver) { this._popupObserver.disconnect(); this._popupObserver = null; }
+        if (this._popupKeyHandler) { document.removeEventListener("keydown", this._popupKeyHandler); this._popupKeyHandler = null; }
+        if (this._popupRoot) { this._popupRoot.remove(); this._popupRoot = null; }
     }
 }
+
+HoldStoneButton.template = "stock_lot_dimensions.HoldStoneButton";
 
 registry.category("fields").add("hold_stone_button", {
     component: HoldStoneButton,
