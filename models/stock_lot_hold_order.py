@@ -93,6 +93,34 @@ class StockLotHoldOrder(models.Model):
                 active_holds.write({'estado': 'cancelado'})
                 order.message_post(body=f"Se liberaron {len(active_holds)} apartados automáticamente.")
 
+    def _find_quant_for_lot(self, lot, company_id):
+        """
+        Busca quant con stock positivo para un lote.
+        Primero en ubicaciones internas, luego en tránsito.
+        Esto permite que la Torre de Control reserve lotes que
+        aún están en tránsito (recién recibidos en ubicación transit).
+        """
+        # Prioridad 1: ubicación interna (stock en almacén)
+        quant = self.env['stock.quant'].search([
+            ('lot_id', '=', lot.id),
+            ('quantity', '>', 0),
+            ('location_id.usage', '=', 'internal'),
+            ('company_id', '=', company_id),
+        ], limit=1)
+
+        if quant:
+            return quant
+
+        # Prioridad 2: ubicación de tránsito (mercancía en camino / recién recibida)
+        quant = self.env['stock.quant'].search([
+            ('lot_id', '=', lot.id),
+            ('quantity', '>', 0),
+            ('location_id.usage', '=', 'transit'),
+            ('company_id', '=', company_id),
+        ], limit=1)
+
+        return quant
+
     def action_confirm(self):
         for order in self:
             if not order.hold_line_ids:
@@ -111,12 +139,7 @@ class StockLotHoldOrder(models.Model):
                     if lot.id in already_held_lot_ids:
                         continue
 
-                    quant = self.env['stock.quant'].search([
-                        ('lot_id', '=', lot.id),
-                        ('quantity', '>', 0),
-                        ('location_id.usage', '=', 'internal'),
-                        ('company_id', '=', order.company_id.id),
-                    ], limit=1)
+                    quant = order._find_quant_for_lot(lot, order.company_id.id)
                     if not quant:
                         raise UserError(f'El lote {lot.name} no tiene stock disponible para reservar.')
 
