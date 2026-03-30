@@ -231,9 +231,21 @@
                                 </div>
                                 <div class="col-2"></div>
                                 <div class="col-4 text-center">
-                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                        <strong style="font-size: 8px; text-transform: uppercase;">RECIBIDO POR (Nombre y Firma)</strong>
-                                    </div>
+                                    <t t-if="o.signature">
+                                        <div style="margin-bottom: 5px;">
+                                            <img t-att-src="image_data_uri(o.signature)" 
+                                                 style="max-height: 80px; max-width: 200px;"/>
+                                        </div>
+                                        <div style="border-top: 1px solid #000; padding-top: 5px;">
+                                            <strong style="font-size: 8px; text-transform: uppercase;">RECIBIDO POR</strong><br/>
+                                            <span t-if="o.signed_by" style="font-size: 8px;" t-esc="o.signed_by"/>
+                                        </div>
+                                    </t>
+                                    <t t-else="">
+                                        <div style="border-top: 1px solid #000; padding-top: 5px;">
+                                            <strong style="font-size: 8px; text-transform: uppercase;">RECIBIDO POR (Nombre y Firma)</strong>
+                                        </div>
+                                    </t>
                                 </div>
                                 <div class="col-1"></div>
                             </div>
