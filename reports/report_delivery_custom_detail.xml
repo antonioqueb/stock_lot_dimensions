@@ -238,7 +238,7 @@
                                         </div>
                                         <div style="border-top: 1px solid #000; padding-top: 5px;">
                                             <strong style="font-size: 8px; text-transform: uppercase;">RECIBIDO POR</strong><br/>
-                                            <span t-if="o.signed_by" style="font-size: 8px;" t-esc="o.signed_by"/>
+                                            <span style="font-size: 8px;" t-esc="o.partner_id.name"/>
                                         </div>
                                     </t>
                                     <t t-else="">
