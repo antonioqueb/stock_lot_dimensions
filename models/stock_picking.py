@@ -82,7 +82,14 @@ class _PLCellsIndex:
             if r < max_rows:
                 _logger.info(f"  Celda ({c},{r}): {v}")
 
-
+class StockPicking(models.Model):
+    _inherit = 'stock.picking'
+ 
+    x_received_by_name = fields.Char(
+        string='Recibido por',
+        help='Nombre de la persona que recibe el material en sitio',
+        tracking=True,
+    )
 class PackingListImportWizard(models.TransientModel):
     _name = 'packing.list.import.wizard'
     _description = 'Importar Packing List'

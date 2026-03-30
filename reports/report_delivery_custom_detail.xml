@@ -1,21 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- ======================================================= -->
-    <!-- ACCIÓN: REPORTE DE ENTREGA DETALLADO (Estilo Mármol) -->
+    <!-- DESACTIVAR reporte nativo de entrega                     -->
+    <!-- ======================================================= -->
+    <record id="stock.action_report_delivery" model="ir.actions.report">
+        <field name="binding_model_id" eval="False"/>
+    </record>
+
+    <!-- ======================================================= -->
+    <!-- ACCIÓN: REPORTE DE ENTREGA DETALLADO (Predeterminado)    -->
     <!-- ======================================================= -->
     <record id="action_report_delivery_custom_detail" model="ir.actions.report">
-        <field name="name">Remisión de Entrega - Detalle Placas</field>
+        <field name="name">Remisión de Entrega</field>
         <field name="model">stock.picking</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">stock_lot_dimensions.report_delivery_custom_document</field>
         <field name="report_file">stock_lot_dimensions.report_delivery_custom_document</field>
-        <field name="print_report_name">'Entrega - %s - %s' % (object.name, object.partner_id.name or '')</field>
+        <field name="print_report_name">'Remisión - %s - %s' % (object.name, object.partner_id.name or '')</field>
         <field name="binding_model_id" ref="stock.model_stock_picking"/>
         <field name="binding_type">report</field>
     </record>
 
     <!-- ======================================================= -->
-    <!-- PLANTILLA: DOCUMENTO DE ENTREGA -->
+    <!-- PLANTILLA: DOCUMENTO DE ENTREGA                          -->
     <!-- ======================================================= -->
     <template id="report_delivery_custom_document">
         <t t-call="web.html_container">
@@ -50,7 +57,6 @@
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Cliente / Facturación</strong>
                                 </div>
-                                <!-- Si viene de una venta, usamos los datos de la venta para facturación -->
                                 <t t-set="commercial_partner" t-value="o.sale_id.partner_id if o.sale_id else o.partner_id"/>
                                 
                                 <div style="line-height: 1.2; padding-left: 2px;">
@@ -64,7 +70,7 @@
                                 </div>
                             </div>
 
-                            <!-- Columna 2: Dirección de Entrega (Si es diferente) -->
+                            <!-- Columna 2: Dirección de Entrega -->
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Dirección de Entrega</strong>
@@ -133,15 +139,12 @@
                                 </tr>
                             </thead>
                             <tbody style="border-bottom: 1px solid #000;">
-                                <!-- 
-                                    FILTRO: Muestra líneas validadas (qty_done > 0) O reservadas (quantity > 0)
-                                -->
                                 <t t-set="lines" t-value="o.move_line_ids.filtered(lambda l: l.qty_done > 0 or l.quantity > 0).sorted(key=lambda l: (l.product_id.display_name, l.lot_id.name))"/>
                                 <t t-set="current_product" t-value="None"/>
                                 <t t-set="seq" t-value="1"/>
 
                                 <t t-foreach="lines" t-as="line">
-                                    <!-- Cabecera de Producto (Agrupación) -->
+                                    <!-- Cabecera de Producto -->
                                     <t t-if="current_product != line.product_id.id">
                                         <t t-set="current_product" t-value="line.product_id.id"/>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
@@ -151,7 +154,6 @@
                                         </tr>
                                     </t>
 
-                                    <!-- Lógica para determinar qué cantidad mostrar -->
                                     <t t-set="qty_to_show" t-value="line.qty_done if line.qty_done > 0 else line.quantity"/>
 
                                     <tr>
@@ -173,7 +175,6 @@
                                         <td class="align-middle">
                                             <span t-field="line.lot_id.x_atado"/>
                                         </td>
-                                        <!-- Dimensiones -->
                                         <td class="text-center align-middle">
                                             <span t-field="line.lot_id.x_grosor"/>
                                         </td>
@@ -183,7 +184,6 @@
                                         <td class="text-center align-middle">
                                             <span t-field="line.lot_id.x_ancho" t-options='{"widget": "float", "precision": 3}'/>
                                         </td>
-                                        <!-- Cantidad -->
                                         <td class="text-end align-middle">
                                             <strong t-esc="qty_to_show" t-options='{"widget": "float", "precision": 2}'/>
                                         </td>
@@ -197,7 +197,6 @@
                                 <tr>
                                     <td colspan="7" class="text-end" style="padding: 5px; font-weight: bold;">TOTAL UNIDADES:</td>
                                     <td class="text-end" style="padding: 5px; font-weight: bold;">
-                                        <!-- Sumamos dinámicamente lo que se mostró en la tabla -->
                                         <span t-esc="sum(lines.mapped(lambda l: l.qty_done if l.qty_done > 0 else l.quantity))" t-options='{"widget": "float", "precision": 2}'/>
                                     </td>
                                     <td></td>
@@ -206,7 +205,25 @@
                         </table>
 
                         <!-- ================= FOOTER / FIRMAS ================= -->
-                        <div class="row" style="margin-top: 30px; margin-bottom: 10px;">
+                        <div style="margin-top: 30px; width: 100%; page-break-inside: avoid;">
+
+                            <!-- Notas de entrega -->
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <div style="border: 1px solid #ccc; padding: 5px 10px;">
+                                        <strong style="font-size: 9px; text-transform: uppercase;">Notas de Entrega:</strong>
+                                        <div t-if="o.note" style="font-size: 9px; margin-top: 2px;">
+                                            <span t-field="o.note"/>
+                                        </div>
+                                        <div t-else="" style="font-size: 9px; color: #999; margin-top: 2px;">
+                                            Sin notas adicionales.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Firma centrada: RECIBIDO POR -->
+                            <div class="row" style="margin-top: 30px; margin-bottom: 10px;">
                                 <div class="col-3"></div>
                                 <div class="col-6 text-center">
                                     <t t-if="o.signature">
@@ -217,11 +234,36 @@
                                     </t>
                                     <div style="border-top: 1px solid #000; padding-top: 5px;">
                                         <strong style="font-size: 9px; text-transform: uppercase;">RECIBIDO POR</strong><br/>
-                                        <span style="font-size: 9px;" t-esc="o.partner_id.name"/>
+                                        <span style="font-size: 9px;" t-esc="o.x_received_by_name or o.partner_id.name"/>
                                     </div>
                                 </div>
                                 <div class="col-3"></div>
                             </div>
+
+                            <!-- Términos y Condiciones -->
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <div style="border: 1px solid #ccc; padding: 5px; background-color: #fafafa;">
+                                        <strong style="font-size: 12px; display: block; border-bottom: 1px solid #eee; margin-bottom: 3px; text-transform: uppercase;">
+                                            Términos y Condiciones – Remisión de Entrega
+                                        </strong>
+                                        <ul class="list-unstyled mb-0" style="font-size: 11px; text-align: justify; color: #555; padding-left: 0;">
+                                            <li class="mb-1">• Para la programación y realización de la entrega, el pedido deberá estar pagado al 100%.</li>
+                                            <li class="mb-1">• La entrega se realiza a pie de camión. No incluye maniobras especiales de descarga.</li>
+                                            <li class="mb-1">• Es indispensable que se encuentre presente el contacto autorizado para recibir el material. En caso contrario, el material será regresado a bodega y se generará un cargo adicional por reenvío.</li>
+                                            <li class="mb-1">• El tiempo máximo de descarga es de 2 horas a partir de la llegada de la unidad. El tiempo excedente podrá generar cargos adicionales.</li>
+                                            <li class="mb-1">• El cliente es responsable de revisar el material al momento de la entrega. Cualquier observación deberá anotarse en la remisión; una vez firmada, se considera el material recibido de conformidad.</li>
+                                            <li class="mb-1">• El mármol y granito son piedras naturales, por lo que pueden presentar variaciones en color, vetas, tono y dureza, propias del material.</li>
+                                            <li class="mb-0">• La empresa no se hace responsable por daños ocasionados después de la entrega, durante maniobras de descarga o traslado posterior.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center text-muted mt-2" style="font-size: 6px;">
+                                Documento Interno | Página <span class="page"/>
+                            </div>
+                        </div>
 
                     </div>
                 </t>

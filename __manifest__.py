@@ -51,6 +51,7 @@
         'views/product_template_views.xml',
         'views/stock_lot_image_delete_wizard_views.xml', 
         'views/res_company_views.xml',
+        'views/stock_picking_received_by_view.xml',
     ],
     'assets': {
         'web.assets_backend': [
