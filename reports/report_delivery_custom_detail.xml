@@ -206,73 +206,22 @@
                         </table>
 
                         <!-- ================= FOOTER / FIRMAS ================= -->
-                        <div style="margin-top: 30px; width: 100%; page-break-inside: avoid;">
-                            <div class="row">
-                                <div class="col-12 mb-3">
-                                    <div style="border: 1px solid #ccc; padding: 5px 10px;">
-                                        <strong style="font-size: 9px; text-transform: uppercase;">Notas de Entrega:</strong>
-                                        <div t-if="o.note" style="font-size: 9px; margin-top: 2px;">
-                                            <span t-field="o.note"/>
-                                        </div>
-                                        <div t-else="" style="font-size: 9px; color: #999; margin-top: 2px;">
-                                            Sin notas adicionales.
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row" style="margin-top: 30px; margin-bottom: 10px;">
-                                <div class="col-1"></div>
-                                <div class="col-4 text-center">
-                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                        <strong style="font-size: 8px; text-transform: uppercase;">ENTREGADO POR</strong><br/>
-                                        <span style="font-size: 8px;" t-if="o.user_id" t-field="o.user_id.name"/>
-                                    </div>
-                                </div>
-                                <div class="col-2"></div>
-                                <div class="col-4 text-center">
+                        <div class="row" style="margin-top: 30px; margin-bottom: 10px;">
+                                <div class="col-3"></div>
+                                <div class="col-6 text-center">
                                     <t t-if="o.signature">
-                                        <div style="margin-bottom: 5px;">
+                                        <div style="margin-bottom: 8px;">
                                             <img t-att-src="image_data_uri(o.signature)" 
-                                                 style="max-height: 80px; max-width: 200px;"/>
-                                        </div>
-                                        <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                            <strong style="font-size: 8px; text-transform: uppercase;">RECIBIDO POR</strong><br/>
-                                            <span style="font-size: 8px;" t-esc="o.partner_id.name"/>
+                                                 style="max-height: 100px; max-width: 250px;"/>
                                         </div>
                                     </t>
-                                    <t t-else="">
-                                        <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                            <strong style="font-size: 8px; text-transform: uppercase;">RECIBIDO POR (Nombre y Firma)</strong>
-                                        </div>
-                                    </t>
-                                </div>
-                                <div class="col-1"></div>
-                            </div>
-
-                            <div class="row mt-2">
-                                <div class="col-12">
-                                    <div style="border: 1px solid #ccc; padding: 5px; background-color: #fafafa;">
-                                        <strong style="font-size: 12px; display: block; border-bottom: 1px solid #eee; margin-bottom: 3px; text-transform: uppercase;">
-                                            Términos y Condiciones – Remisión de Entrega
-                                        </strong>
-                                        <ul class="list-unstyled mb-0" style="font-size: 11px; text-align: justify; color: #555; padding-left: 0;">
-                                            <li class="mb-1">• Para la programación y realización de la entrega, el pedido deberá estar pagado al 100%.</li>
-                                            <li class="mb-1">• La entrega se realiza a pie de camión. No incluye maniobras especiales de descarga.</li>
-                                            <li class="mb-1">• Es indispensable que se encuentre presente el contacto autorizado para recibir el material. En caso contrario, el material será regresado a bodega y se generará un cargo adicional por reenvío.</li>
-                                            <li class="mb-1">• El tiempo máximo de descarga es de 2 horas a partir de la llegada de la unidad. El tiempo excedente podrá generar cargos adicionales.</li>
-                                            <li class="mb-1">• El cliente es responsable de revisar el material al momento de la entrega. Cualquier observación deberá anotarse en la remisión; una vez firmada, se considera el material recibido de conformidad.</li>
-                                            <li class="mb-1">• El mármol y granito son piedras naturales, por lo que pueden presentar variaciones en color, vetas, tono y dureza, propias del material.</li>
-                                            <li class="mb-0">• La empresa no se hace responsable por daños ocasionados después de la entrega, durante maniobras de descarga o traslado posterior.</li>
-                                        </ul>
+                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                                        <strong style="font-size: 9px; text-transform: uppercase;">RECIBIDO POR</strong><br/>
+                                        <span style="font-size: 9px;" t-esc="o.partner_id.name"/>
                                     </div>
                                 </div>
+                                <div class="col-3"></div>
                             </div>
-                            
-                            <div class="text-center text-muted mt-2" style="font-size: 6px;">
-                                Documento Interno | Página <span class="page"/>
-                            </div>
-                        </div>
 
                     </div>
                 </t>
