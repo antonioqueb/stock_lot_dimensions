@@ -90,6 +90,15 @@ class StockPicking(models.Model):
         help='Nombre de la persona que recibe el material en sitio',
         tracking=True,
     )
+
+    def do_print_picking(self):
+        """Override para usar nuestro reporte personalizado de remisión"""
+        self.write({'printed': True})
+        return self.env.ref(
+            'stock_lot_dimensions.action_report_delivery_custom_detail'
+        ).report_action(self)
+
+
 class PackingListImportWizard(models.TransientModel):
     _name = 'packing.list.import.wizard'
     _description = 'Importar Packing List'
@@ -287,14 +296,6 @@ class PackingListImportWizard(models.TransientModel):
     def _apply_all_revisions(self, doc, idx):
         """
         Aplica TODAS las revisiones del documento.
-        
-        ESTRUCTURA ODOO 19:
-        - commands es un STRING JSON con formato:
-          {"type": "REMOTE_REVISION", "version": 1, "commands": [{...}, {...}]}
-        - Los UPDATE_CELL reales están en el array 'commands' interno
-        
-        IMPORTANTE: Las revisiones tienen active=False después de consolidarse,
-        por eso usamos with_context(active_test=False)
         """
         revisions = self.env['spreadsheet.revision'].sudo().with_context(active_test=False).search([
             ('res_model', '=', 'documents.document'),
@@ -307,7 +308,6 @@ class PackingListImportWizard(models.TransientModel):
         
         for rev in revisions:
             try:
-                # Parsear el JSON del campo commands
                 raw_commands = rev.commands
                 if not raw_commands:
                     continue
@@ -316,9 +316,7 @@ class PackingListImportWizard(models.TransientModel):
                 revision_type = parsed.get('type', '')
                 _logger.info(f"[PL_IMPORT] Revisión {rev.id}: tipo={revision_type}")
                 
-                # Solo procesar REMOTE_REVISION que contienen comandos de celdas
                 if revision_type == 'REMOTE_REVISION':
-                    # Los comandos reales están en parsed['commands']
                     actual_commands = parsed.get('commands', [])
                     if actual_commands and isinstance(actual_commands, list):
                         applied = idx.apply_revision_commands(actual_commands)
@@ -341,9 +339,8 @@ class PackingListImportWizard(models.TransientModel):
             _logger.warning("[PL_IMPORT] No hay producto en los movimientos")
             return []
         
-        # Filas 4 a 103 (índices 3 a 102)
         for row_idx in range(3, 103):
-            grosor_val = idx.value(0, row_idx)  # Columna A = 0
+            grosor_val = idx.value(0, row_idx)
             if not grosor_val:
                 continue
             
@@ -385,16 +382,11 @@ class PackingListImportWizard(models.TransientModel):
         """Parsea el campo tipo: Placa, Formato o Pieza"""
         if not val:
             return 'placa'
-        
-        # Limpiamos el valor para evitar errores por espacios o mayúsculas
         val_clean = str(val).lower().strip()
-        
         if val_clean == 'formato':
             return 'formato'
         elif val_clean == 'pieza':
             return 'pieza'
-        
-        # Por defecto, si no coincide con los anteriores o es "placa"
         return 'placa'
 
     def _get_data_from_excel_file(self):
