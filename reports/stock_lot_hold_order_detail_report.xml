@@ -178,7 +178,7 @@
                                         <div class="col-5 text-end">
                                             <strong>m²:</strong>
                                             <span t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/>
-                                            &nbsp;&nbsp;|&nbsp;&nbsp;
+                                            <span> | </span>
                                             <strong>Total:</strong>
                                             <span t-esc="'%s %.2f' % ((o.currency_id.symbol or ''), (line.precio_total or 0.0))"/>
                                         </div>
