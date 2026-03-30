@@ -79,9 +79,11 @@ class StockLotHoldOrder(models.Model):
         for vals in vals_list:
             if vals.get('name', '/') == '/':
                 vals['name'] = self.env['ir.sequence'].next_by_code('stock.lot.hold.order') or '/'
-            if 'fecha_expiracion' not in vals and vals.get('fecha_orden'):
-                fecha_orden = fields.Datetime.to_datetime(vals['fecha_orden'])
-                vals['fecha_expiracion'] = BusinessDaysCalculator.add_business_days(fecha_orden, 5)
+            # FIX: Auto-calcular fecha_expiracion incluso cuando fecha_orden no viene en vals
+            # (sucede al crear desde formulario UI donde Odoo resuelve el default en cliente)
+            if 'fecha_expiracion' not in vals:
+                fecha_base = fields.Datetime.to_datetime(vals['fecha_orden']) if vals.get('fecha_orden') else fields.Datetime.now()
+                vals['fecha_expiracion'] = BusinessDaysCalculator.add_business_days(fecha_base, 5)
         return super().create(vals_list)
 
     def _release_related_holds(self):
@@ -97,10 +99,7 @@ class StockLotHoldOrder(models.Model):
         """
         Busca quant con stock positivo para un lote.
         Primero en ubicaciones internas, luego en tránsito.
-        Esto permite que la Torre de Control reserve lotes que
-        aún están en tránsito (recién recibidos en ubicación transit).
         """
-        # Prioridad 1: ubicación interna (stock en almacén)
         quant = self.env['stock.quant'].search([
             ('lot_id', '=', lot.id),
             ('quantity', '>', 0),
@@ -111,7 +110,6 @@ class StockLotHoldOrder(models.Model):
         if quant:
             return quant
 
-        # Prioridad 2: ubicación de tránsito (mercancía en camino / recién recibida)
         quant = self.env['stock.quant'].search([
             ('lot_id', '=', lot.id),
             ('quantity', '>', 0),
@@ -132,7 +130,6 @@ class StockLotHoldOrder(models.Model):
                 if not line.lot_ids:
                     raise UserError(f'La línea de {line.product_id.display_name} no tiene placas seleccionadas.')
 
-                # Lotes que ya tienen hold creado por esta línea
                 already_held_lot_ids = line.hold_ids.mapped('lot_id').ids
 
                 for lot in line.lot_ids:
@@ -298,14 +295,12 @@ class StockLotHoldOrder(models.Model):
         migrated_count = 0
 
         for order in orders:
-            # Solo migrar si hay líneas con lot_id pero sin lot_ids
             lines_to_migrate = order.hold_line_ids.filtered(
                 lambda l: l.lot_id and not l.lot_ids and l.product_id.type != 'service'
             )
             if not lines_to_migrate:
                 continue
 
-            # Agrupar por producto
             product_groups = {}
             for line in lines_to_migrate:
                 pid = line.product_id.id
@@ -327,14 +322,12 @@ class StockLotHoldOrder(models.Model):
 
             for pid, group in product_groups.items():
                 if len(group['lines']) <= 1:
-                    # Solo 1 línea: simplemente poblar lot_ids desde lot_id
                     line = group['lines'][0]
                     vals = {'lot_ids': [(6, 0, group['lot_ids'])]}
                     if group['hold_ids']:
                         vals['hold_ids'] = [(6, 0, group['hold_ids'])]
                     line.write(vals)
                 else:
-                    # Múltiples líneas del mismo producto: consolidar en la primera
                     keeper = group['lines'][0]
                     to_delete = group['lines'] - keeper
 
@@ -347,7 +340,6 @@ class StockLotHoldOrder(models.Model):
                         vals['hold_ids'] = [(6, 0, group['hold_ids'])]
                     keeper.write(vals)
 
-                    # Eliminar las líneas sobrantes
                     to_delete.unlink()
                     _logger.info(
                         "Migración: Orden %s, producto %s: consolidadas %d líneas → 1",
