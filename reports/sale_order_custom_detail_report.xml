@@ -216,9 +216,18 @@
                                                     <td class="align-middle"><strong t-esc="lot.name"/></td>
                                                     <td class="align-middle"><span t-esc="lot.x_bloque or ''"/></td>
                                                     <td class="align-middle"><span t-esc="lot.x_atado or ''"/></td>
-                                                    <td class="text-center align-middle"><span t-esc="'%.2f' % float(lot.x_grosor or 0)"/></td>
-                                                    <td class="text-center align-middle"><span t-esc="'%.3f' % float(lot.x_alto or 0)"/></td>
-                                                    <td class="text-center align-middle"><span t-esc="'%.3f' % float(lot.x_ancho or 0)"/></td>
+                                                    <td class="text-center align-middle">
+                                                        <span t-if="lot.x_grosor and str(lot.x_grosor).strip().replace('.','',1).replace('-','',1).isdigit()" t-esc="'%.2f' % float(lot.x_grosor)"/>
+                                                        <span t-else="" t-esc="lot.x_grosor or ''"/>
+                                                    </td>
+                                                    <td class="text-center align-middle">
+                                                        <span t-if="lot.x_alto and str(lot.x_alto).strip().replace('.','',1).replace('-','',1).isdigit()" t-esc="'%.3f' % float(lot.x_alto)"/>
+                                                        <span t-else="" t-esc="lot.x_alto or ''"/>
+                                                    </td>
+                                                    <td class="text-center align-middle">
+                                                        <span t-if="lot.x_ancho and str(lot.x_ancho).strip().replace('.','',1).replace('-','',1).isdigit()" t-esc="'%.3f' % float(lot.x_ancho)"/>
+                                                        <span t-else="" t-esc="lot.x_ancho or ''"/>
+                                                    </td>
                                                     <td class="text-end align-middle"><strong t-esc="'%.2f' % float(lot_qty)"/></td>
                                                     <td class="text-end align-middle"><span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td>
                                                     <td t-if="has_line_discount_columns" class="text-end align-middle"><span t-if="line_discount_pct &gt; 0" t-esc="'%.2f%%' % line_discount_pct"/><span t-else="" style="color: #999;">-</span></td>
@@ -298,9 +307,18 @@
                                                     <td class="align-middle"><strong t-esc="lot.name"/></td>
                                                     <td class="align-middle"><span t-esc="lot.x_bloque or ''"/></td>
                                                     <td class="align-middle"><span t-esc="lot.x_atado or ''"/></td>
-                                                    <td class="text-center align-middle"><span t-esc="'%.2f' % float(lot.x_grosor or 0)"/></td>
-                                                    <td class="text-center align-middle"><span t-esc="'%.3f' % float(lot.x_alto or 0)"/></td>
-                                                    <td class="text-center align-middle"><span t-esc="'%.3f' % float(lot.x_ancho or 0)"/></td>
+                                                    <td class="text-center align-middle">
+                                                        <span t-if="lot.x_grosor and str(lot.x_grosor).strip().replace('.','',1).replace('-','',1).isdigit()" t-esc="'%.2f' % float(lot.x_grosor)"/>
+                                                        <span t-else="" t-esc="lot.x_grosor or ''"/>
+                                                    </td>
+                                                    <td class="text-center align-middle">
+                                                        <span t-if="lot.x_alto and str(lot.x_alto).strip().replace('.','',1).replace('-','',1).isdigit()" t-esc="'%.3f' % float(lot.x_alto)"/>
+                                                        <span t-else="" t-esc="lot.x_alto or ''"/>
+                                                    </td>
+                                                    <td class="text-center align-middle">
+                                                        <span t-if="lot.x_ancho and str(lot.x_ancho).strip().replace('.','',1).replace('-','',1).isdigit()" t-esc="'%.3f' % float(lot.x_ancho)"/>
+                                                        <span t-else="" t-esc="lot.x_ancho or ''"/>
+                                                    </td>
                                                     <td class="text-end align-middle"><strong t-esc="'%.2f' % float(lot_qty)"/></td>
                                                     <td class="text-end align-middle"><span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td>
                                                     <td t-if="has_line_discount_columns" class="text-end align-middle"><span t-if="line_discount_pct &gt; 0" t-esc="'%.2f%%' % line_discount_pct"/><span t-else="" style="color: #999;">-</span></td>
