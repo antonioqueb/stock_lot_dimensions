@@ -9,7 +9,7 @@
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">stock_lot_dimensions.report_stock_lot_hold_order_summary_document_no_prices</field>
         <field name="report_file">stock_lot_dimensions.report_stock_lot_hold_order_summary_document_no_prices</field>
-        <field name="print_report_name">'Reserva Resumen Sin Precios - %s' % (object.name)</field>
+        <field name="print_report_name">'Reserva Resumen - %s' % (object.name)</field>
         <field name="binding_model_id" ref="model_stock_lot_hold_order"/>
         <field name="binding_type">report</field>
     </record>
