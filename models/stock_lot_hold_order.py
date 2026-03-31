@@ -237,8 +237,6 @@ class StockLotHoldOrder(models.Model):
                         )
 
                     notas_hold = f'Orden: {order.name}\n'
-                    if line.precio_unitario and line.currency_id:
-                        notas_hold += f'Precio: {line.precio_unitario:.2f} {line.currency_id.name}/m²\n'
                     if order.notas:
                         notas_hold += f'\n{order.notas}'
 

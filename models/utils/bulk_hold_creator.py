@@ -48,10 +48,8 @@ class BulkHoldCreator:
             days=5
         )
         
-        # Preparar notas con precios
-        notes_with_prices = self._build_notes_with_prices(
-            notes, currency_code, product_prices
-        )
+        # Preparar notas (sin precios)
+        hold_notes = notes or ''
         
         # Crear holds
         holds_created, errors = self._create_holds(
@@ -61,7 +59,7 @@ class BulkHoldCreator:
             architect_id,
             fecha_inicio,
             fecha_expiracion,
-            notes_with_prices
+            hold_notes
         )
         
         # Limpiar carrito si hubo éxitos
@@ -102,31 +100,6 @@ class BulkHoldCreator:
             }
         
         return None
-    
-    def _build_notes_with_prices(self, notes, currency_code, product_prices):
-        """Construye notas con información de precios"""
-        notes_with_prices = notes or ''
-        
-        if not product_prices:
-            return notes_with_prices
-        
-        notes_with_prices += f'\n\n=== PRECIOS ({currency_code}) ===\n'
-        
-        for product_id_str, price in product_prices.items():
-            try:
-                product = self.env['product.product'].browse(int(product_id_str))
-                if product.exists():
-                    notes_with_prices += (
-                        f'• {product.display_name}: '
-                        f'{price:.2f} {currency_code}/m²\n'
-                    )
-            except Exception as e:
-                _logger.warning(
-                    "Error agregando precio para producto %s: %s",
-                    product_id_str, str(e)
-                )
-        
-        return notes_with_prices
     
     def _create_holds(self, selected_lots, partner_id, project_id, architect_id,
                      fecha_inicio, fecha_expiracion, notes):

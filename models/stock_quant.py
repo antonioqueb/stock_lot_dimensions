@@ -419,8 +419,6 @@ class StockQuant(models.Model):
         
         return {'success': True}
     
-    # AQUÍ ESTABA LA DUPLICACIÓN (ELIMINADA)
-    
     # ==================== OVERRIDE CRÍTICO - FILTRADO DE QUANTS (OPTIMIZADO) ====================
     def _gather(self, product_id, location_id, lot_id=None, package_id=None, 
                 owner_id=None, strict=False, qty=None):
@@ -508,12 +506,6 @@ class StockQuant(models.Model):
     def get_inventory_grouped_by_product(self, filters=None):
         """
         Obtener inventario agrupado por producto con filtros avanzados
-        
-        Args:
-            filters: dict - Diccionario con filtros aplicados
-            
-        Returns:
-            list: Lista de productos con inventario agrupado
         """
         domain = [('quantity', '>', 0)]
         
@@ -534,16 +526,7 @@ class StockQuant(models.Model):
         return result
     
     def _build_filter_domain(self, domain, filters):
-        """
-        Construye el dominio de búsqueda según filtros
-        
-        Args:
-            domain: list - Dominio base
-            filters: dict - Filtros a aplicar
-            
-        Returns:
-            list: Dominio actualizado
-        """
+        """Construye el dominio de búsqueda según filtros"""
         if filters.get('product_name'):
             search_term = filters['product_name'].strip()
             domain.append('|')
@@ -600,15 +583,7 @@ class StockQuant(models.Model):
         return domain
     
     def _group_quants_by_product(self, quants):
-        """
-        Agrupa quants por producto y calcula métricas
-        
-        Args:
-            quants: recordset - Quants a agrupar
-            
-        Returns:
-            defaultdict: Diccionario con productos agrupados
-        """
+        """Agrupa quants por producto y calcula métricas"""
         products_data = defaultdict(lambda: {
             'stock_qty': 0.0,
             'stock_plates': 0,
@@ -657,17 +632,7 @@ class StockQuant(models.Model):
         return 0.0
     
     def _calculate_quant_metrics(self, quant, hold_activo, plate_area):
-        """
-        Calcula métricas individuales de un quant
-        
-        Args:
-            quant: stock.quant record
-            hold_activo: stock.lot.hold record or False
-            plate_area: float - Área de la placa
-            
-        Returns:
-            dict: Diccionario con métricas calculadas
-        """
+        """Calcula métricas individuales de un quant"""
         total_m2 = quant.quantity
         hold_m2 = total_m2 if hold_activo else 0.0
         committed_m2 = quant.reserved_quantity
@@ -700,16 +665,7 @@ class StockQuant(models.Model):
         }
     
     def _accumulate_product_metrics(self, product_data, metrics, quant, product, plate_area):
-        """
-        Acumula métricas en los datos del producto
-        
-        Args:
-            product_data: dict - Datos acumulados del producto
-            metrics: dict - Métricas del quant actual
-            quant: stock.quant record
-            product: product.product record
-            plate_area: float - Área de la placa
-        """
+        """Acumula métricas en los datos del producto"""
         # Información básica del producto (solo la primera vez)
         if 'product_id' not in product_data:
             category_name = self._get_category_name(product)
@@ -770,15 +726,7 @@ class StockQuant(models.Model):
     
     @api.model
     def get_quant_details(self, quant_ids):
-        """
-        Obtener detalles expandidos de quants específicos
-        
-        Args:
-            quant_ids: list - Lista de IDs de quants
-            
-        Returns:
-            list: Lista de diccionarios con detalles de cada quant
-        """
+        """Obtener detalles expandidos de quants específicos"""
         if not quant_ids:
             return []
         
@@ -792,15 +740,7 @@ class StockQuant(models.Model):
         return details
     
     def _build_quant_detail(self, quant):
-        """
-        Construye el diccionario de detalles de un quant
-        
-        Args:
-            quant: stock.quant record
-            
-        Returns:
-            dict: Diccionario con todos los detalles del quant
-        """
+        """Construye el diccionario de detalles de un quant"""
         # Campos básicos
         color = getattr(quant, 'x_color', None) or ''
         grosor = getattr(quant, 'x_grosor', None) or ''
@@ -998,15 +938,7 @@ class StockQuant(models.Model):
     
     @api.model
     def get_lot_photos(self, quant_id=None):
-        """
-        Obtener fotografías de un lote
-        
-        Args:
-            quant_id: int - ID del quant
-            
-        Returns:
-            dict: Información del lote y sus fotografías
-        """
+        """Obtener fotografías de un lote"""
         if isinstance(quant_id, list):
             quant_id = quant_id[0] if quant_id else False
         
@@ -1051,19 +983,7 @@ class StockQuant(models.Model):
     
     @api.model
     def save_lot_photo(self, quant_id=None, photo_name='', photo_data='', sequence=10, notas=''):
-        """
-        Guardar una nueva fotografía en un lote
-        
-        Args:
-            quant_id: int - ID del quant
-            photo_name: str - Nombre de la foto
-            photo_data: str - Datos base64 de la imagen
-            sequence: int - Orden de la foto
-            notas: str - Notas adicionales
-            
-        Returns:
-            dict: Resultado de la operación
-        """
+        """Guardar una nueva fotografía en un lote"""
         if isinstance(quant_id, list):
             quant_id = quant_id[0] if quant_id else False
         
@@ -1098,15 +1018,7 @@ class StockQuant(models.Model):
     
     @api.model
     def delete_lot_photo(self, photo_id):
-        """
-        Eliminar una fotografía
-        
-        Args:
-            photo_id: int - ID de la foto a eliminar
-            
-        Returns:
-            dict: Resultado de la operación
-        """
+        """Eliminar una fotografía"""
         try:
             photo = self.env['stock.lot.image'].browse(photo_id)
             
@@ -1127,15 +1039,7 @@ class StockQuant(models.Model):
     
     @api.model
     def get_lot_notes(self, quant_id=None):
-        """
-        Obtener notas de un lote
-        
-        Args:
-            quant_id: int - ID del quant
-            
-        Returns:
-            dict: Información del lote y sus notas
-        """
+        """Obtener notas de un lote"""
         if isinstance(quant_id, list):
             quant_id = quant_id[0] if quant_id else False
         
@@ -1167,16 +1071,7 @@ class StockQuant(models.Model):
     
     @api.model
     def save_lot_notes(self, quant_id=None, notes=''):
-        """
-        Guardar notas de un lote
-        
-        Args:
-            quant_id: int - ID del quant
-            notes: str - Notas a guardar
-            
-        Returns:
-            dict: Resultado de la operación
-        """
+        """Guardar notas de un lote"""
         if isinstance(quant_id, list):
             quant_id = quant_id[0] if quant_id else False
         
@@ -1208,15 +1103,7 @@ class StockQuant(models.Model):
     
     @api.model
     def get_lot_history(self, quant_id=None):
-        """
-        Obtener historial completo de un lote
-        
-        Args:
-            quant_id: int - ID del quant
-            
-        Returns:
-            dict: Información histórica completa del lote
-        """
+        """Obtener historial completo de un lote"""
         if isinstance(quant_id, list):
             quant_id = quant_id[0] if quant_id else False
         
@@ -1501,15 +1388,7 @@ class StockQuant(models.Model):
     
     @api.model
     def get_sale_order_info(self, sale_order_ids=None):
-        """
-        Obtener información de órdenes de venta
-        
-        Args:
-            sale_order_ids: list - Lista de IDs de órdenes de venta
-            
-        Returns:
-            dict: Información de las órdenes de venta
-        """
+        """Obtener información de órdenes de venta"""
         if not sale_order_ids:
             return {'error': 'IDs de órdenes de venta inválidos'}
         
@@ -1549,17 +1428,7 @@ class StockQuant(models.Model):
     
     @api.model
     def create_lot_hold(self, quant_id=None, partner_id=None, notas=''):
-        """
-        Crear un hold básico (versión simple)
-        
-        Args:
-            quant_id: int - ID del quant
-            partner_id: int - ID del cliente
-            notas: str - Notas adicionales
-            
-        Returns:
-            dict: Resultado de la operación
-        """
+        """Crear un hold básico (versión simple)"""
         if isinstance(quant_id, list):
             quant_id = quant_id[0] if quant_id else False
         
@@ -1608,21 +1477,7 @@ class StockQuant(models.Model):
     def create_lot_hold_enhanced(self, quant_id=None, partner_id=None, project_id=None, 
                                 architect_id=None, notas='', currency_code='USD', 
                                 product_prices=None):
-        """
-        Crear un hold completo con toda la información (versión avanzada)
-        
-        Args:
-            quant_id: int - ID del quant
-            partner_id: int - ID del cliente
-            project_id: int - ID del proyecto
-            architect_id: int - ID del arquitecto
-            notas: str - Notas adicionales
-            currency_code: str - Código de divisa
-            product_prices: dict - Precios de productos
-            
-        Returns:
-            dict: Resultado de la operación
-        """
+        """Crear un hold completo con toda la información (versión avanzada)"""
         if isinstance(quant_id, list):
             quant_id = quant_id[0] if quant_id else False
         
@@ -1669,18 +1524,6 @@ class StockQuant(models.Model):
                 if fecha_actual.weekday() < 5:  # Lunes a viernes
                     dias_agregados += 1
             
-            # Agregar información de precios a las notas
-            notes_with_prices = notas or ''
-            if product_prices:
-                notes_with_prices += f'\n\n=== PRECIOS ({currency_code}) ===\n'
-                for product_id_str, price in product_prices.items():
-                    try:
-                        product = self.env['product.product'].browse(int(product_id_str))
-                        if product.exists():
-                            notes_with_prices += f'• {product.display_name}: {price:.2f} {currency_code}/m²\n'
-                    except Exception as e:
-                        _logger.warning(f"Error agregando precio para producto {product_id_str}: {str(e)}")
-            
             # Crear el hold
             hold = self.env['stock.lot.hold'].create({
                 'lot_id': quant.lot_id.id,
@@ -1691,7 +1534,7 @@ class StockQuant(models.Model):
                 'arquitecto_id': architect_id,
                 'fecha_inicio': fecha_inicio,
                 'fecha_expiracion': fecha_actual,
-                'notas': notes_with_prices,
+                'notas': notas or '',
             })
             
             partner = self.env['res.partner'].browse(partner_id)
@@ -1706,28 +1549,13 @@ class StockQuant(models.Model):
             return {'error': f'Error al crear apartado: {str(e)}'}
     
     
-    
 
     @api.model
     def create_holds_from_cart(self, partner_id=None, project_id=None, 
                             architect_id=None, selected_lots=None, 
                             notes=None, currency_code='USD', 
                             product_prices=None):
-        """
-        Crear holds múltiples desde el carrito con información de precios
-        
-        Args:
-            partner_id: int - ID del cliente
-            project_id: int - ID del proyecto
-            architect_id: int - ID del arquitecto
-            selected_lots: list - Lista de IDs de quants
-            notes: str - Notas adicionales
-            currency_code: str - Código de divisa (USD/MXN)
-            product_prices: dict - Precios por producto
-            
-        Returns:
-            dict: Resultado con éxitos y errores
-        """
+        """Crear holds múltiples desde el carrito"""
         if not partner_id or not selected_lots:
             return {
                 'success': 0,
@@ -1765,17 +1593,8 @@ class StockQuant(models.Model):
         
         fecha_expiracion = fecha_actual
         
-        # Preparar notas con información de precios
-        notes_with_prices = notas or ''
-        if product_prices:
-            notes_with_prices += f'\n\n=== PRECIOS ({currency_code}) ===\n'
-            for product_id_str, price in product_prices.items():
-                try:
-                    product = self.env['product.product'].browse(int(product_id_str))
-                    if product.exists():
-                        notes_with_prices += f'• {product.display_name}: {price:.2f} {currency_code}/m²\n'
-                except Exception as e:
-                    _logger.warning(f"Error agregando precio para producto {product_id_str}: {str(e)}")
+        # Usar solo las notas del usuario, sin agregar precios
+        hold_notes = notes or ''
         
         # Crear holds
         holds_created = []
@@ -1817,7 +1636,7 @@ class StockQuant(models.Model):
                     'arquitecto_id': architect_id,
                     'fecha_inicio': fecha_inicio,
                     'fecha_expiracion': fecha_expiracion,
-                    'notas': notes_with_prices,
+                    'notas': hold_notes,
                 })
                 
                 holds_created.append({
@@ -1850,15 +1669,7 @@ class StockQuant(models.Model):
     
     @api.model
     def search_partners(self, name=''):
-        """
-        Buscar partners (clientes)
-        
-        Args:
-            name: str - Término de búsqueda
-            
-        Returns:
-            list: Lista de partners encontrados
-        """
+        """Buscar partners (clientes)"""
         if not name or name.strip() == '':
             domain = [
                 ('active', '=', True),
