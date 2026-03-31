@@ -515,7 +515,6 @@ class StockLotHoldOrderLine(models.Model):
         store=True,
         readonly=False,
         compute='_compute_cantidad_m2',
-        precompute=True,
     )
 
     currency_id = fields.Many2one(

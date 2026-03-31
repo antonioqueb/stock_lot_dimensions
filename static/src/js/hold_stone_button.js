@@ -52,6 +52,39 @@ export class HoldStoneButton extends Component {
     getProductName() { return this._name(this.props.record.data.product_id); }
     getCurrentLotIds() { return this._extractIds(this.props.record.data.lot_ids); }
 
+    // ─── Calcular m² total de los lotes seleccionados ─────────────────────
+    async _computeM2ForLots(lotIds) {
+        if (!lotIds || !lotIds.length) return 0.0;
+        try {
+            const quants = await this.orm.searchRead("stock.quant",
+                [["lot_id", "in", lotIds], ["location_id.usage", "=", "internal"], ["quantity", ">", 0]],
+                ["lot_id", "quantity"]);
+            let total = 0.0;
+            const seen = new Set();
+            for (const q of quants) {
+                const lid = q.lot_id[0];
+                if (!seen.has(lid)) {
+                    seen.add(lid);
+                    total += q.quantity || 0;
+                }
+            }
+            return total;
+        } catch (e) {
+            console.warn("Error computing m2:", e);
+            return 0.0;
+        }
+    }
+
+    // ─── Actualizar lot_ids Y cantidad_m2 juntos ──────────────────────────
+    async _updateLotsAndM2(newLotIds) {
+        const m2 = await this._computeM2ForLots(newLotIds);
+        await this.props.record.update({
+            lot_ids: [[6, 0, newLotIds]],
+            cantidad_m2: m2,
+        });
+        this._updateCount();
+    }
+
     // ─── Toggle ───────────────────────────────────────────────────────────────
 
     async handleToggle(ev) {
@@ -171,8 +204,7 @@ export class HoldStoneButton extends Component {
 
     async _removeLot(lotId) {
         const newIds = this.getCurrentLotIds().filter(id => id !== lotId);
-        await this.props.record.update({ lot_ids: [[6, 0, newIds]] });
-        this._updateCount();
+        await this._updateLotsAndM2(newIds);
         await this._refreshDetail();
     }
 
@@ -334,7 +366,6 @@ export class HoldStoneButton extends Component {
                 const cur = Array.from(S.pending);
                 const d = [["location_id.usage", "=", "internal"], ["quantity", ">", 0], ["lot_id", "!=", false]];
                 if (S.productId) d.push(["product_id", "=", S.productId]);
-                // Mostrar libres + los ya seleccionados (aunque tengan hold propio)
                 if (cur.length) { d.push("|"); d.push("&"); d.push(["x_tiene_hold", "=", false]); d.push(["reserved_quantity", "=", 0]); d.push(["lot_id", "in", cur]); }
                 else { d.push(["x_tiene_hold", "=", false]); d.push(["reserved_quantity", "=", 0]); }
                 if (S.filters.lot_name) d.push(["lot_id.name", "ilike", S.filters.lot_name]);
@@ -357,7 +388,12 @@ export class HoldStoneButton extends Component {
             render();
         };
 
-        const confirm = async () => { this.destroyPopup(); await this.props.record.update({ lot_ids: [[6, 0, Array.from(S.pending)]] }); this._updateCount(); await this._refreshDetail(); };
+        const confirm = async () => {
+            const newIds = Array.from(S.pending);
+            this.destroyPopup();
+            await this._updateLotsAndM2(newIds);
+            await this._refreshDetail();
+        };
         const close = () => this.destroyPopup();
 
         root.querySelector("#hp-x").addEventListener("click", close);
