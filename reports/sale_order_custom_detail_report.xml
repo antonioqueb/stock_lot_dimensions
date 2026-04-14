@@ -196,6 +196,10 @@
                                         <tr style="background-color: #2f2f2f; color: #fff;">
                                             <td t-att-colspan="14 if has_line_discount_columns else 12" style="background-color: #2f2f2f; padding: 2px 8px; font-weight: bold; color: #fff; font-size: 9px; text-transform: uppercase;">
                                                 <span t-field="line.product_id.display_name"/>
+                                                <t t-if="line.name and line.name != line.product_id.display_name">
+                                                    <br/>
+                                                    <span style="font-weight: normal; font-size: 8px; font-style: italic; color: #ccc; text-transform: none;" t-field="line.name"/>
+                                                </t>
                                             </td>
                                         </tr>
                                         <t t-set="all_lots_data" t-value="line._get_all_sale_lots_with_qty()"/>
@@ -287,6 +291,10 @@
                                         <tr style="background-color: #2f2f2f; color: #fff;">
                                             <td t-att-colspan="14 if has_line_discount_columns else 12" style="background-color: #2f2f2f; padding: 2px 8px; font-weight: bold; color: #fff; font-size: 9px; text-transform: uppercase;">
                                                 <span t-field="line.product_id.display_name"/>
+                                                <t t-if="line.name and line.name != line.product_id.display_name">
+                                                    <br/>
+                                                    <span style="font-weight: normal; font-size: 8px; font-style: italic; color: #ccc; text-transform: none;" t-field="line.name"/>
+                                                </t>
                                             </td>
                                         </tr>
                                         <t t-set="all_lots_data" t-value="line._get_all_sale_lots_with_qty()"/>
