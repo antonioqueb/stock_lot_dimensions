@@ -10,28 +10,67 @@ export class HoldStoneButton extends Component {
 
     setup() {
         this.orm = useService("orm");
+
         this._detailsRow = null;
         this._popupRoot = null;
         this._popupKeyHandler = null;
         this._popupObserver = null;
 
-        this.state = useState({ isExpanded: false, selectedCount: 0 });
+        this.state = useState({
+            isExpanded: false,
+            selectedCount: 0,
+        });
 
         onWillStart(() => this._updateCount());
-        onWillUpdateProps((np) => this._updateCount(np));
-        onWillUnmount(() => { this.removeDetailsRow(); this.destroyPopup(); });
+        onWillUpdateProps((nextProps) => this._updateCount(nextProps));
+
+        onWillUnmount(() => {
+            this.removeDetailsRow();
+            this.destroyPopup();
+        });
     }
 
-    _updateCount(props = this.props) {
-        this.state.selectedCount = this._extractIds(props?.record?.data?.lot_ids).length;
+    // ─────────────────────────────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────────────────────────────
+
+    _escapeHtml(value) {
+        const raw = value === null || value === undefined ? "" : String(value);
+        return raw
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    _fmt(num) {
+        const value = parseFloat(num);
+        if (Number.isNaN(value)) return "0.00";
+        return value.toFixed(2);
+    }
+
+    _fmtDim(num) {
+        const value = parseFloat(num);
+        if (!value || Number.isNaN(value)) return "—";
+        return value % 1 === 0 ? value.toFixed(0) : value.toFixed(2);
+    }
+
+    _tipoLabel(tipo) {
+        const clean = (tipo || "placa").toLowerCase();
+        return clean.charAt(0).toUpperCase() + clean.slice(1);
+    }
+
+    _qtyLabel(tipo) {
+        return (tipo || "").toLowerCase() === "pieza" ? "pzas" : "m²";
     }
 
     _extractIds(raw) {
         if (!raw) return [];
-        if (Array.isArray(raw)) return raw.filter(x => typeof x === "number");
+        if (Array.isArray(raw)) return raw.filter((item) => typeof item === "number");
         if (raw.currentIds) return raw.currentIds;
         if (raw.resIds) return raw.resIds;
-        if (raw.records) return raw.records.map(r => r.resId || r.data?.id).filter(Boolean);
+        if (raw.records) return raw.records.map((record) => record.resId || record.data?.id).filter(Boolean);
         return [];
     }
 
@@ -48,378 +87,954 @@ export class HoldStoneButton extends Component {
         return field.display_name || field.name || "";
     }
 
-    getProductId() { return this._id(this.props.record.data.product_id); }
-    getProductName() { return this._name(this.props.record.data.product_id); }
-    getCurrentLotIds() { return this._extractIds(this.props.record.data.lot_ids); }
+    getProductId() {
+        return this._id(this.props.record.data.product_id);
+    }
 
-    // ─── Calcular m² total de los lotes seleccionados ─────────────────────
+    getProductName() {
+        return this._name(this.props.record.data.product_id);
+    }
+
+    getCurrentLotIds() {
+        return this._extractIds(this.props.record.data.lot_ids);
+    }
+
+    _updateCount(props = this.props) {
+        this.state.selectedCount = this._extractIds(props?.record?.data?.lot_ids).length;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Cantidad / m²
+    // ─────────────────────────────────────────────────────────────────────
+
     async _computeM2ForLots(lotIds) {
         if (!lotIds || !lotIds.length) return 0.0;
+
         try {
-            const quants = await this.orm.searchRead("stock.quant",
-                [["lot_id", "in", lotIds], ["location_id.usage", "=", "internal"], ["quantity", ">", 0]],
-                ["lot_id", "quantity"]);
+            const quants = await this.orm.searchRead(
+                "stock.quant",
+                [
+                    ["lot_id", "in", lotIds],
+                    ["location_id.usage", "=", "internal"],
+                    ["quantity", ">", 0],
+                ],
+                ["lot_id", "quantity"],
+                { limit: lotIds.length * 3 }
+            );
+
             let total = 0.0;
-            const seen = new Set();
-            for (const q of quants) {
-                const lid = q.lot_id[0];
-                if (!seen.has(lid)) {
-                    seen.add(lid);
-                    total += q.quantity || 0;
-                }
+            for (const quant of quants) {
+                total += quant.quantity || 0;
             }
+
             return total;
-        } catch (e) {
-            console.warn("Error computing m2:", e);
+        } catch (error) {
+            console.warn("[HOLD STONE] Error calculando m²:", error);
             return 0.0;
         }
     }
 
-    // ─── Actualizar lot_ids Y cantidad_m2 juntos ──────────────────────────
     async _updateLotsAndM2(newLotIds) {
         const m2 = await this._computeM2ForLots(newLotIds);
+
         await this.props.record.update({
             lot_ids: [[6, 0, newLotIds]],
             cantidad_m2: m2,
         });
+
         this._updateCount();
     }
 
-    // ─── Toggle ───────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    // Toggle principal
+    // ─────────────────────────────────────────────────────────────────────
 
     async handleToggle(ev) {
         ev.stopPropagation();
+        ev.preventDefault();
+
         if (this.state.isExpanded) {
             this.removeDetailsRow();
             this.state.isExpanded = false;
             return;
         }
-        document.querySelectorAll(".hold-stone-selected-row").forEach(e => e.remove());
+
+        document.querySelectorAll(".hold-stone-selected-row").forEach((row) => row.remove());
+
         const tr = ev.currentTarget.closest("tr");
         if (!tr) return;
+
         this.state.isExpanded = true;
         await this._injectDetail(tr);
     }
 
-    // ─── Detalle inline ───────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    // Detalle inline
+    // ─────────────────────────────────────────────────────────────────────
 
     async _injectDetail(row) {
         const newTr = document.createElement("tr");
-        newTr.className = "hold-stone-selected-row stone-selected-row";
+        newTr.className = "hold-stone-selected-row";
+
         const td = document.createElement("td");
         td.colSpan = row.querySelectorAll("td").length || 10;
-        td.className = "stone-selected-cell";
+        td.className = "hold-stone-selected-cell";
 
         const container = document.createElement("div");
-        container.className = "stone-selected-container";
+        container.className = "hold-stone-selected-container";
+
+        const currentLotIds = this.getCurrentLotIds();
 
         const header = document.createElement("div");
-        header.className = "stone-selected-header";
-        const count = this.getCurrentLotIds().length;
+        header.className = "hold-stone-selected-header";
         header.innerHTML = `
-            <span class="stone-selected-title">
-                <i class="fa fa-check-circle me-2"></i>Placas seleccionadas
-                <span class="stone-sel-badge" id="hold-sel-badge">${count}</span>
+            <button class="hold-stone-add-btn hold-stone-add-btn-trigger hold-stone-add-btn-prominent">
+                <i class="fa fa-plus me-1"></i>
+                Agregar placas
+            </button>
+
+            <span class="hold-stone-selected-title">
+                <i class="fa fa-check-circle me-2"></i>
+                Placas seleccionadas
+                <span class="hold-stone-sel-badge" id="hold-stone-sel-badge">${currentLotIds.length}</span>
             </span>
-            <button class="stone-add-btn hold-add-btn-trigger">
-                <i class="fa fa-plus me-1"></i> Agregar placa
-            </button>`;
+        `;
 
         const body = document.createElement("div");
-        body.className = "stone-selected-body";
+        body.className = "hold-stone-selected-body";
 
         container.appendChild(header);
         container.appendChild(body);
         td.appendChild(container);
         newTr.appendChild(td);
+
         row.after(newTr);
         this._detailsRow = newTr;
 
-        await this._renderDetail(body, this.getCurrentLotIds());
-        header.querySelector(".hold-add-btn-trigger").addEventListener("click", e => {
-            e.stopPropagation();
+        await this._renderDetail(body, currentLotIds);
+
+        header.querySelector(".hold-stone-add-btn-trigger").addEventListener("click", (event) => {
+            event.stopPropagation();
+            event.preventDefault();
             this.openPopup();
         });
     }
 
     async _renderDetail(container, lotIds) {
         if (!lotIds.length) {
-            container.innerHTML = `<div class="stone-no-selection"><i class="fa fa-info-circle me-2 text-muted"></i>
-                <span class="text-muted">Sin placas seleccionadas. Usa <strong>Agregar placa</strong> para comenzar.</span></div>`;
+            container.innerHTML = `
+                <div class="hold-stone-no-selection">
+                    <i class="fa fa-info-circle me-2 text-muted"></i>
+                    <span class="text-muted">
+                        Sin placas seleccionadas. Usa <strong>Agregar placas</strong> para comenzar.
+                    </span>
+                </div>
+            `;
             return;
         }
-        container.innerHTML = `<div class="stone-table-loading"><i class="fa fa-circle-o-notch fa-spin me-2"></i> Cargando...</div>`;
+
+        container.innerHTML = `
+            <div class="hold-stone-table-loading">
+                <i class="fa fa-circle-o-notch fa-spin me-2"></i>
+                Cargando placas seleccionadas...
+            </div>
+        `;
 
         try {
             const [lots, quants] = await Promise.all([
-                this.orm.searchRead("stock.lot", [["id", "in", lotIds]],
-                    ["name", "x_bloque", "x_atado", "x_alto", "x_ancho", "x_grosor", "x_tipo", "x_color"],
-                    { limit: lotIds.length }),
-                this.orm.searchRead("stock.quant",
-                    [["lot_id", "in", lotIds], ["location_id.usage", "=", "internal"], ["quantity", ">", 0]],
-                    ["lot_id", "quantity"]),
+                this.orm.searchRead(
+                    "stock.lot",
+                    [["id", "in", lotIds]],
+                    [
+                        "name",
+                        "x_bloque",
+                        "x_atado",
+                        "x_alto",
+                        "x_ancho",
+                        "x_grosor",
+                        "x_tipo",
+                        "x_color",
+                    ],
+                    { limit: lotIds.length }
+                ),
+                this.orm.searchRead(
+                    "stock.quant",
+                    [
+                        ["lot_id", "in", lotIds],
+                        ["location_id.usage", "=", "internal"],
+                        ["quantity", ">", 0],
+                    ],
+                    ["lot_id", "quantity"],
+                    { limit: lotIds.length * 3 }
+                ),
             ]);
 
-            const qm = {};
-            for (const q of quants) qm[q.lot_id[0]] = (qm[q.lot_id[0]] || 0) + q.quantity;
-            const lm = {};
-            for (const l of lots) lm[l.id] = l;
+            const qtyMap = {};
+            for (const quant of quants) {
+                const lotId = quant.lot_id?.[0];
+                if (!lotId) continue;
+                qtyMap[lotId] = (qtyMap[lotId] || 0) + (quant.quantity || 0);
+            }
+
+            const lotMap = {};
+            for (const lot of lots) {
+                lotMap[lot.id] = lot;
+            }
 
             let total = 0;
             let rows = "";
-            for (const lid of lotIds) {
-                const lot = lm[lid];
+
+            for (const lotId of lotIds) {
+                const lot = lotMap[lotId];
                 if (!lot) continue;
-                const qty = qm[lid] || 0;
+
+                const qty = qtyMap[lotId] || 0;
+                const tipo = (lot.x_tipo || "placa").toLowerCase();
+
                 total += qty;
-                rows += `<tr>
-                    <td class="cell-lot">${lot.name}</td>
-                    <td>${lot.x_bloque || "-"}</td><td>${lot.x_atado || "-"}</td>
-                    <td class="col-num">${lot.x_alto ? lot.x_alto.toFixed(4) : "-"}</td>
-                    <td class="col-num">${lot.x_ancho ? lot.x_ancho.toFixed(4) : "-"}</td>
-                    <td class="col-num">${lot.x_grosor || "-"}</td>
-                    <td class="col-num fw-semibold">${qty.toFixed(2)}</td>
-                    <td>${lot.x_tipo || "-"}</td><td>${lot.x_color || "-"}</td>
-                    <td class="col-act"><button class="stone-remove-btn" data-lot-id="${lid}" title="Quitar"><i class="fa fa-times"></i></button></td>
-                </tr>`;
+
+                rows += `
+                    <tr data-lot-row="${lotId}">
+                        <td class="cell-lot">${this._escapeHtml(lot.name)}</td>
+                        <td>${this._escapeHtml(lot.x_bloque || "—")}</td>
+                        <td>${this._escapeHtml(lot.x_atado || "—")}</td>
+                        <td class="col-num">${this._fmtDim(lot.x_alto)}</td>
+                        <td class="col-num">${this._fmtDim(lot.x_ancho)}</td>
+                        <td class="col-num">${this._fmtDim(lot.x_grosor)}</td>
+                        <td class="col-num fw-semibold">${this._fmt(qty)}</td>
+                        <td>
+                            <span class="hold-stone-tag hold-stone-tag-tipo-${this._escapeHtml(tipo)}">
+                                ${this._escapeHtml(this._tipoLabel(tipo))}
+                            </span>
+                        </td>
+                        <td>${this._escapeHtml(lot.x_color || "—")}</td>
+                        <td class="col-act">
+                            <button class="hold-stone-remove-btn" data-lot-id="${lotId}" title="Quitar placa">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
             }
 
-            container.innerHTML = `<table class="stone-sel-table">
-                <thead><tr><th>Lote</th><th>Bloque</th><th>Atado</th>
-                    <th class="col-num">Alto</th><th class="col-num">Ancho</th><th class="col-num">Espesor</th>
-                    <th class="col-num">M²</th><th>Tipo</th><th>Color</th><th class="col-act"></th></tr></thead>
-                <tbody>${rows}</tbody>
-                <tfoot><tr class="stone-total-row">
-                    <td colspan="6" class="text-end fw-bold text-muted">Total:</td>
-                    <td class="col-num fw-bold">${total.toFixed(2)}</td><td colspan="3"></td>
-                </tr></tfoot></table>`;
+            container.innerHTML = `
+                <table class="hold-stone-sel-table">
+                    <thead>
+                        <tr>
+                            <th>Lote</th>
+                            <th>Bloque</th>
+                            <th>Atado</th>
+                            <th class="col-num">Alto</th>
+                            <th class="col-num">Ancho</th>
+                            <th class="col-num">Espesor</th>
+                            <th class="col-num">M²</th>
+                            <th>Tipo</th>
+                            <th>Color</th>
+                            <th class="col-act"></th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot>
+                        <tr class="hold-stone-total-row">
+                            <td colspan="6" class="text-end fw-bold text-muted">Total:</td>
+                            <td class="col-num fw-bold hold-stone-total-qty">${this._fmt(total)}</td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            `;
 
-            container.querySelectorAll(".stone-remove-btn").forEach(btn => {
-                btn.addEventListener("click", e => { e.stopPropagation(); this._removeLot(parseInt(btn.dataset.lotId)); });
+            container.querySelectorAll(".hold-stone-remove-btn").forEach((btn) => {
+                btn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    this._removeLot(parseInt(btn.dataset.lotId, 10));
+                });
             });
-        } catch (err) {
-            container.innerHTML = `<div class="text-danger p-2">Error: ${err.message}</div>`;
+        } catch (error) {
+            container.innerHTML = `
+                <div class="text-danger p-2">
+                    <i class="fa fa-exclamation-triangle me-2"></i>
+                    Error: ${this._escapeHtml(error.message)}
+                </div>
+            `;
         }
     }
 
     async _removeLot(lotId) {
-        const newIds = this.getCurrentLotIds().filter(id => id !== lotId);
+        const newIds = this.getCurrentLotIds().filter((id) => id !== lotId);
         await this._updateLotsAndM2(newIds);
         await this._refreshDetail();
     }
 
     async _refreshDetail() {
         if (!this._detailsRow) return;
-        const body = this._detailsRow.querySelector(".stone-selected-body");
+
+        const body = this._detailsRow.querySelector(".hold-stone-selected-body");
         if (!body) return;
+
         const ids = this.getCurrentLotIds();
-        const badge = this._detailsRow.querySelector(".stone-sel-badge");
+
+        const badge = this._detailsRow.querySelector(".hold-stone-sel-badge");
         if (badge) badge.textContent = ids.length;
+
         await this._renderDetail(body, ids);
     }
 
     removeDetailsRow() {
-        if (this._detailsRow) { this._detailsRow.remove(); this._detailsRow = null; }
+        if (this._detailsRow) {
+            this._detailsRow.remove();
+            this._detailsRow = null;
+        }
     }
 
-    // ─── Popup ────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    // Popup fullscreen
+    // ─────────────────────────────────────────────────────────────────────
 
     openPopup() {
         this.destroyPopup();
+
         this._popupRoot = document.createElement("div");
-        this._popupRoot.className = "stone-popup-root";
+        this._popupRoot.className = "hold-stone-popup-root";
         document.body.appendChild(this._popupRoot);
+
         this._buildPopup(this.getProductId());
     }
 
     _buildPopup(fixedProductId) {
         const root = this._popupRoot;
-        const PS = 35;
-        const S = {
-            quants: [], total: 0, hasMore: false, loading: false, loadingMore: false,
-            page: 0, pending: new Set(this.getCurrentLotIds()),
-            filters: { lot_name: "", bloque: "", atado: "", alto_min: "", ancho_min: "" },
+        const PAGE_SIZE = 35;
+        const showProductSelector = !fixedProductId;
+
+        const state = {
+            quants: [],
+            total: 0,
+            hasMore: false,
+            loading: false,
+            loadingMore: false,
+            page: 0,
+            pending: new Set(this.getCurrentLotIds()),
+            pendingQtyMap: {},
+            filters: {
+                lot_name: "",
+                bloque: "",
+                atado: "",
+                alto_min: "",
+                ancho_min: "",
+                tipo: "",
+            },
             productId: fixedProductId,
         };
-        let timer = null;
-        const showProd = !fixedProductId;
+
+        let searchTimer = null;
 
         root.innerHTML = `
-        <div class="stone-popup-overlay" id="hp-ov">
-            <div class="stone-popup-container">
-                <div class="stone-popup-header">
-                    <div class="stone-popup-title"><i class="fa fa-th me-2"></i>Seleccionar Placas
-                        <span class="stone-popup-subtitle">${this.getProductName() ? "— " + this.getProductName() : ""}</span></div>
-                    <div class="stone-popup-header-actions">
-                        <span class="stone-badge-selected"><i class="fa fa-check-circle me-1"></i><span id="hp-bc">${S.pending.size}</span> selec.</span>
-                        <button class="stone-btn stone-btn-accent" id="hp-ok1"><i class="fa fa-check me-1"></i>Confirmar</button>
-                        <button class="stone-btn stone-btn-ghost" id="hp-x"><i class="fa fa-times"></i></button>
+            <div class="hold-stone-popup-overlay" id="hold-popup-overlay">
+                <div class="hold-stone-popup-container">
+
+                    <div class="hold-stone-popup-header">
+                        <div class="hold-stone-popup-title">
+                            <i class="fa fa-th me-2"></i>
+                            Seleccionar placas
+                            <span class="hold-stone-popup-subtitle">
+                                ${this.getProductName() ? "— " + this._escapeHtml(this.getProductName()) : ""}
+                            </span>
+                        </div>
+
+                        <div class="hold-stone-popup-header-actions">
+                            <span class="hold-stone-badge-selected">
+                                <i class="fa fa-check-circle me-1"></i>
+                                <span id="hold-popup-count">${state.pending.size}</span> seleccionadas
+                            </span>
+
+                            <span class="hold-stone-badge-qty-total">
+                                <i class="fa fa-balance-scale me-1"></i>
+                                <span id="hold-popup-qty">0.00</span>
+                                <span id="hold-popup-unit">m²</span>
+                            </span>
+
+                            <button class="hold-stone-btn hold-stone-btn-accent" id="hold-popup-confirm-top">
+                                <i class="fa fa-check me-1"></i>
+                                Confirmar
+                            </button>
+
+                            <button class="hold-stone-btn hold-stone-btn-ghost" id="hold-popup-close">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <div class="stone-popup-filters">
-                    ${showProd ? '<div class="stone-filter-group"><label>Producto</label><select class="stone-filter-input" id="hf-prod" style="width:220px"><option value="">Todos</option></select></div>' : ""}
-                    <div class="stone-filter-group"><label>Lote</label><input type="text" class="stone-filter-input" id="hf-lot" placeholder="Buscar..."/></div>
-                    <div class="stone-filter-group"><label>Bloque</label><input type="text" class="stone-filter-input" id="hf-blq" placeholder="Bloque..."/></div>
-                    <div class="stone-filter-group"><label>Atado</label><input type="text" class="stone-filter-input" id="hf-ata" placeholder="Atado..."/></div>
-                    <div class="stone-filter-group"><label>Alto mín.</label><input type="number" class="stone-filter-input stone-filter-sm" id="hf-alt" placeholder="0"/></div>
-                    <div class="stone-filter-group"><label>Ancho mín.</label><input type="number" class="stone-filter-input stone-filter-sm" id="hf-anc" placeholder="0"/></div>
-                    <div class="stone-filter-actions">
-                        <button class="stone-btn stone-btn-select-all" id="hp-sa"><i class="fa fa-check-square-o me-1"></i>Todo</button>
-                        <button class="stone-btn stone-btn-clear-all" id="hp-ca"><i class="fa fa-square-o me-1"></i>Limpiar</button>
+
+                    <div class="hold-stone-popup-filters">
+                        ${
+                            showProductSelector
+                                ? `<div class="hold-stone-filter-group">
+                                    <label>Producto</label>
+                                    <select class="hold-stone-filter-input" id="hold-filter-product" style="width: 260px;">
+                                        <option value="">Todos</option>
+                                    </select>
+                                </div>`
+                                : ""
+                        }
+
+                        <div class="hold-stone-filter-group">
+                            <label>Lote</label>
+                            <input type="text" class="hold-stone-filter-input" id="hold-filter-lot" placeholder="Buscar lote..."/>
+                        </div>
+
+                        <div class="hold-stone-filter-group">
+                            <label>Bloque</label>
+                            <input type="text" class="hold-stone-filter-input" id="hold-filter-block" placeholder="Bloque..."/>
+                        </div>
+
+                        <div class="hold-stone-filter-group">
+                            <label>Atado</label>
+                            <input type="text" class="hold-stone-filter-input" id="hold-filter-bundle" placeholder="Atado..."/>
+                        </div>
+
+                        <div class="hold-stone-filter-group">
+                            <label>Alto mín.</label>
+                            <input type="number" class="hold-stone-filter-input hold-stone-filter-sm" id="hold-filter-height" placeholder="0" step="0.01"/>
+                        </div>
+
+                        <div class="hold-stone-filter-group">
+                            <label>Ancho mín.</label>
+                            <input type="number" class="hold-stone-filter-input hold-stone-filter-sm" id="hold-filter-width" placeholder="0" step="0.01"/>
+                        </div>
+
+                        <div class="hold-stone-filter-group">
+                            <label>Tipo</label>
+                            <select class="hold-stone-filter-input" id="hold-filter-type">
+                                <option value="">Todos</option>
+                                <option value="placa">Placa</option>
+                                <option value="formato">Formato</option>
+                                <option value="pieza">Pieza</option>
+                            </select>
+                        </div>
+
+                        <div class="hold-stone-filter-actions">
+                            <button class="hold-stone-btn hold-stone-btn-select-all" id="hold-popup-select-all">
+                                <i class="fa fa-check-square-o me-1"></i>
+                                Todo
+                            </button>
+
+                            <button class="hold-stone-btn hold-stone-btn-clear-all" id="hold-popup-clear-all">
+                                <i class="fa fa-square-o me-1"></i>
+                                Limpiar
+                            </button>
+                        </div>
+
+                        <div class="hold-stone-filter-spacer"></div>
+
+                        <div class="hold-stone-filter-stats">
+                            <span id="hold-popup-stat" class="hold-stone-filter-stat-loading">
+                                <i class="fa fa-circle-o-notch fa-spin me-1"></i>
+                                Buscando...
+                            </span>
+                        </div>
                     </div>
-                    <div class="stone-filter-spacer"></div>
-                    <div class="stone-filter-stats"><span id="hp-st" class="stone-filter-stat-loading"><i class="fa fa-circle-o-notch fa-spin me-1"></i>Buscando...</span></div>
-                </div>
-                <div class="stone-popup-body" id="hp-bd"><div class="stone-empty-state"><i class="fa fa-circle-o-notch fa-spin fa-2x text-muted"></i><div class="stone-empty-text mt-2">Cargando...</div></div></div>
-                <div class="stone-popup-footer">
-                    <span class="stone-footer-info" id="hp-fi">—</span>
-                    <div class="stone-footer-actions">
-                        <button class="stone-btn stone-btn-outline" id="hp-cn">Cancelar</button>
-                        <button class="stone-btn stone-btn-primary-dark" id="hp-ok2"><i class="fa fa-check me-1"></i>Agregar selección</button>
+
+                    <div class="hold-stone-popup-body" id="hold-popup-body">
+                        <div class="hold-stone-empty-state">
+                            <i class="fa fa-circle-o-notch fa-spin fa-2x text-muted"></i>
+                            <div class="hold-stone-empty-text mt-2">Cargando inventario...</div>
+                        </div>
                     </div>
+
+                    <div class="hold-stone-popup-footer">
+                        <span class="hold-stone-footer-info" id="hold-popup-footer-info">—</span>
+
+                        <div class="hold-stone-footer-qty-summary">
+                            <span id="hold-popup-footer-qty">0.00 m²</span>
+                        </div>
+
+                        <div class="hold-stone-footer-actions">
+                            <button class="hold-stone-btn hold-stone-btn-outline" id="hold-popup-cancel">
+                                Cancelar
+                            </button>
+
+                            <button class="hold-stone-btn hold-stone-btn-primary-dark" id="hold-popup-confirm-bottom">
+                                <i class="fa fa-check me-1"></i>
+                                Agregar selección
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
-        </div>`;
+        `;
 
-        const ov = root.querySelector("#hp-ov"), bd = root.querySelector("#hp-bd");
-        const st = root.querySelector("#hp-st"), fi = root.querySelector("#hp-fi"), bc = root.querySelector("#hp-bc");
-        const ps = root.querySelector("#hf-prod");
+        const overlay = root.querySelector("#hold-popup-overlay");
+        const body = root.querySelector("#hold-popup-body");
+        const stat = root.querySelector("#hold-popup-stat");
+        const footerInfo = root.querySelector("#hold-popup-footer-info");
+        const badgeCount = root.querySelector("#hold-popup-count");
+        const badgeQty = root.querySelector("#hold-popup-qty");
+        const badgeUnit = root.querySelector("#hold-popup-unit");
+        const footerQty = root.querySelector("#hold-popup-footer-qty");
+        const productSelect = root.querySelector("#hold-filter-product");
 
-        const ub = () => { bc.textContent = S.pending.size; };
-        const us = () => { st.className = "stone-filter-stat-count"; st.innerHTML = `${S.total} disponibles`; fi.innerHTML = `<strong>${S.quants.length}</strong> de <strong>${S.total}</strong>`; };
-
-        const loadProds = async () => {
-            if (!ps) return;
-            try {
-                const r = await this.orm.searchRead("stock.quant", [["location_id.usage", "=", "internal"], ["quantity", ">", 0], ["lot_id", "!=", false]], ["product_id"], { limit: 500 });
-                const seen = new Set(), items = [];
-                for (const q of r) { if (q.product_id && !seen.has(q.product_id[0])) { seen.add(q.product_id[0]); items.push({ id: q.product_id[0], name: q.product_id[1] }); } }
-                items.sort((a, b) => a.name.localeCompare(b.name));
-                for (const p of items) { const o = document.createElement("option"); o.value = p.id; o.textContent = p.name; ps.appendChild(o); }
-            } catch (e) { console.error(e); }
+        const getQuantByLotId = (lotId) => {
+            return state.quants.find((quant) => quant.lot_id && quant.lot_id[0] === lotId);
         };
 
-        const selAll = () => {
-            for (const q of S.quants) { const l = q.lot_id ? q.lot_id[0] : 0; if (l) S.pending.add(l); }
-            ub(); bd.querySelectorAll("tr[data-lid]").forEach(tr => { tr.className = "row-sel"; const c = tr.querySelector(".stone-chkbox"); if (c) { c.className = "stone-chkbox checked"; c.innerHTML = '<i class="fa fa-check"></i>'; } const t = tr.querySelector(".stone-tag"); if (t) { t.className = "stone-tag stone-tag-ok"; t.textContent = "Selec."; } });
-        };
-        const clrAll = () => {
-            S.pending.clear(); ub();
-            bd.querySelectorAll("tr[data-lid]").forEach(tr => { tr.className = ""; const c = tr.querySelector(".stone-chkbox"); if (c) { c.className = "stone-chkbox"; c.innerHTML = ""; } const t = tr.querySelector(".stone-tag"); if (t) { const rv = tr.dataset.rsv === "1"; t.className = rv ? "stone-tag stone-tag-warn" : "stone-tag stone-tag-free"; t.textContent = rv ? "Reservado" : "Libre"; } });
+        const rememberQuant = (quant) => {
+            const lotId = quant.lot_id ? quant.lot_id[0] : 0;
+            if (!lotId) return;
+            state.pendingQtyMap[String(lotId)] = quant.quantity || 0;
         };
 
-        const render = () => {
-            if (!S.quants.length && !S.loading) { bd.innerHTML = `<div class="stone-empty-state"><i class="fa fa-inbox fa-3x text-muted"></i><div class="stone-empty-text mt-2">Sin resultados</div></div>`; us(); return; }
-            let rows = "";
-            for (const q of S.quants) {
-                const lid = q.lot_id ? q.lot_id[0] : 0, ln = q.lot_id ? q.lot_id[1] : "-";
-                const loc = q.location_id ? q.location_id[1].split("/").pop() : "-";
-                const sel = S.pending.has(lid), rsv = q.reserved_quantity > 0;
-                let badge = `<span class="stone-tag stone-tag-free">Libre</span>`;
-                if (sel) badge = `<span class="stone-tag stone-tag-ok">Selec.</span>`;
-                else if (rsv) badge = `<span class="stone-tag stone-tag-warn">Reservado</span>`;
-                rows += `<tr class="${sel ? "row-sel" : ""}" data-lid="${lid}" data-rsv="${rsv ? "1" : "0"}">
-                    <td class="col-chk"><div class="stone-chkbox ${sel ? "checked" : ""}">${sel ? '<i class="fa fa-check"></i>' : ""}</div></td>
-                    <td class="cell-lot">${ln}</td><td>${q.x_bloque || "-"}</td><td>${q.x_atado || "-"}</td>
-                    <td class="col-num">${q.x_alto ? q.x_alto.toFixed(4) : "-"}</td>
-                    <td class="col-num">${q.x_ancho ? q.x_ancho.toFixed(4) : "-"}</td>
-                    <td class="col-num">${q.x_grosor || "-"}</td>
-                    <td class="col-num fw-semibold">${q.quantity ? q.quantity.toFixed(2) : "-"}</td>
-                    <td>${q.x_tipo || "-"}</td><td>${q.x_color || "-"}</td>
-                    <td class="cell-loc">${loc}</td><td>${badge}</td></tr>`;
+        const getQtyForLot = (lotId) => {
+            const lotIdStr = String(lotId);
+
+            if (state.pendingQtyMap[lotIdStr] !== undefined) {
+                return parseFloat(state.pendingQtyMap[lotIdStr]) || 0;
             }
-            const sent = `<div id="hp-sn" class="stone-scroll-sentinel">${S.loadingMore ? '<div class="stone-loading-more"><i class="fa fa-circle-o-notch fa-spin me-2"></i>Cargando más...</div>' : ""}${S.hasMore && !S.loadingMore ? '<div class="stone-scroll-hint"><i class="fa fa-chevron-down me-1"></i>Desplázate para más</div>' : ""}</div>`;
 
-            bd.innerHTML = `<table class="stone-popup-table"><thead><tr>
-                <th class="col-chk">✓</th><th>Lote</th><th>Bloque</th><th>Atado</th>
-                <th class="col-num">Alto</th><th class="col-num">Ancho</th><th class="col-num">Gros.</th>
-                <th class="col-num">M²</th><th>Tipo</th><th>Color</th><th>Ubic.</th><th>Estado</th>
-                </tr></thead><tbody>${rows}</tbody></table>${sent}`;
-            us();
+            const quant = getQuantByLotId(lotId);
+            return quant ? quant.quantity || 0 : 0;
+        };
 
-            bd.querySelectorAll("tr[data-lid]").forEach(tr => {
-                tr.style.cursor = "pointer";
+        const computeSelectedTotals = () => {
+            let total = 0;
+            for (const lotId of state.pending) {
+                total += getQtyForLot(lotId);
+            }
+            return total;
+        };
+
+        const updateQtyDisplay = () => {
+            const total = computeSelectedTotals();
+            badgeQty.textContent = this._fmt(total);
+            badgeUnit.textContent = "m²";
+            footerQty.textContent = `${this._fmt(total)} m²`;
+        };
+
+        const updateBadge = () => {
+            badgeCount.textContent = state.pending.size;
+            updateQtyDisplay();
+        };
+
+        const updateStats = () => {
+            stat.className = "hold-stone-filter-stat-count";
+            stat.innerHTML = `${state.total} placas`;
+            footerInfo.innerHTML = `Mostrando <strong>${state.quants.length}</strong> de <strong>${state.total}</strong>`;
+        };
+
+        const loadProducts = async () => {
+            if (!productSelect) return;
+
+            try {
+                const records = await this.orm.searchRead(
+                    "stock.quant",
+                    [
+                        ["location_id.usage", "=", "internal"],
+                        ["quantity", ">", 0],
+                        ["lot_id", "!=", false],
+                    ],
+                    ["product_id"],
+                    { limit: 800 }
+                );
+
+                const seen = new Set();
+                const products = [];
+
+                for (const quant of records) {
+                    if (quant.product_id && !seen.has(quant.product_id[0])) {
+                        seen.add(quant.product_id[0]);
+                        products.push({
+                            id: quant.product_id[0],
+                            name: quant.product_id[1],
+                        });
+                    }
+                }
+
+                products.sort((a, b) => a.name.localeCompare(b.name));
+
+                for (const product of products) {
+                    const option = document.createElement("option");
+                    option.value = product.id;
+                    option.textContent = product.name;
+                    productSelect.appendChild(option);
+                }
+            } catch (error) {
+                console.error("[HOLD STONE] Error cargando productos:", error);
+            }
+        };
+
+        const selectAll = () => {
+            for (const quant of state.quants) {
+                const lotId = quant.lot_id ? quant.lot_id[0] : 0;
+                if (!lotId) continue;
+                state.pending.add(lotId);
+                rememberQuant(quant);
+            }
+
+            updateBadge();
+            renderTable();
+        };
+
+        const clearAll = () => {
+            state.pending.clear();
+            state.pendingQtyMap = {};
+            updateBadge();
+            renderTable();
+        };
+
+        const renderTable = () => {
+            if (!state.quants.length && !state.loading) {
+                body.innerHTML = `
+                    <div class="hold-stone-empty-state">
+                        <i class="fa fa-inbox fa-3x text-muted"></i>
+                        <div class="hold-stone-empty-text mt-2">Sin resultados</div>
+                    </div>
+                `;
+                updateStats();
+                updateBadge();
+                return;
+            }
+
+            let rows = "";
+
+            for (const quant of state.quants) {
+                const lotId = quant.lot_id ? quant.lot_id[0] : 0;
+                const lotName = quant.lot_id ? quant.lot_id[1] : "—";
+                const locationName = quant.location_id ? quant.location_id[1].split("/").pop() : "—";
+                const selected = state.pending.has(lotId);
+                const reserved = quant.reserved_quantity > 0;
+                const tipo = (quant.x_tipo || "placa").toLowerCase();
+
+                if (selected) {
+                    rememberQuant(quant);
+                }
+
+                let badge = `<span class="hold-stone-tag hold-stone-tag-free">Libre</span>`;
+                if (selected) {
+                    badge = `<span class="hold-stone-tag hold-stone-tag-ok">Selec.</span>`;
+                } else if (reserved) {
+                    badge = `<span class="hold-stone-tag hold-stone-tag-warn">Reservado</span>`;
+                }
+
+                rows += `
+                    <tr class="${selected ? "row-sel" : ""}"
+                        data-lot-id="${lotId}"
+                        data-reserved="${reserved ? "1" : "0"}">
+                        <td class="col-chk">
+                            <div class="hold-stone-chkbox ${selected ? "checked" : ""}">
+                                ${selected ? '<i class="fa fa-check"></i>' : ""}
+                            </div>
+                        </td>
+                        <td class="cell-lot">${this._escapeHtml(lotName)}</td>
+                        <td>${this._escapeHtml(quant.x_bloque || "—")}</td>
+                        <td>${this._escapeHtml(quant.x_atado || "—")}</td>
+                        <td class="col-num">${this._fmtDim(quant.x_alto)}</td>
+                        <td class="col-num">${this._fmtDim(quant.x_ancho)}</td>
+                        <td class="col-num">${this._fmtDim(quant.x_grosor)}</td>
+                        <td class="col-num fw-semibold">${this._fmt(quant.quantity)}</td>
+                        <td>
+                            <span class="hold-stone-tag hold-stone-tag-tipo-${this._escapeHtml(tipo)}">
+                                ${this._escapeHtml(this._tipoLabel(tipo))}
+                            </span>
+                        </td>
+                        <td>${this._escapeHtml(quant.x_color || "—")}</td>
+                        <td class="cell-loc">${this._escapeHtml(locationName)}</td>
+                        <td>${badge}</td>
+                    </tr>
+                `;
+            }
+
+            const sentinel = `
+                <div id="hold-popup-sentinel" class="hold-stone-scroll-sentinel">
+                    ${
+                        state.loadingMore
+                            ? '<div class="hold-stone-loading-more"><i class="fa fa-circle-o-notch fa-spin me-2"></i>Cargando más...</div>'
+                            : ""
+                    }
+                    ${
+                        state.hasMore && !state.loadingMore
+                            ? '<div class="hold-stone-scroll-hint"><i class="fa fa-chevron-down me-1"></i>Desplázate para cargar más</div>'
+                            : ""
+                    }
+                </div>
+            `;
+
+            body.innerHTML = `
+                <table class="hold-stone-popup-table">
+                    <thead>
+                        <tr>
+                            <th class="col-chk">✓</th>
+                            <th>Lote</th>
+                            <th>Bloque</th>
+                            <th>Atado</th>
+                            <th class="col-num">Alto</th>
+                            <th class="col-num">Ancho</th>
+                            <th class="col-num">Esp.</th>
+                            <th class="col-num">M²</th>
+                            <th>Tipo</th>
+                            <th>Color</th>
+                            <th>Ubicación</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                ${sentinel}
+            `;
+
+            updateStats();
+            updateBadge();
+
+            body.querySelectorAll("tr[data-lot-id]").forEach((tr) => {
                 tr.addEventListener("click", () => {
-                    const lid = parseInt(tr.dataset.lid); if (!lid) return;
-                    if (S.pending.has(lid)) S.pending.delete(lid); else S.pending.add(lid);
-                    const sel = S.pending.has(lid);
-                    tr.className = sel ? "row-sel" : "";
-                    const c = tr.querySelector(".stone-chkbox"); if (c) { c.className = "stone-chkbox" + (sel ? " checked" : ""); c.innerHTML = sel ? '<i class="fa fa-check"></i>' : ""; }
-                    const t = tr.querySelector(".stone-tag"); if (t) { if (sel) { t.className = "stone-tag stone-tag-ok"; t.textContent = "Selec."; } else { const rv = tr.dataset.rsv === "1"; t.className = rv ? "stone-tag stone-tag-warn" : "stone-tag stone-tag-free"; t.textContent = rv ? "Reservado" : "Libre"; } }
-                    ub();
+                    const lotId = parseInt(tr.dataset.lotId, 10);
+                    if (!lotId) return;
+
+                    const quant = getQuantByLotId(lotId);
+
+                    if (state.pending.has(lotId)) {
+                        state.pending.delete(lotId);
+                        delete state.pendingQtyMap[String(lotId)];
+                    } else {
+                        state.pending.add(lotId);
+                        if (quant) rememberQuant(quant);
+                    }
+
+                    updateBadge();
+                    renderTable();
                 });
             });
 
-            if (this._popupObserver) { this._popupObserver.disconnect(); this._popupObserver = null; }
-            const sn = bd.querySelector("#hp-sn");
-            if (sn && S.hasMore) {
-                this._popupObserver = new IntersectionObserver(e => { if (e[0].isIntersecting && S.hasMore && !S.loadingMore) load(S.page + 1, false); }, { root: bd, rootMargin: "100px", threshold: 0.1 });
-                this._popupObserver.observe(sn);
+            if (this._popupObserver) {
+                this._popupObserver.disconnect();
+                this._popupObserver = null;
+            }
+
+            const sentinelEl = body.querySelector("#hold-popup-sentinel");
+            if (sentinelEl && state.hasMore) {
+                this._popupObserver = new IntersectionObserver(
+                    (entries) => {
+                        if (entries[0].isIntersecting && state.hasMore && !state.loadingMore) {
+                            loadPage(state.page + 1, false);
+                        }
+                    },
+                    { root: body, rootMargin: "100px", threshold: 0.1 }
+                );
+                this._popupObserver.observe(sentinelEl);
             }
         };
 
-        const load = async (page, reset) => {
-            if (reset) { S.loading = true; S.quants = []; bd.innerHTML = `<div class="stone-empty-state"><i class="fa fa-circle-o-notch fa-spin fa-2x text-muted"></i><div class="stone-empty-text mt-2">Buscando...</div></div>`; st.className = "stone-filter-stat-loading"; st.innerHTML = `<i class="fa fa-circle-o-notch fa-spin me-1"></i>Buscando...`; }
-            else S.loadingMore = true;
+        const loadPage = async (page, reset) => {
+            if (reset) {
+                state.loading = true;
+                state.quants = [];
+
+                body.innerHTML = `
+                    <div class="hold-stone-empty-state">
+                        <i class="fa fa-circle-o-notch fa-spin fa-2x text-muted"></i>
+                        <div class="hold-stone-empty-text mt-2">Buscando...</div>
+                    </div>
+                `;
+
+                stat.className = "hold-stone-filter-stat-loading";
+                stat.innerHTML = `<i class="fa fa-circle-o-notch fa-spin me-1"></i>Buscando...`;
+            } else {
+                state.loadingMore = true;
+            }
 
             try {
-                const cur = Array.from(S.pending);
-                const d = [["location_id.usage", "=", "internal"], ["quantity", ">", 0], ["lot_id", "!=", false]];
-                if (S.productId) d.push(["product_id", "=", S.productId]);
-                if (cur.length) { d.push("|"); d.push("&"); d.push(["x_tiene_hold", "=", false]); d.push(["reserved_quantity", "=", 0]); d.push(["lot_id", "in", cur]); }
-                else { d.push(["x_tiene_hold", "=", false]); d.push(["reserved_quantity", "=", 0]); }
-                if (S.filters.lot_name) d.push(["lot_id.name", "ilike", S.filters.lot_name]);
-                if (S.filters.bloque) d.push(["lot_id.x_bloque", "ilike", S.filters.bloque]);
-                if (S.filters.atado) d.push(["lot_id.x_atado", "ilike", S.filters.atado]);
-                if (S.filters.alto_min) d.push(["lot_id.x_alto", ">=", parseFloat(S.filters.alto_min)]);
-                if (S.filters.ancho_min) d.push(["lot_id.x_ancho", ">=", parseFloat(S.filters.ancho_min)]);
+                const currentIds = Array.from(state.pending);
 
-                const flds = ["lot_id", "product_id", "location_id", "quantity", "reserved_quantity", "x_grosor", "x_alto", "x_ancho", "x_bloque", "x_atado", "x_tipo", "x_color"];
-                const tot = await this.orm.searchCount("stock.quant", d);
-                const off = page * PS;
-                const qs = await this.orm.searchRead("stock.quant", d, flds, { limit: PS, offset: off, order: "lot_id" });
+                const domain = [
+                    ["location_id.usage", "=", "internal"],
+                    ["quantity", ">", 0],
+                    ["lot_id", "!=", false],
+                ];
 
-                if (reset || page === 0) S.quants = qs; else S.quants = [...S.quants, ...qs];
-                S.total = tot; S.page = page; S.hasMore = S.quants.length < tot;
-            } catch (err) {
-                bd.innerHTML = `<div class="stone-empty-state"><i class="fa fa-exclamation-triangle fa-2x text-danger"></i><div class="stone-empty-text mt-2 text-danger">${err.message}</div></div>`;
+                if (state.productId) {
+                    domain.push(["product_id", "=", state.productId]);
+                }
+
+                if (currentIds.length) {
+                    domain.push("|");
+                    domain.push("&");
+                    domain.push(["x_tiene_hold", "=", false]);
+                    domain.push(["reserved_quantity", "=", 0]);
+                    domain.push(["lot_id", "in", currentIds]);
+                } else {
+                    domain.push(["x_tiene_hold", "=", false]);
+                    domain.push(["reserved_quantity", "=", 0]);
+                }
+
+                if (state.filters.lot_name) {
+                    domain.push(["lot_id.name", "ilike", state.filters.lot_name]);
+                }
+
+                if (state.filters.bloque) {
+                    domain.push(["lot_id.x_bloque", "ilike", state.filters.bloque]);
+                }
+
+                if (state.filters.atado) {
+                    domain.push(["lot_id.x_atado", "ilike", state.filters.atado]);
+                }
+
+                if (state.filters.tipo) {
+                    domain.push(["lot_id.x_tipo", "=", state.filters.tipo]);
+                }
+
+                if (state.filters.alto_min) {
+                    domain.push(["lot_id.x_alto", ">=", parseFloat(state.filters.alto_min)]);
+                }
+
+                if (state.filters.ancho_min) {
+                    domain.push(["lot_id.x_ancho", ">=", parseFloat(state.filters.ancho_min)]);
+                }
+
+                const fields = [
+                    "lot_id",
+                    "product_id",
+                    "location_id",
+                    "quantity",
+                    "reserved_quantity",
+                    "x_grosor",
+                    "x_alto",
+                    "x_ancho",
+                    "x_bloque",
+                    "x_atado",
+                    "x_tipo",
+                    "x_color",
+                ];
+
+                const total = await this.orm.searchCount("stock.quant", domain);
+                const offset = page * PAGE_SIZE;
+
+                const quants = await this.orm.searchRead(
+                    "stock.quant",
+                    domain,
+                    fields,
+                    {
+                        limit: PAGE_SIZE,
+                        offset,
+                        order: "lot_id",
+                    }
+                );
+
+                if (reset || page === 0) {
+                    state.quants = quants;
+                } else {
+                    state.quants = [...state.quants, ...quants];
+                }
+
+                state.total = total;
+                state.page = page;
+                state.hasMore = state.quants.length < total;
+
+                for (const quant of quants) {
+                    const lotId = quant.lot_id ? quant.lot_id[0] : 0;
+                    if (lotId && state.pending.has(lotId)) {
+                        rememberQuant(quant);
+                    }
+                }
+            } catch (error) {
+                body.innerHTML = `
+                    <div class="hold-stone-empty-state">
+                        <i class="fa fa-exclamation-triangle fa-2x text-danger"></i>
+                        <div class="hold-stone-empty-text mt-2 text-danger">
+                            ${this._escapeHtml(error.message)}
+                        </div>
+                    </div>
+                `;
                 return;
-            } finally { S.loading = false; S.loadingMore = false; }
-            render();
+            } finally {
+                state.loading = false;
+                state.loadingMore = false;
+            }
+
+            renderTable();
         };
 
         const confirm = async () => {
-            const newIds = Array.from(S.pending);
+            const newIds = Array.from(state.pending);
             this.destroyPopup();
             await this._updateLotsAndM2(newIds);
             await this._refreshDetail();
         };
+
         const close = () => this.destroyPopup();
 
-        root.querySelector("#hp-x").addEventListener("click", close);
-        root.querySelector("#hp-cn").addEventListener("click", close);
-        root.querySelector("#hp-ok1").addEventListener("click", confirm);
-        root.querySelector("#hp-ok2").addEventListener("click", confirm);
-        root.querySelector("#hp-sa").addEventListener("click", selAll);
-        root.querySelector("#hp-ca").addEventListener("click", clrAll);
-        ov.addEventListener("click", e => { if (e.target === ov) close(); });
-        const kd = e => { if (e.key === "Escape") close(); };
-        document.addEventListener("keydown", kd); this._popupKeyHandler = kd;
+        root.querySelector("#hold-popup-close").addEventListener("click", close);
+        root.querySelector("#hold-popup-cancel").addEventListener("click", close);
+        root.querySelector("#hold-popup-confirm-top").addEventListener("click", confirm);
+        root.querySelector("#hold-popup-confirm-bottom").addEventListener("click", confirm);
+        root.querySelector("#hold-popup-select-all").addEventListener("click", selectAll);
+        root.querySelector("#hold-popup-clear-all").addEventListener("click", clearAll);
 
-        const sched = () => { if (timer) clearTimeout(timer); timer = setTimeout(() => load(0, true), 350); };
-        const bf = (id, k) => { const i = root.querySelector(`#${id}`); if (i) i.addEventListener("input", e => { S.filters[k] = e.target.value; sched(); }); };
-        bf("hf-lot", "lot_name"); bf("hf-blq", "bloque"); bf("hf-ata", "atado"); bf("hf-alt", "alto_min"); bf("hf-anc", "ancho_min");
-        if (ps) ps.addEventListener("change", e => { S.productId = e.target.value ? parseInt(e.target.value) : 0; load(0, true); });
+        overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) close();
+        });
 
-        loadProds().then(() => load(0, true));
+        const onKeyDown = (event) => {
+            if (event.key === "Escape") close();
+        };
+
+        document.addEventListener("keydown", onKeyDown);
+        this._popupKeyHandler = onKeyDown;
+
+        const scheduleSearch = () => {
+            if (searchTimer) clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => loadPage(0, true), 350);
+        };
+
+        const bindFilter = (id, key) => {
+            const input = root.querySelector(`#${id}`);
+            if (!input) return;
+
+            const handler = (event) => {
+                state.filters[key] = event.target.value;
+                scheduleSearch();
+            };
+
+            input.addEventListener("input", handler);
+            input.addEventListener("change", handler);
+        };
+
+        bindFilter("hold-filter-lot", "lot_name");
+        bindFilter("hold-filter-block", "bloque");
+        bindFilter("hold-filter-bundle", "atado");
+        bindFilter("hold-filter-height", "alto_min");
+        bindFilter("hold-filter-width", "ancho_min");
+        bindFilter("hold-filter-type", "tipo");
+
+        if (productSelect) {
+            productSelect.addEventListener("change", (event) => {
+                state.productId = event.target.value ? parseInt(event.target.value, 10) : 0;
+                loadPage(0, true);
+            });
+        }
+
+        loadProducts().then(() => loadPage(0, true));
     }
 
     destroyPopup() {
-        if (this._popupObserver) { this._popupObserver.disconnect(); this._popupObserver = null; }
-        if (this._popupKeyHandler) { document.removeEventListener("keydown", this._popupKeyHandler); this._popupKeyHandler = null; }
-        if (this._popupRoot) { this._popupRoot.remove(); this._popupRoot = null; }
+        if (this._popupObserver) {
+            this._popupObserver.disconnect();
+            this._popupObserver = null;
+        }
+
+        if (this._popupKeyHandler) {
+            document.removeEventListener("keydown", this._popupKeyHandler);
+            this._popupKeyHandler = null;
+        }
+
+        if (this._popupRoot) {
+            this._popupRoot.remove();
+            this._popupRoot = null;
+        }
     }
 }
 
 HoldStoneButton.template = "stock_lot_dimensions.HoldStoneButton";
-registry.category("fields").add("hold_stone_button", { component: HoldStoneButton, displayName: "Botón Selección Piedra (Hold)" });
+
+registry.category("fields").add("hold_stone_button", {
+    component: HoldStoneButton,
+    displayName: "Botón Selección Piedra (Hold)",
+});
