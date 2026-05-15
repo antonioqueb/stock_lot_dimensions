@@ -153,18 +153,18 @@
                                 <t t-if="line.product_id.type != 'service'">
                                     <table class="table table-sm mb-0" style="font-size: 8.5px; width: 100%;">
                                         <thead>
-                                            <tr style="background-color: #2f2f2f; color: #fff;">
-                                                <th style="padding: 4px; width: 30px;">#</th>
-                                                <th style="padding: 4px;">Lote</th>
-                                                <th style="padding: 4px;">Bloque</th>
-                                                <th style="padding: 4px;">Atado</th>
-                                                <th style="padding: 4px;">No. Placa</th>
-                                                <th style="padding: 4px;">Color</th>
-                                                <th class="text-center" style="padding: 4px;">Grosor</th>
-                                                <th class="text-end" style="padding: 4px;">Alto</th>
-                                                <th class="text-end" style="padding: 4px;">Ancho</th>
-                                                <th class="text-end" style="padding: 4px;">m²</th>
-                                                <th class="text-end" style="padding: 4px;">Subtotal</th>
+                                            <tr style="background-color: #2f2f2f;">
+                                                <th style="padding: 4px; width: 30px; color: #fff; background-color: #2f2f2f;">#</th>
+                                                <th style="padding: 4px; color: #fff; background-color: #2f2f2f;">Lote</th>
+                                                <th style="padding: 4px; color: #fff; background-color: #2f2f2f;">Bloque</th>
+                                                <th style="padding: 4px; color: #fff; background-color: #2f2f2f;">Atado</th>
+                                                <th style="padding: 4px; color: #fff; background-color: #2f2f2f;">No. Placa</th>
+                                                <th style="padding: 4px; color: #fff; background-color: #2f2f2f;">Color</th>
+                                                <th class="text-center" style="padding: 4px; color: #fff; background-color: #2f2f2f;">Grosor</th>
+                                                <th class="text-end" style="padding: 4px; color: #fff; background-color: #2f2f2f;">Alto</th>
+                                                <th class="text-end" style="padding: 4px; color: #fff; background-color: #2f2f2f;">Ancho</th>
+                                                <th class="text-end" style="padding: 4px; color: #fff; background-color: #2f2f2f;">m²</th>
+                                                <th class="text-end" style="padding: 4px; color: #fff; background-color: #2f2f2f;">Subtotal</th>
                                             </tr>
                                         </thead>
                                         <tbody>
