@@ -70,7 +70,7 @@
                         <!-- ================= INFORMACIÓN GENERAL (3 COLUMNAS) ================= -->
                         <div class="row mb-3" id="informations">
                             <div class="col-4">
-                                <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                                <div class="mb-1">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
                                 </div>
                                 <div style="line-height: 1.2; padding-left: 2px;">
@@ -232,34 +232,36 @@
                         </div>
 
                         <!-- ================= TOTALES GENERALES ================= -->
-                        <div class="row mt-2">
-                            <div class="col-6"></div>
-                            <div class="col-6">
-                                <table class="table table-sm table-borderless" style="font-size: 9px; border-top: 2px solid #000;">
-                                    <tr>
-                                        <td class="text-end"><strong>TOTAL m²</strong></td>
-                                        <td class="text-end" style="width: 30%;">
-                                            <span t-esc="'%.2f' % o.total_m2"/>
-                                        </td>
-                                    </tr>
-                                    <tr style="font-weight: bold;">
-                                        <td class="text-end">SUBTOTAL</td>
-                                        <td class="text-end">
-                                            <span t-field="o.total_con_precio" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </td>
-                                    </tr>
-                                    <tr style="font-weight: bold; color: #555;">
-                                        <td class="text-end">IMPUESTOS (16%)</td>
-                                        <td class="text-end">
-                                            <span t-esc="o.total_con_precio * 0.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </td>
-                                    </tr>
-                                    <tr style="font-weight: 900; font-size: 11px; border-top: 1px solid #ccc; background-color: #f1f1f1;">
-                                        <td class="text-end pt-2 pb-2">TOTAL</td>
-                                        <td class="text-end pt-2 pb-2">
-                                            <span t-esc="o.total_con_precio * 1.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                        </td>
-                                    </tr>
+                        <div class="row mt-3">
+                            <div class="col-7"></div>
+                            <div class="col-5">
+                                <table style="font-size: 9.5px; width: 100%; border-collapse: collapse; border: 1px solid #bbb;">
+                                    <tbody>
+                                        <tr style="border-bottom: 1px solid #e5e5e5;">
+                                            <td style="padding: 5px 10px; text-transform: uppercase; color: #555; letter-spacing: 0.3px;">Total m²</td>
+                                            <td style="padding: 5px 10px; width: 50%; text-align: right; font-variant-numeric: tabular-nums;">
+                                                <span t-esc="'%.2f' % o.total_m2"/>
+                                            </td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #e5e5e5;">
+                                            <td style="padding: 5px 10px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.3px;">Subtotal</td>
+                                            <td style="padding: 5px 10px; text-align: right; font-weight: bold; font-variant-numeric: tabular-nums;">
+                                                <span t-field="o.total_con_precio" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                            </td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #e5e5e5;">
+                                            <td style="padding: 5px 10px; text-transform: uppercase; color: #555; letter-spacing: 0.3px;">Impuestos (16%)</td>
+                                            <td style="padding: 5px 10px; text-align: right; color: #555; font-variant-numeric: tabular-nums;">
+                                                <span t-esc="o.total_con_precio * 0.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                            </td>
+                                        </tr>
+                                        <tr style="background-color: #2f2f2f; color: #fff;">
+                                            <td style="padding: 8px 10px; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Total</td>
+                                            <td style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 11px; font-variant-numeric: tabular-nums;">
+                                                <span t-esc="o.total_con_precio * 1.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                            </td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                             </div>
                         </div>
