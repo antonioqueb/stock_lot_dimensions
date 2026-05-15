@@ -126,7 +126,8 @@
 
                             .report-hold-order-detail .hold-line-product {
                                 width: 42%;
-                                font-weight: 800;
+                                font-size: 9px;
+                                font-weight: 800;  
                                 text-transform: uppercase;
                                 overflow-wrap: break-word;
                                 word-break: normal;
