@@ -28,15 +28,6 @@
                             tbody { display: table-row-group; }
                             tfoot { display: table-row-group; }
                             tr { page-break-inside: avoid; break-inside: avoid; }
-
-                            /* Elimina bordes residuales en tablas borderless del encabezado */
-                            #informations .table-borderless,
-                            #informations .table-borderless td,
-                            #informations .table-borderless th,
-                            #informations .table-borderless tr {
-                                border: 0 !important;
-                                box-shadow: none !important;
-                            }
                         </style>
 
                         <!-- ================= ENCABEZADO ================= -->
@@ -69,66 +60,91 @@
 
                         <!-- ================= INFORMACIÓN GENERAL (3 COLUMNAS) ================= -->
                         <div class="row mb-3" id="informations">
+                            <!-- CLIENTE -->
                             <div class="col-4">
-                                <div class="mb-1">
-                                    <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
-                                </div>
-                                <div style="line-height: 1.2; padding-left: 2px;">
-                                    <span style="font-weight: bold; font-size: 12px;" t-field="o.partner_id.name"/><br/>
-                                    <span t-if="o.partner_id.vat">RFC: <span t-field="o.partner_id.vat"/></span>
-                                </div>
-                                <div class="mt-1" style="border-top: 1px dotted #9f9f9fff; padding-top: 1px;">
-                                    <strong style="font-size: 9px; text-transform: uppercase; color: #555; display: block;">Dirección de Entrega:</strong>
-                                    <div style="font-size: 9px; color: #333; line-height: 1.1; margin-top: 2px; white-space: pre-line;">
-                                        <span t-field="o.delivery_address"/>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-4">
-                                <div class="mb-1">
-                                    <strong style="font-size: 10px; text-transform: uppercase;">Referencia</strong>
-                                </div>
-                                <table class="table table-borderless table-sm mb-0 p-0" style="width: 100%;">
-                                    <tr t-if="o.project_id">
-                                        <td class="p-0" style="width: 30%;"><strong>Proyecto:</strong></td>
-                                        <td class="p-0"><span t-field="o.project_id.name"/></td>
-                                    </tr>
-                                    <tr t-if="o.arquitecto_id">
-                                        <td class="p-0"><strong>Arquitecto:</strong></td>
-                                        <td class="p-0"><span t-field="o.arquitecto_id.name"/></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="p-0"><strong>Vendedor:</strong></td>
-                                        <td class="p-0"><span t-field="o.user_id.name"/></td>
-                                    </tr>
+                                <table style="font-size: 9px; width: 100%; border-collapse: collapse; border: 1px solid #bbb;">
+                                    <thead>
+                                        <tr style="background-color: #2f2f2f; color: #fff;">
+                                            <th style="padding: 5px 8px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Cliente</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr style="border-bottom: 1px solid #e5e5e5;">
+                                            <td style="padding: 6px 8px;">
+                                                <span style="font-weight: bold; font-size: 11px;" t-field="o.partner_id.name"/>
+                                                <span t-if="o.partner_id.vat" style="display: block; font-size: 8.5px; color: #555; margin-top: 2px;">RFC: <span t-field="o.partner_id.vat"/></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 6px 8px;">
+                                                <strong style="font-size: 8.5px; text-transform: uppercase; color: #555; display: block; letter-spacing: 0.3px;">Dirección de Entrega</strong>
+                                                <div style="font-size: 9px; color: #333; line-height: 1.25; margin-top: 3px; white-space: pre-line;">
+                                                    <span t-field="o.delivery_address"/>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                             </div>
 
+                            <!-- REFERENCIA -->
                             <div class="col-4">
-                                <div class="mb-1">
-                                    <strong style="font-size: 10px; text-transform: uppercase;">Estado</strong>
-                                </div>
-                                <table class="table table-borderless table-sm mb-1 p-0" style="width: 100%;">
-                                    <tr>
-                                        <td class="p-0"><strong>Fecha Emisión:</strong></td>
-                                        <td class="p-0 text-end"><span t-field="o.fecha_orden" t-options='{"widget": "date"}'/></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="p-0"><strong>Moneda:</strong></td>
-                                        <td class="p-0 text-end"><span t-field="o.currency_id.name"/></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="p-0 pt-1"><strong>Estatus:</strong></td>
-                                        <td class="p-0 pt-1 text-end">
-                                            <span style="font-weight: 900; text-transform: uppercase;">
-                                                <t t-if="o.state == 'draft'">Borrador</t>
-                                                <t t-if="o.state == 'confirmed'">Confirmada</t>
-                                                <t t-if="o.state == 'done'">Finalizada</t>
-                                                <t t-if="o.state == 'cancel'">Cancelada</t>
-                                            </span>
-                                        </td>
-                                    </tr>
+                                <table style="font-size: 9px; width: 100%; border-collapse: collapse; border: 1px solid #bbb;">
+                                    <thead>
+                                        <tr style="background-color: #2f2f2f; color: #fff;">
+                                            <th colspan="2" style="padding: 5px 8px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Referencia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-if="o.project_id" style="border-bottom: 1px solid #e5e5e5;">
+                                            <td style="padding: 5px 8px; width: 38%; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Proyecto</td>
+                                            <td style="padding: 5px 8px; font-weight: 600;"><span t-field="o.project_id.name"/></td>
+                                        </tr>
+                                        <tr t-if="o.arquitecto_id" style="border-bottom: 1px solid #e5e5e5;">
+                                            <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Arquitecto</td>
+                                            <td style="padding: 5px 8px; font-weight: 600;"><span t-field="o.arquitecto_id.name"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Vendedor</td>
+                                            <td style="padding: 5px 8px; font-weight: 600;"><span t-field="o.user_id.name"/></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- ESTADO -->
+                            <div class="col-4">
+                                <table style="font-size: 9px; width: 100%; border-collapse: collapse; border: 1px solid #bbb;">
+                                    <thead>
+                                        <tr style="background-color: #2f2f2f; color: #fff;">
+                                            <th colspan="2" style="padding: 5px 8px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr style="border-bottom: 1px solid #e5e5e5;">
+                                            <td style="padding: 5px 8px; width: 50%; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Fecha Emisión</td>
+                                            <td style="padding: 5px 8px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;">
+                                                <span t-field="o.fecha_orden" t-options='{"widget": "date"}'/>
+                                            </td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #e5e5e5;">
+                                            <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Moneda</td>
+                                            <td style="padding: 5px 8px; text-align: right; font-weight: 600;">
+                                                <span t-field="o.currency_id.name"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Estatus</td>
+                                            <td style="padding: 5px 8px; text-align: right;">
+                                                <span style="font-weight: 900; text-transform: uppercase;">
+                                                    <t t-if="o.state == 'draft'">Borrador</t>
+                                                    <t t-if="o.state == 'confirmed'">Confirmada</t>
+                                                    <t t-if="o.state == 'done'">Finalizada</t>
+                                                    <t t-if="o.state == 'cancel'">Cancelada</t>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                             </div>
                         </div>
