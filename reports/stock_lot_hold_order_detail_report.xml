@@ -30,7 +30,7 @@
                             }
 
                             .report-hold-order-detail {
-                                padding-top: 0;
+                                padding-top: 2mm;
                                 clear: both;
                             }
 
@@ -46,57 +46,18 @@
                                 break-inside: avoid;
                             }
 
-                            .report-hold-order-detail .report-main-header {
-                                width: 100%;
-                                border-bottom: 1px solid #000;
-                                padding: 0 0 3px 0;
-                                margin: 0 0 5px 0;
-                                line-height: 1;
-                            }
-
-                            .report-hold-order-detail .report-main-header-table {
-                                width: 100%;
-                                border-collapse: collapse;
-                                table-layout: fixed;
-                            }
-
-                            .report-hold-order-detail .report-main-header-table td {
-                                border: none;
-                                padding: 0;
-                                vertical-align: middle;
-                            }
-
-                            .report-hold-order-detail .report-main-title {
-                                font-size: 12px;
-                                font-weight: 800;
-                                letter-spacing: 0.6px;
-                                text-transform: uppercase;
-                                line-height: 1;
-                                margin: 0;
-                                padding: 0;
-                            }
-
-                            .report-hold-order-detail .report-main-date {
-                                font-size: 7px;
-                                color: #777;
-                                line-height: 1;
-                                margin: 0;
-                                padding: 0;
-                                text-align: right;
-                            }
-
                             .report-hold-order-detail .detail-lines-wrapper {
                                 clear: both;
                                 display: block;
                                 width: 100%;
-                                margin-top: 6px;
+                                margin-top: 8px;
                             }
 
                             .report-hold-order-detail .hold-line-card {
                                 clear: both;
                                 display: block;
                                 width: 100%;
-                                margin: 0 0 14px 0;
+                                margin: 0 0 16px 0;
                                 border: 1px solid #bbb;
                                 page-break-inside: auto;
                                 break-inside: auto;
@@ -105,7 +66,7 @@
                             .report-hold-order-detail .hold-line-header {
                                 page-break-after: avoid;
                                 break-after: avoid;
-                                padding: 5px 7px;
+                                padding: 5px 8px;
                                 background: #2f2f2f;
                                 color: #fff;
                                 border-bottom: 1px solid #bbb;
@@ -121,16 +82,17 @@
                                 border: none;
                                 padding: 0;
                                 vertical-align: middle;
-                                line-height: 1.2;
+                                line-height: 1.15;
                             }
 
                             .report-hold-order-detail .hold-line-product {
                                 width: 42%;
                                 font-size: 9px;
-                                font-weight: 800;  
+                                font-weight: 800;
                                 text-transform: uppercase;
                                 overflow-wrap: break-word;
                                 word-break: normal;
+                                line-height: 1.1;
                             }
 
                             .report-hold-order-detail .hold-line-summary {
@@ -138,7 +100,7 @@
                                 text-align: right;
                                 font-size: 9px;
                                 white-space: normal;
-                                line-height: 1.2;
+                                line-height: 1.15;
                             }
 
                             .report-hold-order-detail .hold-lots-table {
@@ -150,6 +112,12 @@
                                 font-size: 8.5px;
                             }
 
+                            /*
+                                Protección principal:
+                                wkhtmltopdf puede repetir THEAD en saltos de página
+                                y superponerlo con filas. Se desactiva la repetición
+                                automática del encabezado para evitar empalmes.
+                            */
                             .report-hold-order-detail .hold-lots-table thead {
                                 display: table-row-group;
                             }
@@ -170,27 +138,40 @@
 
                             .report-hold-order-detail .hold-lots-table th,
                             .report-hold-order-detail .hold-lots-table td {
-                                padding: 3px 4px;
-                                line-height: 1.12;
                                 vertical-align: top;
                                 overflow-wrap: break-word;
                                 word-break: normal;
                             }
 
+                            /*
+                                Cabecera de tabla más delgada.
+                                Se conserva el mismo estilo visual:
+                                fondo gris claro, texto fuerte, borde inferior negro.
+                            */
                             .report-hold-order-detail .hold-lots-table th {
+                                padding: 2px 4px;
+                                line-height: 1;
+                                font-size: 8px;
                                 background-color: #f8f8f8;
                                 border-bottom: 1px solid #000;
                                 font-weight: 800;
+                                text-transform: uppercase;
+                                vertical-align: middle;
                             }
 
                             .report-hold-order-detail .hold-lots-table tbody td {
+                                padding: 4px;
+                                line-height: 1.15;
                                 border-bottom: 1px solid #e5e5e5;
                             }
 
                             .report-hold-order-detail .hold-lots-table tfoot td {
+                                padding: 3px 4px;
+                                line-height: 1.1;
                                 border-top: 2px solid #000;
                                 background-color: #f8f8f8;
                                 font-weight: bold;
+                                vertical-align: middle;
                             }
 
                             .report-hold-order-detail .col-index { width: 4%; }
@@ -225,35 +206,29 @@
                             }
                         </style>
 
-                        <!-- ================= ENCABEZADO COMPACTO ================= -->
-                        <div class="report-main-header">
-                            <table class="report-main-header-table">
-                                <tr>
-                                    <td style="width: 70%;">
-                                        <div class="report-main-title">
-                                            Orden de Reserva
-                                            <span t-field="o.name" style="margin-left: 6px; color: #333;"/>
-                                        </div>
-                                    </td>
-                                    <td style="width: 30%;">
-                                        <div class="report-main-date">
-                                            Impreso:
-                                            <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </table>
+                        <!-- ================= ENCABEZADO ================= -->
+                        <div class="report-main-header row border-bottom pb-2 mb-2"
+                             style="border-color: #000 !important; align-items: center;">
+                            <div class="col-8">
+                                <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
+                                    Orden de Reserva <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
+                                </h4>
+                            </div>
+                            <div class="col-4 text-end">
+                                <div style="font-size: 8px; color: #999; margin-top: 4px;">
+                                    Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- ================= ALERTA DE VENCIMIENTO ================= -->
-                        <div class="expiration-alert row mb-3" t-if="o.fecha_expiracion and o.state not in ['done', 'cancel']">
+                        <div class="expiration-alert row mb-4" t-if="o.fecha_expiracion and o.state not in ['done', 'cancel']">
                             <div class="col-12">
-                                <div style="border: 3px solid #ff0000; background-color: #fff5f5; padding: 7px; width: 100%;">
-                                    <div style="color: #ff0000; font-weight: 900; font-size: 14px; text-transform: uppercase; line-height: 1.1;">
-                                        RESERVA CON VENCIMIENTO:
-                                        <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
+                                <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
+                                    <div style="color: #ff0000; font-weight: 900; font-size: 16px; text-transform: uppercase;">
+                                        RESERVA CON VENCIMIENTO: <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
                                     </div>
-                                    <div style="color: #333; font-size: 10px; margin-top: 3px; font-style: italic; line-height: 1.15;">
+                                    <div style="color: #333; font-size: 12px; margin-top: 3px; font-style: italic;">
                                         A partir de esa fecha, las placas se liberan automáticamente y podrán ser asignadas a otro proyecto sin previo aviso.
                                     </div>
                                 </div>
@@ -261,7 +236,7 @@
                         </div>
 
                         <!-- ================= INFORMACIÓN GENERAL ================= -->
-                        <div class="info-block row mb-2" id="informations">
+                        <div class="info-block row mb-3" id="informations">
                             <div class="col-4">
                                 <div class="mb-1" style="border-bottom: 1px solid #ccc; padding-bottom: 2px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
@@ -439,7 +414,7 @@
                         <!-- ================= NOTAS ================= -->
                         <div t-if="o.notas" class="notes-block row mt-2">
                             <div class="col-12">
-                                <div style="border: 1px dashed #ccc; padding: 8px; margin-top: 4px;">
+                                <div style="border: 1px dashed #ccc; padding: 10px; margin-top: 5px;">
                                     <strong style="font-size: 9px; text-transform: uppercase; color: #555;">Notas:</strong>
                                     <div style="font-size: 9px; white-space: pre-wrap;" t-esc="o.notas"/>
                                 </div>
@@ -474,8 +449,8 @@
                         </div>
 
                         <!-- ================= FOOTER / FIRMAS ================= -->
-                        <div class="signature-block" style="margin-top: 42px; width: 100%;">
-                            <div class="row" style="margin-top: 32px; margin-bottom: 10px;">
+                        <div class="signature-block" style="margin-top: 50px; width: 100%;">
+                            <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                                 <div class="col-1"></div>
                                 <div class="col-4 text-center">
                                     <div style="border-top: 1px solid #000; padding-top: 5px;">
