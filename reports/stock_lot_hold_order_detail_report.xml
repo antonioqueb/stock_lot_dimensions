@@ -28,6 +28,15 @@
                             tbody { display: table-row-group; }
                             tfoot { display: table-row-group; }
                             tr { page-break-inside: avoid; break-inside: avoid; }
+
+                            /* Elimina bordes residuales en tablas borderless del encabezado */
+                            #informations .table-borderless,
+                            #informations .table-borderless td,
+                            #informations .table-borderless th,
+                            #informations .table-borderless tr {
+                                border: 0 !important;
+                                box-shadow: none !important;
+                            }
                         </style>
 
                         <!-- ================= ENCABEZADO ================= -->
