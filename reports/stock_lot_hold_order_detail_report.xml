@@ -58,31 +58,41 @@
                                 display: block;
                                 width: 100%;
                                 margin: 0 0 16px 0;
+                                padding: 0;
                                 border: 1px solid #bbb;
                                 page-break-inside: auto;
                                 break-inside: auto;
                             }
 
+                            /*
+                                Barra oscura del producto.
+                                Ajustada para que quede delgada aunque incluya:
+                                Placas | m² | Precio/m² | Total.
+                            */
                             .report-hold-order-detail .hold-line-header {
                                 page-break-after: avoid;
                                 break-after: avoid;
-                                padding: 5px 8px;
+                                padding: 0;
+                                margin: 0;
                                 background: #2f2f2f;
                                 color: #fff;
-                                border-bottom: 1px solid #bbb;
+                                border-bottom: 4px solid #111827;
                             }
 
                             .report-hold-order-detail .hold-line-summary-table {
                                 width: 100%;
                                 table-layout: fixed;
                                 border-collapse: collapse;
+                                margin: 0;
+                                padding: 0;
                             }
 
                             .report-hold-order-detail .hold-line-summary-table td {
                                 border: none;
-                                padding: 0;
+                                padding: 4px 8px;
                                 vertical-align: middle;
-                                line-height: 1.15;
+                                line-height: 1;
+                                height: 20px;
                             }
 
                             .report-hold-order-detail .hold-line-product {
@@ -90,17 +100,27 @@
                                 font-size: 9px;
                                 font-weight: 800;
                                 text-transform: uppercase;
-                                overflow-wrap: break-word;
-                                word-break: normal;
-                                line-height: 1.1;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                line-height: 1;
                             }
 
                             .report-hold-order-detail .hold-line-summary {
                                 width: 58%;
                                 text-align: right;
-                                font-size: 9px;
-                                white-space: normal;
-                                line-height: 1.15;
+                                font-size: 8px;
+                                white-space: nowrap;
+                                line-height: 1;
+                            }
+
+                            .report-hold-order-detail .hold-line-summary strong {
+                                font-weight: 800;
+                            }
+
+                            .report-hold-order-detail .hold-line-separator {
+                                display: inline-block;
+                                margin: 0 5px;
                             }
 
                             .report-hold-order-detail .hold-lots-table {
@@ -110,6 +130,7 @@
                                 page-break-inside: auto;
                                 break-inside: auto;
                                 font-size: 8.5px;
+                                margin: 0;
                             }
 
                             /*
@@ -143,11 +164,6 @@
                                 word-break: normal;
                             }
 
-                            /*
-                                Cabecera de tabla más delgada.
-                                Se conserva el mismo estilo visual:
-                                fondo gris claro, texto fuerte, borde inferior negro.
-                            */
                             .report-hold-order-detail .hold-lots-table th {
                                 padding: 2px 4px;
                                 line-height: 1;
@@ -168,7 +184,7 @@
                             .report-hold-order-detail .hold-lots-table tfoot td {
                                 padding: 3px 4px;
                                 line-height: 1.1;
-                                border-top: 2px solid #000;
+                                border-top: 4px solid #111827;
                                 background-color: #f8f8f8;
                                 font-weight: bold;
                                 vertical-align: middle;
@@ -316,13 +332,13 @@
                                                 <td class="hold-line-summary">
                                                     <strong>Placas:</strong>
                                                     <span t-esc="len(line.lot_ids) if line.product_id.type != 'service' else '-'"/>
-                                                    <span style="margin: 0 4px;">|</span>
+                                                    <span class="hold-line-separator">|</span>
                                                     <strong>m²:</strong>
                                                     <span t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/>
-                                                    <span style="margin: 0 4px;">|</span>
+                                                    <span class="hold-line-separator">|</span>
                                                     <strong>Precio/m²:</strong>
                                                     <span t-esc="'%s %.2f' % ((o.currency_id.symbol or ''), (line.precio_unitario or 0.0))"/>
-                                                    <span style="margin: 0 4px;">|</span>
+                                                    <span class="hold-line-separator">|</span>
                                                     <strong>Total:</strong>
                                                     <span t-esc="'%s %.2f' % ((o.currency_id.symbol or ''), (line.precio_total or 0.0))"/>
                                                 </td>
