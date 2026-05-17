@@ -330,17 +330,7 @@ class StockLotHoldOrder(models.Model):
 
         products = list(product_groups.values())
 
-        notes = (
-            f'=== CONVERTIDO DESDE ORDEN DE RESERVA ===\n'
-            f'Orden: {self.name}\n'
-            f'Fecha: {self.fecha_orden.strftime("%d/%m/%Y %H:%M")}\n'
-        )
-        if self.project_id:
-            notes += f'Proyecto: {self.project_id.name}\n'
-        if self.arquitecto_id:
-            notes += f'Arquitecto: {self.arquitecto_id.name}\n'
-        if self.notas:
-            notes += f'\n{self.notas}'
+        notes = self.notas or ''
 
         pricelist = self.env['product.pricelist'].search([
             ('name', '=', self.currency_id.name)
