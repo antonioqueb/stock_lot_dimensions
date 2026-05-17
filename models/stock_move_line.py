@@ -1,420 +1,702 @@
 # -*- coding: utf-8 -*-
 # models/stock_move_line.py
+
+import logging
+
 from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
+
 from .utils.lot_dimension_sync import LotDimensionSync
 from .utils.notification_builder import NotificationBuilder
 from .utils.photo_helpers import PhotoHelper
-# ✅ IMPORTACIÓN AGREGADA AQUÍ ABAJO
-from .utils.hold_validator import HoldValidator 
-import logging
+from .utils.hold_validator import HoldValidator
 
 _logger = logging.getLogger(__name__)
 
 
 class StockMoveLine(models.Model):
     _inherit = 'stock.move.line'
-    
+
+    # Estados donde una línea de movimiento sigue comprometiendo el lote.
+    # Se excluye únicamente cancel.
+    _LOT_COMMITMENT_STATES = [
+        'draft',
+        'waiting',
+        'confirmed',
+        'partially_available',
+        'assigned',
+        'done',
+    ]
+
     # ==================== CAMPOS TEMPORALES DE DIMENSIONES ====================
+
     x_color_temp = fields.Char(
         string='Color',
-        help='Color del producto (se guardará en el lote)'
+        help='Color del producto (se guardará en el lote)',
     )
 
+    # Corrección: fields.Char no acepta digits.
     x_grosor_temp = fields.Char(
         string='Grosor (cm)',
-        digits=(10, 2),
-        help='Grosor del producto en centímetros (se guardará en el lote)'
+        help='Grosor del producto en centímetros (se guardará en el lote)',
     )
-    
+
     x_alto_temp = fields.Float(
         string='Alto (m)',
         digits=(10, 4),
-        help='Alto del producto en metros (se guardará en el lote)'
+        help='Alto del producto en metros (se guardará en el lote)',
     )
-    
+
     x_ancho_temp = fields.Float(
         string='Ancho (m)',
         digits=(10, 4),
-        help='Ancho del producto en metros (se guardará en el lote)'
+        help='Ancho del producto en metros (se guardará en el lote)',
     )
-    
+
     x_tipo_temp = fields.Selection(
         [('placa', 'Placa'), ('formato', 'Formato'), ('pieza', 'Pieza')],
         string='Tipo',
-        help='Tipo de producto (se guardará en el lote)'
+        help='Tipo de producto (se guardará en el lote)',
     )
-    
+
     x_numero_placa_temp = fields.Char(
-    string='No. Placa',
-        help='Número de placa (se guardará en el lote)'
+        string='No. Placa',
+        help='Número de placa (se guardará en el lote)',
     )
+
     x_bloque_temp = fields.Char(
         string='Bloque',
-        help='Identificación del bloque de origen (se guardará en el lote)'
+        help='Identificación del bloque de origen (se guardará en el lote)',
     )
-    
+
     x_atado_temp = fields.Char(
         string='Atado',
-        help='Identificación del atado (se guardará en el lote)'
+        help='Identificación del atado (se guardará en el lote)',
     )
-    
+
     x_grupo_temp = fields.Many2many(
         'stock.lot.group',
         string='Grupo',
-        help='Grupos del lote (se guardarán en el lote)'
+        help='Grupos del lote (se guardarán en el lote)',
     )
-    
+
     x_pedimento_temp = fields.Char(
         string='Pedimento',
-        help='Número de pedimento (se guardará en el lote)'
+        help='Número de pedimento (se guardará en el lote)',
     )
-    
+
     x_contenedor_temp = fields.Char(
         string='Contenedor',
-        help='Número de contenedor (se guardará en el lote)'
+        help='Número de contenedor (se guardará en el lote)',
     )
-    
+
     x_referencia_proveedor_temp = fields.Char(
-    
         string='Referencia Proveedor',
-        help='Referencia del proveedor (se guardará en el lote)'
+        help='Referencia del proveedor (se guardará en el lote)',
     )
-    x_proveedor_temp = fields.Char(string='Proveedor')
-    x_origen_temp = fields.Char(string='Origen')
+
+    x_proveedor_temp = fields.Char(
+        string='Proveedor',
+    )
+
+    x_origen_temp = fields.Char(
+        string='Origen',
+    )
+
+    x_peso_temp = fields.Float(
+        string='Peso (kg)',
+        digits=(10, 3),
+        help='Peso del producto en kg (se guardará en el lote)',
+    )
+
     # ==================== CAMPOS COMPUTADOS ====================
+
     x_is_incoming = fields.Boolean(
         string='Es Recepción',
         compute='_compute_is_incoming',
-        store=False
+        store=False,
     )
-    
+
     # ==================== CAMPOS RELATED DEL LOTE ====================
+
     x_color_lote = fields.Char(
         related='lot_id.x_color',
         string='Color Lote',
         readonly=True,
-        store=False
+        store=False,
     )
 
     x_grosor_lote = fields.Char(
         related='lot_id.x_grosor',
         string='Grosor Lote (cm)',
         readonly=True,
-        store=False
+        store=False,
     )
-    
+
     x_alto_lote = fields.Float(
         related='lot_id.x_alto',
         string='Alto Lote (m)',
         readonly=True,
-        store=False
+        store=False,
     )
-    
+
     x_ancho_lote = fields.Float(
         related='lot_id.x_ancho',
         string='Ancho Lote (m)',
         readonly=True,
-        store=False
+        store=False,
     )
-    
+
     x_tipo_lote = fields.Selection(
         related='lot_id.x_tipo',
         string='Tipo Lote',
         readonly=True,
-        store=False
+        store=False,
     )
-    
+
     x_numero_placa_lote = fields.Char(
         related='lot_id.x_numero_placa',
         string='No. Placa Lote',
         readonly=True,
-        store=False
+        store=False,
     )
 
     x_bloque_lote = fields.Char(
         related='lot_id.x_bloque',
         string='Bloque Lote',
         readonly=True,
-        store=False
+        store=False,
     )
-    
+
     x_atado_lote = fields.Char(
         related='lot_id.x_atado',
         string='Atado Lote',
         readonly=True,
-        store=False
+        store=False,
     )
-    
+
     x_grupo_lote = fields.Many2many(
         related='lot_id.x_grupo',
         string='Grupo Lote',
         readonly=True,
-        store=False
+        store=False,
     )
-    
+
     x_pedimento_lote = fields.Char(
         related='lot_id.x_pedimento',
         string='Pedimento Lote',
         readonly=True,
-        store=False
+        store=False,
     )
-    
+
     x_contenedor_lote = fields.Char(
         related='lot_id.x_contenedor',
         string='Contenedor Lote',
         readonly=True,
-        store=False
+        store=False,
     )
-    
+
     x_referencia_proveedor_lote = fields.Char(
         related='lot_id.x_referencia_proveedor',
         string='Ref. Proveedor Lote',
         readonly=True,
-        store=False
+        store=False,
     )
 
-    x_proveedor_lote = fields.Char(related='lot_id.x_proveedor', string='Proveedor Lote', readonly=True)
-    x_origen_lote = fields.Char(related='lot_id.x_origen', string='Origen Lote', readonly=True)
-    
+    x_proveedor_lote = fields.Char(
+        related='lot_id.x_proveedor',
+        string='Proveedor Lote',
+        readonly=True,
+    )
+
+    x_origen_lote = fields.Char(
+        related='lot_id.x_origen',
+        string='Origen Lote',
+        readonly=True,
+    )
+
     x_fotografia_principal_lote = fields.Binary(
         related='lot_id.x_fotografia_principal',
         string='Foto Lote',
         readonly=True,
-        store=False
+        store=False,
     )
-    
+
     x_cantidad_fotos_lote = fields.Integer(
         related='lot_id.x_cantidad_fotos',
         string='# Fotos Lote',
         readonly=True,
-        store=False
+        store=False,
     )
 
-    x_peso_temp = fields.Float(
-        string='Peso (kg)',
-        digits=(10, 3),
-        help='Peso del producto en kg (se guardará en el lote)'
-    )
-    
-    # ==================== MÉTODOS COMPUTADOS ====================
-    @api.depends('picking_id', 'picking_id.picking_type_code')
-    def _compute_is_incoming(self):
-        """Determinar si la línea pertenece a una recepción"""
+    # ==================== HELPERS DE VALIDACIÓN GLOBAL ====================
+
+    def _get_qty_field_name(self):
+        """
+        Odoo 19 usa quantity en stock.move.line.
+        Se conserva fallback a qty_done para evitar errores si alguna base trae compatibilidad.
+        """
+        return 'quantity' if 'quantity' in self._fields else 'qty_done'
+
+    def _get_line_reserved_qty(self, line):
+        qty_field = self._get_qty_field_name()
+        return float(getattr(line, qty_field, 0.0) or 0.0)
+
+    def _get_sale_order_from_move_line(self, line):
+        """
+        Resuelve la SO relacionada desde:
+        1. move_id.sale_line_id.order_id
+        2. picking.sale_id, si existe
+        3. picking.origin exacto
+        """
+        SaleOrder = self.env['sale.order'].sudo()
+
+        if line.move_id and line.move_id.sale_line_id and line.move_id.sale_line_id.order_id:
+            return line.move_id.sale_line_id.order_id.sudo()
+
+        picking = line.picking_id
+        if picking and 'sale_id' in picking._fields and picking.sale_id:
+            return picking.sale_id.sudo()
+
+        if picking and picking.origin:
+            sale_order = SaleOrder.search([('name', '=', picking.origin)], limit=1)
+            if sale_order:
+                return sale_order
+
+        return SaleOrder.browse()
+
+    def _is_sale_related_move_line(self, line):
+        return bool(self._get_sale_order_from_move_line(line))
+
+    def _should_validate_duplicate_lot_commitment(self, line):
+        """
+        La defensa final aplica sobre movimientos con lote en operaciones no canceladas.
+
+        Se omiten:
+        - líneas sin lote/producto/ubicación
+        - líneas canceladas
+        - recepciones incoming
+        - líneas sin picking, como ajustes de inventario
+        """
+        if self.env.context.get('skip_duplicate_lot_validation'):
+            return False
+
+        if not line.lot_id or not line.product_id or not line.location_id:
+            return False
+
+        if line.state == 'cancel':
+            return False
+
+        if not line.picking_id:
+            return False
+
+        if line.picking_id.picking_type_code == 'incoming':
+            return False
+
+        if self._get_line_reserved_qty(line) <= 0:
+            return False
+
+        return True
+
+    def _get_duplicate_lot_blockers(self, line):
+        """
+        Busca otras líneas activas/no canceladas que ya comprometen el mismo
+        lote físico desde la misma ubicación.
+
+        La llave lógica corresponde al quant:
+        product_id + lot_id + location_id + company_id + package_id + owner_id.
+        """
+        StockMoveLine = self.sudo()
+        qty_field = self._get_qty_field_name()
+
+        domain = [
+            ('id', '!=', line.id),
+            ('product_id', '=', line.product_id.id),
+            ('lot_id', '=', line.lot_id.id),
+            ('location_id', '=', line.location_id.id),
+            ('state', 'in', self._LOT_COMMITMENT_STATES),
+            ('picking_id', '!=', False),
+            (qty_field, '>', 0),
+        ]
+
+        if line.company_id:
+            domain.append(('company_id', '=', line.company_id.id))
+
+        if line.package_id:
+            domain.append(('package_id', '=', line.package_id.id))
+        else:
+            domain.append(('package_id', '=', False))
+
+        if line.owner_id:
+            domain.append(('owner_id', '=', line.owner_id.id))
+        else:
+            domain.append(('owner_id', '=', False))
+
+        blockers = StockMoveLine.search(domain)
+
+        # No bloquear recepciones. Sí bloquear internos/salidas/hechos/no cancelados.
+        blockers = blockers.filtered(
+            lambda ml:
+                ml.picking_id
+                and ml.picking_id.picking_type_code != 'incoming'
+                and ml.state != 'cancel'
+        )
+
+        return blockers
+
+    def _format_blocker_document(self, blocker):
+        picking = blocker.picking_id
+        sale_order = self._get_sale_order_from_move_line(blocker)
+
+        picking_name = picking.name if picking else 'Sin picking'
+        origin = picking.origin if picking else ''
+
+        if sale_order:
+            return f"{picking_name} / {sale_order.name}"
+
+        if origin:
+            return f"{picking_name} / {origin}"
+
+        return picking_name
+
+    def _raise_duplicate_lot_error(self, line, blockers):
+        docs = []
+        for blocker in blockers:
+            docs.append(self._format_blocker_document(blocker))
+
+        docs_txt = ', '.join(sorted(set(docs))) or 'Operación activa no identificada'
+
+        current_doc = self._format_blocker_document(line)
+
+        raise UserError(
+            f"No se puede asignar el lote {line.lot_id.name}.\n\n"
+            f"Este lote ya se encuentra comprometido en otra operación activa.\n\n"
+            f"Producto: {line.product_id.display_name}\n"
+            f"Ubicación origen: {line.location_id.complete_name}\n"
+            f"Documento existente: {docs_txt}\n"
+            f"Documento actual: {current_doc}\n\n"
+            f"Debe seleccionar otro lote o liberar/cancelar primero la operación existente."
+        )
+
+    def _validate_duplicate_lot_commitment(self):
+        """
+        Defensa final: evita que el mismo lote físico se guarde manualmente
+        en otra operación activa desde la pestaña Operaciones/Detalles.
+        """
         for line in self:
-            line.x_is_incoming = (
-                line.picking_id and 
-                line.picking_id.picking_type_code == 'incoming'
-            )
-    
-    # ==================== VALIDACIONES DE HOLDS ====================
-    @api.constrains('lot_id', 'picking_id', 'state')
-    def _check_lot_hold(self):
-        """Validación de holds al asignar/confirmar lotes con soporte multi-compañía"""
-        # Bypass si ya se validó - CORREGIDO PARA ODOO 19
+            if not line._should_validate_duplicate_lot_commitment(line):
+                continue
+
+            blockers = line._get_duplicate_lot_blockers(line)
+
+            if blockers:
+                _logger.warning(
+                    "[LOT_DUPLICATE_BLOCKED] Lote=%s Producto=%s Línea=%s Picking=%s Bloqueadores=%s",
+                    line.lot_id.name,
+                    line.product_id.display_name,
+                    line.id,
+                    line.picking_id.name if line.picking_id else False,
+                    blockers.ids,
+                )
+                line._raise_duplicate_lot_error(line, blockers)
+
+        return True
+
+    def _should_validate_hold_for_line(self, line):
+        """
+        Valida holds para operaciones de venta/recolección/salida.
+        Antes solo aplicaba a outgoing. Ahora también cubre pickings internos
+        ligados a venta, como SOM: Recolectar.
+        """
         if self.env.context.get('skip_hold_validation'):
-            return
-        
+            return False
+
+        if not line.lot_id or not line.picking_id or not line.location_id:
+            return False
+
+        if line.picking_id.picking_type_code == 'incoming':
+            return False
+
+        # Aplica a salidas y a operaciones internas con cliente/venta.
+        if line.picking_id.picking_type_code == 'outgoing':
+            return True
+
+        if self._is_sale_related_move_line(line):
+            return True
+
+        if line.picking_id.partner_id:
+            return True
+
+        return False
+
+    def _validate_hold_for_lines(self, forced_lot_id=False):
         validator = HoldValidator(self.env)
-        
+
         for line in self:
-            # Solo validar pickings de salida con lote asignado
-            if not line.lot_id or not line.picking_id:
+            if not line._should_validate_hold_for_line(line):
                 continue
-            
-            if line.picking_id.picking_type_code != 'outgoing':
+
+            lot_id = forced_lot_id or line.lot_id.id
+            if not lot_id:
                 continue
-            
-            # Obtener cliente
+
             partner = validator.get_customer_from_picking(line)
             if not partner:
                 continue
-            
-            # Obtener compañía del picking
-            company_id = line.picking_id.company_id.id if line.picking_id.company_id else self.env.company.id
-            
-            # Validar hold considerando compañía
-            try:
-                validator.validate_lot_assignment(
-                    line.lot_id.id,
-                    line.location_id.id,
-                    partner.id,
-                    company_id
-                )
-            except ValidationError:
-                raise
-    
-    # ==================== ONCHANGE - FILTRADO DE LOTES ====================
-    @api.onchange('product_id', 'location_id', 'picking_id')
-    def _onchange_product_location_filter_lots(self):
-        """Filtrar lotes disponibles según holds del cliente y compañía"""
-        if not self.product_id or not self.picking_id:
-            return {}
-        
-        # Solo aplicar en pickings de salida
-        if self.picking_id.picking_type_code != 'outgoing':
-            return {}
-        
+
+            company_id = (
+                line.picking_id.company_id.id
+                if line.picking_id.company_id
+                else self.env.company.id
+            )
+
+            validator.validate_lot_assignment(
+                lot_id,
+                line.location_id.id,
+                partner.id,
+                company_id,
+            )
+
+        return True
+
+    def _get_available_lots_domain_for_line(self):
+        """
+        Dominio para onchange de lot_id:
+        - respeta holds por cliente
+        - excluye lotes ya comprometidos en otra operación activa
+        """
+        self.ensure_one()
+
+        if not self.product_id or not self.location_id or not self.picking_id:
+            return [('id', '=', False)]
+
         validator = HoldValidator(self.env)
         partner = validator.get_customer_from_picking(self)
-        
-        if not partner or not self.location_id:
-            return {'domain': {'lot_id': [('id', '=', False)]}}
-        
-        # Obtener compañía del picking
-        company_id = self.picking_id.company_id.id if self.picking_id.company_id else self.env.company.id
-        
-        # Obtener lotes disponibles considerando compañía
-        available_lots = validator.get_available_lots(
-            self.product_id.id,
-            self.location_id.id,
-            partner.id,
-            company_id
+
+        company_id = (
+            self.picking_id.company_id.id
+            if self.picking_id.company_id
+            else self.env.company.id
         )
-        
-        if available_lots:
-            return {
-                'domain': {
-                    'lot_id': [
-                        ('id', 'in', available_lots),
-                        ('product_id', '=', self.product_id.id)
-                    ]
-                }
-            }
+
+        available_lots = []
+
+        if partner:
+            available_lots = validator.get_available_lots(
+                self.product_id.id,
+                self.location_id.id,
+                partner.id,
+                company_id,
+            )
         else:
+            quants = self.env['stock.quant'].sudo().search([
+                ('product_id', '=', self.product_id.id),
+                ('location_id', '=', self.location_id.id),
+                ('quantity', '>', 0),
+                ('company_id', '=', company_id),
+            ])
+            available_lots = quants.mapped('lot_id').ids
+
+        if not available_lots:
+            return [('id', '=', False)]
+
+        qty_field = self._get_qty_field_name()
+        blocked_lines = self.env['stock.move.line'].sudo().search([
+            ('id', '!=', self.id or 0),
+            ('product_id', '=', self.product_id.id),
+            ('location_id', '=', self.location_id.id),
+            ('lot_id', 'in', available_lots),
+            ('state', 'in', self._LOT_COMMITMENT_STATES),
+            ('picking_id', '!=', False),
+            (qty_field, '>', 0),
+        ])
+
+        blocked_lines = blocked_lines.filtered(
+            lambda ml:
+                ml.picking_id
+                and ml.picking_id.picking_type_code != 'incoming'
+                and ml.state != 'cancel'
+        )
+
+        blocked_lot_ids = set(blocked_lines.mapped('lot_id').ids)
+
+        # Si la línea actual ya tiene lote, conservarlo en dominio para no romper edición visual.
+        if self.lot_id:
+            blocked_lot_ids.discard(self.lot_id.id)
+
+        final_lot_ids = [lot_id for lot_id in available_lots if lot_id not in blocked_lot_ids]
+
+        if final_lot_ids:
+            return [
+                ('id', 'in', final_lot_ids),
+                ('product_id', '=', self.product_id.id),
+            ]
+
+        return [('id', '=', False)]
+
+    # ==================== MÉTODOS COMPUTADOS ====================
+
+    @api.depends('picking_id', 'picking_id.picking_type_code')
+    def _compute_is_incoming(self):
+        """Determinar si la línea pertenece a una recepción."""
+        for line in self:
+            line.x_is_incoming = (
+                line.picking_id
+                and line.picking_id.picking_type_code == 'incoming'
+            )
+
+    # ==================== VALIDACIONES ====================
+
+    @api.constrains(
+        'lot_id',
+        'product_id',
+        'location_id',
+        'picking_id',
+        'move_id',
+        'state',
+        'package_id',
+        'owner_id',
+        'company_id',
+    )
+    def _check_lot_hold_and_duplicate_commitment(self):
+        """
+        Validación ORM final.
+
+        Cubre:
+        - holds activos de otro cliente
+        - el mismo lote ya comprometido en otra operación no cancelada
+        """
+        self._validate_hold_for_lines()
+        self._validate_duplicate_lot_commitment()
+
+    # ==================== ONCHANGE - FILTRADO DE LOTES ====================
+
+    @api.onchange('product_id', 'location_id', 'picking_id')
+    def _onchange_product_location_filter_lots(self):
+        """
+        Filtra lotes disponibles según holds y reservas nativas activas.
+
+        Antes solo aplicaba en outgoing. Ahora también aplica a recolecciones
+        internas vinculadas a ventas.
+        """
+        if not self.product_id or not self.picking_id:
+            return {}
+
+        if self.picking_id.picking_type_code == 'incoming':
+            return {}
+
+        if not self.location_id:
             return {'domain': {'lot_id': [('id', '=', False)]}}
-    
+
+        return {
+            'domain': {
+                'lot_id': self._get_available_lots_domain_for_line(),
+            }
+        }
+
     # ==================== ONCHANGE - DIMENSIONES ====================
+
     @api.onchange('lot_id')
     def _onchange_lot_id_dimensions(self):
-        """Cargar dimensiones del lote y calcular cantidad"""
+        """Cargar dimensiones del lote y calcular cantidad."""
         if not self.lot_id:
             return
-        
-        # Cargar dimensiones
+
         LotDimensionSync.load_dimensions_from_lot(self)
-        
+
         if not self.picking_id:
             return
-        
-        # Calcular cantidad según tipo de picking
+
         if self.picking_id.picking_type_code == 'incoming':
-            # Recepción: Calcular por dimensiones
             self.qty_done = LotDimensionSync.calculate_area(
                 self.lot_id.x_alto,
-                self.lot_id.x_ancho
+                self.lot_id.x_ancho,
             )
-        
+
         elif self.picking_id.picking_type_code == 'outgoing':
-            # Entrega: Usar cantidad disponible
             move_qty = self.move_id.product_uom_qty if self.move_id else None
-            
+
             self.qty_done = LotDimensionSync.get_available_quantity(
                 self.env,
                 self.lot_id.id,
                 self.location_id.id,
                 self.product_id.id,
-                move_qty
+                move_qty,
             )
-    
+
     @api.onchange('x_alto_temp', 'x_ancho_temp')
     def _onchange_calcular_cantidad(self):
-        """Calcular qty_done automáticamente cuando se ingresan dimensiones"""
+        """Calcular qty_done automáticamente cuando se ingresan dimensiones."""
         if not self.picking_id or self.picking_id.picking_type_code != 'incoming':
             return
-        
+
         self.qty_done = LotDimensionSync.calculate_area(
             self.x_alto_temp,
-            self.x_ancho_temp
+            self.x_ancho_temp,
         )
-    
+
     # ==================== WRITE ====================
+
     def write(self, vals):
-        """Guardar dimensiones en el lote y validar holds con soporte multi-compañía"""
-        # Validar hold si se está cambiando el lote
+        """
+        Guarda dimensiones y valida:
+        - holds
+        - duplicidad de lote en operaciones no canceladas
+        """
         if 'lot_id' in vals and vals['lot_id']:
-            self._validate_lot_hold_on_write(vals['lot_id'])
-        
-        # Ejecutar write original
+            self._validate_hold_for_lines(forced_lot_id=vals['lot_id'])
+
         result = super().write(vals)
-        
-        # Sincronizar dimensiones al lote
+
+        self._validate_duplicate_lot_commitment()
+
         self._sync_dimensions_to_lot(vals)
-        
-        # Calcular cantidad si se modificaron dimensiones
         self._update_qty_done_if_needed(vals)
-        
+
         return result
-    
-    def _validate_lot_hold_on_write(self, new_lot_id):
-        """Valida hold al cambiar lote en write con soporte multi-compañía"""
-        validator = HoldValidator(self.env)
-        
-        for line in self:
-            # Solo validar pickings de salida
-            if not line.picking_id or line.picking_id.picking_type_code != 'outgoing':
-                continue
-            
-            partner = validator.get_customer_from_picking(line)
-            if not partner:
-                continue
-            
-            # Obtener compañía del picking
-            company_id = line.picking_id.company_id.id if line.picking_id.company_id else self.env.company.id
-            
-            try:
-                validator.validate_lot_assignment(
-                    new_lot_id,
-                    line.location_id.id,
-                    partner.id,
-                    company_id
-                )
-            except ValidationError:
-                raise
-    
+
     def _sync_dimensions_to_lot(self, vals):
-        """Sincroniza dimensiones temporales al lote"""
+        """Sincroniza dimensiones temporales al lote."""
         dimension_fields = list(LotDimensionSync.DIMENSION_MAPPING.keys())
         has_dimensions = any(field in vals for field in dimension_fields)
-        
+
         if 'lot_id' not in vals and not has_dimensions:
             return
-        
+
         for line in self:
-            # Solo en recepciones
             if not line.lot_id or not line.picking_id:
                 continue
-            
+
             if line.picking_id.picking_type_code != 'incoming':
                 continue
-            
+
             lot_vals = LotDimensionSync.sync_dimensions_to_lot(line)
-            
+
             if lot_vals:
                 line.lot_id.write(lot_vals)
-    
+
     def _update_qty_done_if_needed(self, vals):
-        """Actualiza qty_done si cambiaron dimensiones"""
+        """Actualiza qty_done si cambiaron dimensiones."""
         if ('x_alto_temp' not in vals and 'x_ancho_temp' not in vals) or 'qty_done' in vals:
             return
-        
+
         for line in self:
             if not line.picking_id or line.picking_id.picking_type_code != 'incoming':
                 continue
-            
+
             qty_done = LotDimensionSync.calculate_area(
                 line.x_alto_temp,
-                line.x_ancho_temp
+                line.x_ancho_temp,
             )
-            
+
             if qty_done > 0:
                 super(StockMoveLine, line).write({'qty_done': qty_done})
-    
+
     # ==================== CREATE ====================
+
     @api.model_create_multi
     def create(self, vals_list):
-        """Guardar dimensiones en el lote y calcular cantidad al crear"""
-        # Pre-calcular qty_done en recepciones
+        """Guardar dimensiones en el lote y validar duplicidad al crear."""
         for vals in vals_list:
             picking_id = vals.get('picking_id')
             if picking_id:
@@ -422,39 +704,41 @@ class StockMoveLine(models.Model):
                 if picking.picking_type_code == 'incoming':
                     qty_done = LotDimensionSync.calculate_area(
                         vals.get('x_alto_temp'),
-                        vals.get('x_ancho_temp')
+                        vals.get('x_ancho_temp'),
                     )
                     if qty_done > 0:
                         vals['qty_done'] = qty_done
-        
-        # Crear registros
+
         lines = super().create(vals_list)
-        
-        # Sincronizar dimensiones al lote
+
+        lines._validate_hold_for_lines()
+        lines._validate_duplicate_lot_commitment()
+
         for line in lines:
             if not line.lot_id or not line.picking_id:
                 continue
-            
+
             if line.picking_id.picking_type_code != 'incoming':
                 continue
-            
+
             lot_vals = LotDimensionSync.sync_dimensions_to_lot(line)
             if lot_vals:
                 line.lot_id.write(lot_vals)
-        
+
         return lines
-    
+
     # ==================== ACCIONES ====================
+
     def action_add_photos(self):
-        """Abrir wizard para agregar fotografías al lote"""
+        """Abrir wizard para agregar fotografías al lote."""
         self.ensure_one()
-        
+
         if not self.lot_id:
             return NotificationBuilder.build_warning(
                 'Advertencia',
-                'Debe seleccionar un lote primero'
+                'Debe seleccionar un lote primero',
             )
-        
+
         return {
             'name': 'Agregar Fotografía',
             'type': 'ir.actions.act_window',
@@ -464,17 +748,17 @@ class StockMoveLine(models.Model):
             'context': {
                 'default_lot_id': self.lot_id.id,
                 'default_name': f'Foto - {self.lot_id.name}',
-            }
+            },
         }
-    
+
     def action_view_lot_photos(self):
-        """Ver fotografías del lote"""
+        """Ver fotografías del lote."""
         self.ensure_one()
-        
+
         if not self.lot_id:
             raise UserError('Debe seleccionar un lote primero.')
-        
+
         return PhotoHelper.build_photo_gallery_action(
             self.lot_id.id,
-            self.lot_id.name
+            self.lot_id.name,
         )
