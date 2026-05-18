@@ -13,6 +13,14 @@
         <xpath expr="//div[hasclass('page')]" position="replace">
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; line-height: 1.25;">
 
+                <style type="text/css">
+                    /* Evita superposición del thead en saltos de página */
+                    thead { display: table-row-group; }
+                    tbody { display: table-row-group; }
+                    tfoot { display: table-row-group; }
+                    tr { page-break-inside: avoid; break-inside: avoid; }
+                </style>
+
                 <!-- Anchors ocultos para herencias de Odoo (proforma, portal). NO BORRAR. -->
                 <div style="display: none;">
                     <table>
@@ -72,116 +80,118 @@
                     </div>
                 </div>
 
-                <!-- INFORMACIÓN GENERAL SIN TABLAS -->
-                <div id="informations" style="margin-bottom: 10px; font-size: 0;">
+                <!-- INFORMACIÓN GENERAL (3 COLUMNAS) -->
+                <div id="informations" style="margin-bottom: 12px; font-size: 0;">
+
+                    <t t-set="state_label"
+                       t-value="'Borrador' if doc.state == 'draft' else 'Cotización Enviada' if doc.state == 'sent' else 'Orden Confirmada' if doc.state == 'sale' else 'Cerrada' if doc.state == 'done' else 'Cancelada' if doc.state == 'cancel' else doc.state"/>
 
                     <!-- COL 1: CLIENTE -->
-                    <div style="display: inline-block; width: 38%; vertical-align: top; padding-right: 10px; box-sizing: border-box; font-size: 10px; overflow-wrap: anywhere; word-break: break-word;">
-                        <div style="border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 4px;">
-                            <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
-                        </div>
-
-                        <div style="line-height: 1.2;">
-                            <span style="font-weight: bold; font-size: 12px;" t-field="doc.partner_id.name"/><br/>
-                            <span t-if="doc.partner_id.vat">RFC: <span t-field="doc.partner_id.vat"/></span>
-                        </div>
-
-                        <div style="border-top: 1px dotted #9f9f9f; padding-top: 3px; margin-top: 5px;">
-                            <strong style="font-size: 9px; text-transform: uppercase; color: #555;">Dirección Fiscal / Entrega:</strong>
-                            <div style="font-size: 9px; color: #333; line-height: 1.15; margin-top: 2px; overflow-wrap: anywhere; word-break: break-word;">
-                                <span t-field="doc.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
-                            </div>
-                        </div>
+                    <div style="display: inline-block; width: 38%; vertical-align: top; padding-right: 8px; box-sizing: border-box; font-size: 10px;">
+                        <table style="font-size: 9px; width: 100%; border-collapse: collapse; border: 1px solid #bbb; table-layout: fixed;">
+                            <thead>
+                                <tr style="background-color: #2f2f2f; color: #fff;">
+                                    <th style="padding: 5px 8px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Cliente</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom: 1px solid #e5e5e5;">
+                                    <td style="padding: 6px 8px; overflow-wrap: anywhere; word-break: break-word;">
+                                        <span style="font-weight: bold; font-size: 11px;" t-field="doc.partner_id.name"/>
+                                        <span t-if="doc.partner_id.vat" style="display: block; font-size: 8.5px; color: #555; margin-top: 2px;">RFC: <span t-field="doc.partner_id.vat"/></span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 6px 8px; overflow-wrap: anywhere; word-break: break-word;">
+                                        <strong style="font-size: 8.5px; text-transform: uppercase; color: #555; display: block; letter-spacing: 0.3px;">Dirección Fiscal / Entrega</strong>
+                                        <div style="font-size: 9px; color: #333; line-height: 1.25; margin-top: 3px; overflow-wrap: anywhere; word-break: break-word;">
+                                            <span t-field="doc.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
                     <!-- COL 2: DETALLES DEL PROYECTO -->
-                    <div style="display: inline-block; width: 30%; vertical-align: top; padding-right: 10px; box-sizing: border-box; font-size: 10px; overflow-wrap: anywhere; word-break: break-word;">
-                        <div style="border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 4px;">
-                            <strong style="font-size: 10px; text-transform: uppercase;">Detalles del Proyecto</strong>
-                        </div>
-
-                        <div style="margin-bottom: 2px;">
-                            <span style="display: inline-block; width: 34%; vertical-align: top; font-weight: bold; white-space: nowrap;">Proyecto:</span>
-                            <span style="display: inline-block; width: 64%; vertical-align: top; white-space: normal; overflow-wrap: anywhere; word-break: break-word;">
-                                <span t-if="doc.x_project_id" t-field="doc.x_project_id.name"/>
-                                <span t-else="">-</span>
-                            </span>
-                        </div>
-
-                        <div style="margin-bottom: 2px;">
-                            <span style="display: inline-block; width: 34%; vertical-align: top; font-weight: bold; white-space: nowrap;">Arquitecto:</span>
-                            <span style="display: inline-block; width: 64%; vertical-align: top; white-space: normal; overflow-wrap: anywhere; word-break: break-word;">
-                                <span t-if="doc.x_architect_id" t-field="doc.x_architect_id.name"/>
-                                <span t-else="">-</span>
-                            </span>
-                        </div>
-
-                        <div t-if="doc.client_order_ref" style="margin-bottom: 2px;">
-                            <span style="display: inline-block; width: 34%; vertical-align: top; font-weight: bold; white-space: nowrap;">Ref. Cliente:</span>
-                            <span style="display: inline-block; width: 64%; vertical-align: top; white-space: normal; overflow-wrap: anywhere; word-break: break-word;">
-                                <span t-field="doc.client_order_ref"/>
-                            </span>
-                        </div>
-
-                        <div style="margin-bottom: 2px;">
-                            <span style="display: inline-block; width: 34%; vertical-align: top; font-weight: bold; white-space: nowrap;">Vendedor:</span>
-                            <span style="display: inline-block; width: 64%; vertical-align: top; white-space: normal; overflow-wrap: anywhere; word-break: break-word;">
-                                <span t-field="doc.user_id.name"/>
-                            </span>
-                        </div>
+                    <div style="display: inline-block; width: 30%; vertical-align: top; padding-right: 8px; box-sizing: border-box; font-size: 10px;">
+                        <table style="font-size: 9px; width: 100%; border-collapse: collapse; border: 1px solid #bbb; table-layout: fixed;">
+                            <thead>
+                                <tr style="background-color: #2f2f2f; color: #fff;">
+                                    <th colspan="2" style="padding: 5px 8px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Detalles del Proyecto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom: 1px solid #e5e5e5;">
+                                    <td style="padding: 5px 8px; width: 38%; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Proyecto</td>
+                                    <td style="padding: 5px 8px; font-weight: 600; overflow-wrap: anywhere; word-break: break-word;">
+                                        <span t-if="doc.x_project_id" t-field="doc.x_project_id.name"/>
+                                        <span t-else="" style="color: #aaa;">-</span>
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e5e5e5;">
+                                    <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Arquitecto</td>
+                                    <td style="padding: 5px 8px; font-weight: 600; overflow-wrap: anywhere; word-break: break-word;">
+                                        <span t-if="doc.x_architect_id" t-field="doc.x_architect_id.name"/>
+                                        <span t-else="" style="color: #aaa;">-</span>
+                                    </td>
+                                </tr>
+                                <tr t-if="doc.client_order_ref" style="border-bottom: 1px solid #e5e5e5;">
+                                    <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Ref. Cliente</td>
+                                    <td style="padding: 5px 8px; font-weight: 600; overflow-wrap: anywhere; word-break: break-word;"><span t-field="doc.client_order_ref"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Vendedor</td>
+                                    <td style="padding: 5px 8px; font-weight: 600; overflow-wrap: anywhere; word-break: break-word;"><span t-field="doc.user_id.name"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
                     <!-- COL 3: ESTADO DEL DOCUMENTO -->
-                    <div style="display: inline-block; width: 32%; vertical-align: top; box-sizing: border-box; font-size: 10px; overflow-wrap: anywhere; word-break: break-word;">
-                        <div style="border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 4px;">
-                            <strong style="font-size: 10px; text-transform: uppercase;">Estado del Documento</strong>
-                        </div>
-
-                        <t t-set="state_label"
-                           t-value="'Borrador' if doc.state == 'draft' else 'Cotización Enviada' if doc.state == 'sent' else 'Orden Confirmada' if doc.state == 'sale' else 'Cerrada' if doc.state == 'done' else 'Cancelada' if doc.state == 'cancel' else doc.state"/>
-
-                        <div style="margin-bottom: 2px;">
-                            <span style="display: inline-block; width: 34%; vertical-align: top; font-weight: bold; white-space: nowrap;">Fecha:</span>
-                            <span style="display: inline-block; width: 64%; vertical-align: top; text-align: right; white-space: normal; overflow-wrap: anywhere; word-break: break-word;">
-                                <span t-field="doc.date_order" t-options='{"widget": "date"}'/>
-                            </span>
-                        </div>
-
-                        <div style="margin-bottom: 2px;">
-                            <span style="display: inline-block; width: 34%; vertical-align: top; font-weight: bold; white-space: nowrap;">Estado:</span>
-                            <span style="display: inline-block; width: 64%; vertical-align: top; text-align: left; white-space: normal; overflow-wrap: anywhere; word-break: break-word; line-height: 1.2;">
-                                <span t-esc="state_label"/>
-                            </span>
-                        </div>
-
-                        <div style="margin-bottom: 2px;">
-                            <span style="display: inline-block; width: 34%; vertical-align: top; font-weight: bold; white-space: nowrap;">Moneda:</span>
-                            <span style="display: inline-block; width: 64%; vertical-align: top; text-align: right; white-space: normal; overflow-wrap: anywhere; word-break: break-word;">
-                                <span t-field="doc.currency_id.name"/>
-                            </span>
-                        </div>
-
-                        <div t-if="doc.x_is_usd" style="margin-bottom: 2px;">
-                            <span style="display: inline-block; width: 34%; vertical-align: top; font-weight: bold; white-space: nowrap;">T. Cambio:</span>
-                            <span style="display: inline-block; width: 64%; vertical-align: top; text-align: right; white-space: normal; overflow-wrap: anywhere; word-break: break-word;">
-                                <span t-esc="'%.4f' % doc.x_exchange_rate"/> MXN/USD
-                            </span>
-                        </div>
-
-                        <div style="margin-bottom: 2px;">
-                            <span style="display: inline-block; width: 34%; vertical-align: top; font-weight: bold; white-space: nowrap;">Plazos:</span>
-                            <span style="display: inline-block; width: 64%; vertical-align: top; text-align: left; white-space: normal; overflow-wrap: anywhere; word-break: break-word; line-height: 1.2;">
-                                <span t-if="doc.payment_term_id" t-field="doc.payment_term_id.name"/>
-                                <span t-else="">-</span>
-                            </span>
-                        </div>
-
-                        <div t-if="doc.validity_date and doc.state in ['draft', 'sent']" style="margin-bottom: 2px;">
-                            <span style="display: inline-block; width: 34%; vertical-align: top; font-weight: bold; white-space: nowrap;">Vigencia:</span>
-                            <span style="display: inline-block; width: 64%; vertical-align: top; text-align: left; white-space: normal; overflow-wrap: anywhere; word-break: break-word; line-height: 1.2;">
-                                Hasta el <span t-field="doc.validity_date" t-options='{"widget": "date"}'/>
-                            </span>
-                        </div>
+                    <div style="display: inline-block; width: 32%; vertical-align: top; box-sizing: border-box; font-size: 10px;">
+                        <table style="font-size: 9px; width: 100%; border-collapse: collapse; border: 1px solid #bbb; table-layout: fixed;">
+                            <thead>
+                                <tr style="background-color: #2f2f2f; color: #fff;">
+                                    <th colspan="2" style="padding: 5px 8px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Estado del Documento</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom: 1px solid #e5e5e5;">
+                                    <td style="padding: 5px 8px; width: 45%; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Fecha</td>
+                                    <td style="padding: 5px 8px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;">
+                                        <span t-field="doc.date_order" t-options='{"widget": "date"}'/>
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e5e5e5;">
+                                    <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Estado</td>
+                                    <td style="padding: 5px 8px; text-align: right; font-weight: 600; overflow-wrap: anywhere; word-break: break-word;"><span t-esc="state_label"/></td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e5e5e5;">
+                                    <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Moneda</td>
+                                    <td style="padding: 5px 8px; text-align: right; font-weight: 600;"><span t-field="doc.currency_id.name"/></td>
+                                </tr>
+                                <tr t-if="doc.x_is_usd" style="border-bottom: 1px solid #e5e5e5;">
+                                    <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">T. Cambio</td>
+                                    <td style="padding: 5px 8px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;">
+                                        <span t-esc="'%.4f' % doc.x_exchange_rate"/> MXN/USD
+                                    </td>
+                                </tr>
+                                <tr t-attf-style="#{'border-bottom: 1px solid #e5e5e5;' if doc.validity_date and doc.state in ['draft', 'sent'] else ''}">
+                                    <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Plazos</td>
+                                    <td style="padding: 5px 8px; text-align: right; font-weight: 600; overflow-wrap: anywhere; word-break: break-word;">
+                                        <span t-if="doc.payment_term_id" t-field="doc.payment_term_id.name"/>
+                                        <span t-else="" style="color: #aaa;">-</span>
+                                    </td>
+                                </tr>
+                                <tr t-if="doc.validity_date and doc.state in ['draft', 'sent']">
+                                    <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Vigencia</td>
+                                    <td style="padding: 5px 8px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;">
+                                        Hasta el <span t-field="doc.validity_date" t-options='{"widget": "date"}'/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
                 </div>
@@ -237,13 +247,13 @@
 
                     <t t-if="section_lines">
                         <div style="margin-top: 12px; margin-bottom: 4px;">
-                            <strong style="font-size: 10px; text-transform: uppercase; background-color: #eee; padding: 2px 5px;" t-esc="section_title"/>
+                            <strong style="display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; background-color: #2f2f2f; color: #fff; padding: 5px 10px; letter-spacing: 0.5px;" t-esc="section_title"/>
                         </div>
 
                         <table class="table table-sm table-striped"
-                               style="width: 100%; font-size: 9px; border-collapse: collapse; border-bottom: 1px solid #000; table-layout: fixed; page-break-inside: auto;">
+                               style="width: 100%; font-size: 9px; border-collapse: collapse; table-layout: fixed; page-break-inside: auto;">
                             <thead>
-                                <tr style="border-bottom: 2px solid #000; background-color: #000; color: #fff;">
+                                <tr style="background-color: #2f2f2f; color: #fff;">
                                     <th class="text-center" style="color: #fff; width: 4%; font-weight: bold;">#</th>
                                     <th style="color: #fff; width: 32%; font-weight: bold;">Descripción</th>
                                     <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">Cantidad</th>
@@ -313,7 +323,7 @@
                 <!-- ================= DESCUENTOS GLOBALES ================= -->
                 <div t-if="discount_lines" style="margin-top: 15px;">
                     <div class="mb-1">
-                        <strong style="font-size: 10px; text-transform: uppercase; background-color: #ffeaea; padding: 2px 5px; color: #b00020;">Descuentos Aplicados</strong>
+                        <strong style="display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; background-color: #b00020; color: #fff; padding: 5px 10px; letter-spacing: 0.5px;">Descuentos Aplicados</strong>
                     </div>
 
                     <table class="table table-sm"
@@ -348,57 +358,54 @@
                 </div>
 
                 <!-- ================= TOTALES ================= -->
-                <div class="row mt-2">
-                    <div class="col-6">
+                <div class="row mt-3">
+                    <div class="col-7">
                         <div t-if="doc.note" style="border: 1px dashed #ccc; padding: 10px; margin-top: 5px;">
                             <strong style="font-size: 9px; text-transform: uppercase; color: #555;">Notas de la Orden:</strong>
                             <div style="font-size: 9px; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;" t-field="doc.note"/>
                         </div>
                     </div>
 
-                    <div class="col-6">
-                        <table class="table table-sm table-borderless" style="font-size: 9px; border-top: 2px solid #000;">
-                            <tr t-if="line_discount_total_amount &gt; 0" style="font-weight: bold; color: #b00020;">
-                                <td class="text-end">DESCUENTO EN LÍNEAS</td>
-                                <td class="text-end" style="width: 35%; white-space: nowrap;">
-                                    -<span t-esc="line_discount_total_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                </td>
-                            </tr>
-
-                            <tr t-if="global_discount_total_amount &gt; 0" style="font-weight: bold; color: #b00020;">
-                                <td class="text-end">DESC. GLOBALES</td>
-                                <td class="text-end" style="width: 35%; white-space: nowrap;">
-                                    -<span t-esc="global_discount_total_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                </td>
-                            </tr>
-
-                            <tr t-if="total_discount_amount &gt; 0" style="font-weight: 900; color: #b00020; border-top: 1px dashed #d88;">
-                                <td class="text-end">DESCUENTO TOTAL</td>
-                                <td class="text-end" style="width: 35%; white-space: nowrap;">
-                                    -<span t-esc="total_discount_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                </td>
-                            </tr>
-
-                            <tr style="font-weight: bold;">
-                                <td class="text-end">SUBTOTAL</td>
-                                <td class="text-end" style="width: 35%; white-space: nowrap;">
-                                    <span t-field="doc.amount_untaxed" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                </td>
-                            </tr>
-
-                            <tr style="font-weight: bold; color: #555;">
-                                <td class="text-end">IVA 16%</td>
-                                <td class="text-end" style="width: 35%; white-space: nowrap;">
-                                    <span t-field="doc.amount_tax" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                </td>
-                            </tr>
-
-                            <tr style="font-weight: 900; font-size: 11px; border-top: 1px solid #ccc;">
-                                <td class="text-end">TOTAL</td>
-                                <td class="text-end" style="width: 35%; white-space: nowrap;">
-                                    <span t-field="doc.amount_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                </td>
-                            </tr>
+                    <div class="col-5">
+                        <table style="font-size: 9.5px; width: 100%; border-collapse: collapse; border: 1px solid #bbb;">
+                            <tbody>
+                                <tr t-if="line_discount_total_amount &gt; 0" style="border-bottom: 1px solid #e5e5e5;">
+                                    <td style="padding: 5px 10px; text-transform: uppercase; color: #b00020; font-weight: bold; letter-spacing: 0.3px;">Descuento en Líneas</td>
+                                    <td style="padding: 5px 10px; width: 50%; text-align: right; color: #b00020; font-weight: bold; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                                        -<span t-esc="line_discount_total_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                    </td>
+                                </tr>
+                                <tr t-if="global_discount_total_amount &gt; 0" style="border-bottom: 1px solid #e5e5e5;">
+                                    <td style="padding: 5px 10px; text-transform: uppercase; color: #b00020; font-weight: bold; letter-spacing: 0.3px;">Desc. Globales</td>
+                                    <td style="padding: 5px 10px; text-align: right; color: #b00020; font-weight: bold; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                                        -<span t-esc="global_discount_total_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                    </td>
+                                </tr>
+                                <tr t-if="total_discount_amount &gt; 0" style="border-bottom: 1px solid #e5e5e5; background-color: #fff5f5;">
+                                    <td style="padding: 5px 10px; text-transform: uppercase; color: #b00020; font-weight: 900; letter-spacing: 0.3px;">Descuento Total</td>
+                                    <td style="padding: 5px 10px; text-align: right; color: #b00020; font-weight: 900; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                                        -<span t-esc="total_discount_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e5e5e5;">
+                                    <td style="padding: 5px 10px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.3px;">Subtotal</td>
+                                    <td style="padding: 5px 10px; text-align: right; font-weight: bold; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                                        <span t-field="doc.amount_untaxed" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e5e5e5;">
+                                    <td style="padding: 5px 10px; text-transform: uppercase; color: #555; letter-spacing: 0.3px;">IVA 16%</td>
+                                    <td style="padding: 5px 10px; text-align: right; color: #555; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                                        <span t-field="doc.amount_tax" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                    </td>
+                                </tr>
+                                <tr style="background-color: #2f2f2f; color: #fff;">
+                                    <td style="padding: 8px 10px; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Total</td>
+                                    <td style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                                        <span t-field="doc.amount_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                    </td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
