@@ -305,6 +305,10 @@ class StockMoveLine(models.Model):
 
         La llave lógica corresponde al quant:
         product_id + lot_id + location_id + company_id + package_id + owner_id.
+
+        IMPORTANTE: se excluyen las líneas que pertenecen a la MISMA venta que la
+        línea actual. El mismo lote moviéndose dentro del flujo de un mismo pedido
+        (p. ej. PICK -> OUT en almacén de 2 pasos) no debe considerarse duplicado.
         """
         StockMoveLine = self.sudo()
         qty_field = self._get_qty_field_name()
@@ -341,6 +345,13 @@ class StockMoveLine(models.Model):
                 and ml.picking_id.picking_type_code != 'incoming'
                 and ml.state != 'cancel'
         )
+
+        # Excluir líneas del mismo pedido de venta: no es un conflicto real.
+        current_so = self._get_sale_order_from_move_line(line)
+        if current_so:
+            blockers = blockers.filtered(
+                lambda ml: self._get_sale_order_from_move_line(ml) != current_so
+            )
 
         return blockers
 
@@ -464,6 +475,9 @@ class StockMoveLine(models.Model):
         Dominio para onchange de lot_id:
         - respeta holds por cliente
         - excluye lotes ya comprometidos en otra operación activa
+
+        Los lotes comprometidos por líneas de la MISMA venta NO se excluyen,
+        para permitir el flujo de un mismo pedido en almacén de 2 pasos.
         """
         self.ensure_one()
 
@@ -517,6 +531,13 @@ class StockMoveLine(models.Model):
                 and ml.picking_id.picking_type_code != 'incoming'
                 and ml.state != 'cancel'
         )
+
+        # No considerar bloqueadores de la misma venta.
+        current_so = self._get_sale_order_from_move_line(self)
+        if current_so:
+            blocked_lines = blocked_lines.filtered(
+                lambda ml: self._get_sale_order_from_move_line(ml) != current_so
+            )
 
         blocked_lot_ids = set(blocked_lines.mapped('lot_id').ids)
 
