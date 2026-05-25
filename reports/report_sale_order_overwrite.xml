@@ -36,6 +36,24 @@
                     table.table.table-sm.table-striped > tbody > tr {
                         height: auto !important;
                     }
+
+                    /* Aumenta legibilidad en datos bancarios y términos sin afectar tablas de productos */
+                    .aq-bank-details,
+                    .aq-bank-details *,
+                    .aq-terms-conditions,
+                    .aq-terms-conditions * {
+                        font-size: 11px !important;
+                        line-height: 1.35 !important;
+                    }
+
+                    .aq-terms-conditions-title {
+                        font-size: 11px !important;
+                        line-height: 1.25 !important;
+                    }
+
+                    .aq-terms-conditions p {
+                        margin: 0 0 4px 0 !important;
+                    }
                 </style>
 
                 <!-- Anchors ocultos para herencias de Odoo (proforma, portal). NO BORRAR. -->
@@ -521,32 +539,35 @@
                     <div class="row mt-2">
                         <div class="col-12">
                             <t t-set="company" t-value="doc.company_id"/>
-                            <t t-call="stock_lot_dimensions.company_bank_details_block"/>
 
-                            <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
-                                <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
+                            <div class="aq-bank-details" style="font-size: 11px; line-height: 1.35; margin-bottom: 8px; overflow-wrap: anywhere; word-break: break-word;">
+                                <t t-call="stock_lot_dimensions.company_bank_details_block"/>
+                            </div>
+
+                            <div class="aq-terms-conditions" style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa; font-size: 11px; line-height: 1.35;">
+                                <strong class="aq-terms-conditions-title" style="font-size: 11px; line-height: 1.25; display: block; border-bottom: 1px solid #eee; margin-bottom: 6px; text-transform: uppercase;">
                                     <t t-if="doc.state in ('draft', 'sent')">Términos y Condiciones – Cotización</t>
                                     <t t-if="doc.state in ('sale', 'done')">Términos y Condiciones – Orden de Venta</t>
                                 </strong>
 
-                                <div style="font-size: 8px; text-align: justify; color: #555; overflow-wrap: anywhere; word-break: break-word;">
-                                    <p style="margin: 0 0 3px 0;">• El mármol y granito son materiales naturales, por lo que pueden existir variaciones en coloración, vetas y tonalidad respecto a muestras o imágenes.</p>
+                                <div style="font-size: 11px; line-height: 1.35; text-align: justify; color: #555; overflow-wrap: anywhere; word-break: break-word;">
+                                    <p style="margin: 0 0 4px 0;">• El mármol y granito son materiales naturales, por lo que pueden existir variaciones en coloración, vetas y tonalidad respecto a muestras o imágenes.</p>
 
                                     <t t-if="doc.state in ('draft', 'sent')">
-                                        <p style="margin: 0 0 3px 0;">• Los precios están sujetos a disponibilidad y no garantizan existencia hasta recibir confirmación de pago.</p>
-                                        <p style="margin: 0 0 3px 0;">• En materiales de importación o bajo pedido, los tiempos de entrega son estimados y pueden variar por causas ajenas a la empresa.</p>
-                                        <p style="margin: 0 0 3px 0;">• En caso de existir variación en el tipo de cambio entre la fecha de cotización y el pago, se realizará el ajuste correspondiente al día del pago.</p>
-                                        <p style="margin: 0 0 3px 0;">• La cotización no incluye maniobras especiales de descarga ni servicios adicionales, salvo que se especifique por escrito.</p>
+                                        <p style="margin: 0 0 4px 0;">• Los precios están sujetos a disponibilidad y no garantizan existencia hasta recibir confirmación de pago.</p>
+                                        <p style="margin: 0 0 4px 0;">• En materiales de importación o bajo pedido, los tiempos de entrega son estimados y pueden variar por causas ajenas a la empresa.</p>
+                                        <p style="margin: 0 0 4px 0;">• En caso de existir variación en el tipo de cambio entre la fecha de cotización y el pago, se realizará el ajuste correspondiente al día del pago.</p>
+                                        <p style="margin: 0 0 4px 0;">• La cotización no incluye maniobras especiales de descarga ni servicios adicionales, salvo que se especifique por escrito.</p>
                                         <p style="margin: 0;">• Los precios pueden cambiar sin previo aviso en caso de incrementos por parte del proveedor.</p>
                                     </t>
 
                                     <t t-if="doc.state in ('sale', 'done')">
-                                        <p style="margin: 0 0 3px 0;">• La presente orden de venta confirma los materiales, cantidades y precios acordados con el cliente.</p>
-                                        <p style="margin: 0 0 3px 0;">• En caso de devolución autorizada, el material deberá entregarse en las mismas condiciones en que fue recibido, sin daño, sin cortes y sin haber sido instalado.</p>
-                                        <p style="margin: 0 0 3px 0;">• Después de 3 meses de almacenaje, se comenzará a generar un cargo de $7.00 MXN por m², por mes o fracción.</p>
-                                        <p style="margin: 0 0 3px 0;">• La entrega del material está sujeta a que el pedido se encuentre liquidado al 100%.</p>
-                                        <p style="margin: 0 0 3px 0;">• Cualquier aclaración deberá realizarse por escrito dentro de las 24 horas posteriores a la entrega.</p>
-                                        <p style="margin: 0 0 3px 0;">• El cliente acepta las condiciones aquí descritas a partir del momento en que se recibe el anticipo y/o el pago total correspondiente a esta orden de venta.</p>
+                                        <p style="margin: 0 0 4px 0;">• La presente orden de venta confirma los materiales, cantidades y precios acordados con el cliente.</p>
+                                        <p style="margin: 0 0 4px 0;">• En caso de devolución autorizada, el material deberá entregarse en las mismas condiciones en que fue recibido, sin daño, sin cortes y sin haber sido instalado.</p>
+                                        <p style="margin: 0 0 4px 0;">• Después de 3 meses de almacenaje, se comenzará a generar un cargo de $7.00 MXN por m², por mes o fracción.</p>
+                                        <p style="margin: 0 0 4px 0;">• La entrega del material está sujeta a que el pedido se encuentre liquidado al 100%.</p>
+                                        <p style="margin: 0 0 4px 0;">• Cualquier aclaración deberá realizarse por escrito dentro de las 24 horas posteriores a la entrega.</p>
+                                        <p style="margin: 0 0 4px 0;">• El cliente acepta las condiciones aquí descritas a partir del momento en que se recibe el anticipo y/o el pago total correspondiente a esta orden de venta.</p>
                                         <p style="margin: 0;">• El plazo de entrega será de 24 a 48 horas hábiles, contado a partir de la confirmación de disponibilidad del material y de la recepción del pago total correspondiente al pedido.</p>
                                     </t>
                                 </div>
