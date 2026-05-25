@@ -84,7 +84,7 @@
                 <div id="informations" style="margin-bottom: 12px; font-size: 10px;">
 
                     <t t-set="state_label"
-                    t-value="'Borrador' if doc.state == 'draft' else 'Cotización Enviada' if doc.state == 'sent' else 'Orden Confirmada' if doc.state == 'sale' else 'Cerrada' if doc.state == 'done' else 'Cancelada' if doc.state == 'cancel' else doc.state"/>
+                       t-value="'Borrador' if doc.state == 'draft' else 'Cotización Enviada' if doc.state == 'sent' else 'Orden Confirmada' if doc.state == 'sale' else 'Cerrada' if doc.state == 'done' else 'Cancelada' if doc.state == 'cancel' else doc.state"/>
 
                     <table style="font-size: 9px; width: 100%; border-collapse: collapse; border: 1px solid #d8d8d8 !important; table-layout: fixed;">
                         <colgroup>
@@ -289,8 +289,30 @@
                     <t t-set="section_title" t-value="section[1]"/>
 
                     <t t-if="section_lines">
-                        <div style="margin-top: 12px; margin-bottom: 4px;">
-                            <strong style="display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; background-color: #2f2f2f; color: #fff; padding: 5px 10px; letter-spacing: 0.5px;" t-esc="section_title"/>
+                        <div style="margin-top: 14px; margin-bottom: 6px; width: 100%; page-break-inside: avoid;">
+                            <table style="width: 100%; border-collapse: collapse; table-layout: auto;">
+                                <tbody>
+                                    <tr>
+                                        <!-- TÍTULO DE LA SECCIÓN: Placas / Formatos / etc. -->
+                                        <td style="width: 1%; vertical-align: middle; padding: 0 12px 0 0; white-space: nowrap;">
+                                            <span style="font-family: Georgia, 'Times New Roman', serif; font-size: 13px; font-style: italic; font-weight: 400; color: #222; text-transform: none;"
+                                                  t-esc="section_title"/>
+                                        </td>
+
+                                        <!-- LÍNEA HORIZONTAL -->
+                                        <td style="vertical-align: middle; padding: 0;">
+                                            <div style="border-top: 1px solid #222; height: 1px; line-height: 1px; font-size: 0;">&#160;</div>
+                                        </td>
+
+                                        <!-- CANTIDAD DE PARTIDAS -->
+                                        <td style="width: 120px; vertical-align: middle; padding: 0 0 0 12px; text-align: right; white-space: nowrap;">
+                                            <t t-set="section_count" t-value="len(section_lines)"/>
+                                            <span style="font-size: 7.5px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 3px;"
+                                                  t-esc="'%s %s' % (section_count, 'PARTIDA' if section_count == 1 else 'PARTIDAS')"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
 
                         <table class="table table-sm table-striped"
