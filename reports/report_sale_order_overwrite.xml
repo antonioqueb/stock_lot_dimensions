@@ -19,6 +19,23 @@
                     tbody { display: table-row-group; }
                     tfoot { display: table-row-group; }
                     tr { page-break-inside: avoid; break-inside: avoid; }
+
+                    /* Compacta únicamente las tablas de productos sin alterar estructura ni diseño */
+                    table.table.table-sm.table-striped > thead > tr > th {
+                        padding-top: 3px !important;
+                        padding-bottom: 3px !important;
+                        line-height: 1.05 !important;
+                    }
+
+                    table.table.table-sm.table-striped > tbody > tr > td {
+                        padding-top: 2px !important;
+                        padding-bottom: 2px !important;
+                        line-height: 1.08 !important;
+                    }
+
+                    table.table.table-sm.table-striped > tbody > tr {
+                        height: auto !important;
+                    }
                 </style>
 
                 <!-- Anchors ocultos para herencias de Odoo (proforma, portal). NO BORRAR. -->
