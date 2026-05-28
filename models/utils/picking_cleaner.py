@@ -66,20 +66,79 @@ class PickingLotCleaner:
 
     def _delete_move_lines(self, move_lines, picking_name):
         """
-        Elimina move_lines con manejo de errores
-        
+        Elimina move_lines con manejo de errores.
+
+        Importante:
+        Para líneas reservadas no basta con unlink(). En Odoo la reserva física
+        vive en stock.quant.reserved_quantity; borrar la línea sin desreservar
+        puede dejar cantidades huérfanas. Por eso primero se ejecuta
+        _do_unreserve() sobre los movimientos donde todas las líneas vivas son
+        limpiables y después se elimina cualquier remanente.
+
         Returns:
             bool: True si se eliminaron exitosamente
         """
         try:
             count = len(move_lines)
-            move_lines.unlink()
-            _logger.info("Eliminadas %d move_lines del picking %s", count, picking_name)
+            self._unreserve_moves_for_lines(move_lines)
+
+            remaining_lines = move_lines.exists()
+            if remaining_lines:
+                remaining_lines.with_context(
+                    skip_duplicate_lot_validation=True,
+                    skip_hold_validation=True,
+                    stone_transient_auto_assign_cleanup=True,
+                ).unlink()
+
+            _logger.info(
+                "Eliminadas/desreservadas %d move_lines del picking %s",
+                count,
+                picking_name,
+            )
             return True
         except Exception as e:
-            _logger.error("Error eliminando move_lines del picking %s: %s", 
-                         picking_name, str(e))
+            _logger.error(
+                "Error eliminando/desreservando move_lines del picking %s: %s",
+                picking_name,
+                str(e),
+            )
             return False
+
+    def _unreserve_moves_for_lines(self, move_lines):
+        """
+        Libera reservas de stock.quant antes de borrar líneas automáticas.
+
+        Solo se llama _do_unreserve() cuando todas las líneas activas del move
+        están dentro del conjunto limpiable. Así no se rompen líneas protegidas
+        por protected_lot_ids ni selecciones manuales que deban sobrevivir.
+        """
+        if not move_lines:
+            return
+
+        clearable_ids = set(move_lines.ids)
+        moves_to_unreserve = self._move_model.browse()
+
+        for move in move_lines.mapped('move_id'):
+            active_lines = move.move_line_ids.filtered(
+                lambda ml: ml.state not in ('done', 'cancel')
+            )
+            if active_lines and set(active_lines.ids).issubset(clearable_ids):
+                moves_to_unreserve |= move
+
+        if not moves_to_unreserve:
+            return
+
+        _logger.info(
+            "Desreservando %d move(s) antes de limpiar lotes automáticos: %s",
+            len(moves_to_unreserve),
+            moves_to_unreserve.ids,
+        )
+
+        moves_to_unreserve.with_context(
+            skip_duplicate_lot_validation=True,
+            skip_hold_validation=True,
+            stone_transient_auto_assign_cleanup=True,
+        )._do_unreserve()
 
     def _reset_picking_state(self, picking):
         """Resetea el estado del picking de 'assigned' a 'confirmed'"""

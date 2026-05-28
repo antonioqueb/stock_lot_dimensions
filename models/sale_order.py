@@ -138,7 +138,12 @@ class SaleOrder(models.Model):
                     'company_id': company_id,
                 })
         
-        sale_order.with_company(company_id).action_confirm()
+        sale_order.with_company(company_id).with_context(
+            stone_transient_auto_assign=True,
+            skip_duplicate_lot_validation=True,
+            skip_hold_validation=True,
+            skip_picking_clean=False,
+        ).action_confirm()
         
         for line in sale_order.order_line:
             if line.x_selected_lots:
@@ -157,8 +162,27 @@ class SaleOrder(models.Model):
     
     def _assign_specific_lots(self, picking, product, quants):
         for move in picking.move_ids.filtered(lambda m: m.product_id == product):
-            move.move_line_ids.unlink()
-            move_line_model = self.env['stock.move.line'].with_context(skip_hold_validation=True)
+            if move.move_line_ids:
+                # Primero liberar la reserva nativa. Un unlink directo puede dejar
+                # stock.quant.reserved_quantity inflado y provocar duplicidades en
+                # la siguiente asignación exacta.
+                move.with_context(
+                    skip_duplicate_lot_validation=True,
+                    skip_hold_validation=True,
+                    stone_transient_auto_assign_cleanup=True,
+                )._do_unreserve()
+
+                remaining_lines = move.move_line_ids.exists()
+                if remaining_lines:
+                    remaining_lines.with_context(
+                        skip_duplicate_lot_validation=True,
+                        skip_hold_validation=True,
+                        stone_transient_auto_assign_cleanup=True,
+                    ).unlink()
+
+            move_line_model = self.env['stock.move.line'].with_context(
+                skip_hold_validation=True,
+            )
             
             for quant in quants:
                 move_line_model.create({
