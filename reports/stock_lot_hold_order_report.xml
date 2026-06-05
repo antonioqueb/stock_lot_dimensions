@@ -21,7 +21,7 @@
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
                 <t t-call="web.external_layout">
-                    
+
                     <!-- 1. OCULTAR CABECERAS ESTÁNDAR DE ODOO -->
                     <t t-set="address" t-value="False"/>
                     <t t-set="information_block" t-value="False"/>
@@ -155,192 +155,12 @@
                             </div>
                         </div>
 
-                        <!-- ================= RESUMEN FINANCIERO ÚNICO (TODO AGRUPADO) ================= -->
-                        <div class="row mt-2 mb-3" t-if="o.hold_line_ids">
-                            <div class="col-12">
-                                <div style="border: 1px solid #ddd; padding: 0; background-color: #f9f9f9;">
-                                    <strong style="font-size: 9px; text-transform: uppercase; color: #555; display: block; margin: 5px 5px 5px 5px;">
-                                        Resumen General (Materiales, Importación y Servicios)
-                                    </strong>
-                                    
-                                    <t t-set="product_summary" t-value="{}"/>
-                                    <t t-foreach="o.hold_line_ids" t-as="line">
-                                        <t t-set="pid" t-value="line.product_id.id"/>
-                                        <t t-if="pid not in product_summary">
-                                            <t t-set="dummy" t-value="product_summary.update({pid: {
-                                                'name': line.product_id.display_name,
-                                                'type': line.product_id.type,
-                                                'placas': 0,
-                                                'm2': 0.0,
-                                                'subtotal': 0.0,
-                                                'currency': line.currency_id
-                                            }})"/>
-                                        </t>
-                                        <t t-set="placas_linea" t-value="len(line.lot_ids) if line.product_id.type != 'service' else 0"/>
-                                        <t t-set="dummy" t-value="product_summary[pid].update({
-                                            'placas': product_summary[pid]['placas'] + placas_linea,
-                                            'm2': product_summary[pid]['m2'] + (line.cantidad_m2 or 0.0),
-                                            'subtotal': product_summary[pid]['subtotal'] + (line.precio_total or 0.0)
-                                        })"/>
-                                    </t>
-                                    
-                                    <table class="table table-sm table-borderless mb-0 p-0" style="font-size: 8px; width: 100%;">
-                                        <thead>
-                                            <tr style="background-color: #2f2f2f;">
-                                                <th style="width: 35%; color: #fff; background-color: #2f2f2f; font-weight: bold; padding: 4px;">DESCRIPCIÓN</th>
-                                                <th class="text-center" style="width: 10%; color: #fff; background-color: #2f2f2f; font-weight: bold; padding: 4px;">PLACAS</th>
-                                                <th class="text-end" style="width: 10%; color: #fff; background-color: #2f2f2f; font-weight: bold; padding: 4px;">CANT TOTAL</th>
-                                                <th class="text-end" style="width: 11%; color: #fff; background-color: #2f2f2f; font-weight: bold; padding: 4px;">PRECIO PROMEDIO</th>
-                                                <th class="text-end" style="width: 11%; color: #fff; background-color: #2f2f2f; font-weight: bold; padding: 4px;">SUBTOTAL</th>
-                                                <th class="text-end" style="width: 11%; color: #fff; background-color: #2f2f2f; font-weight: bold; padding: 4px;">IVA (16%)</th>
-                                                <th class="text-end" style="width: 12%; color: #fff; background-color: #2f2f2f; font-weight: bold; padding: 4px;">TOTAL</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <t t-foreach="product_summary.values()" t-as="data">
-                                                <t t-set="avg_price" t-value="data['subtotal'] / data['m2'] if data['m2'] else 0.0"/>
-                                                <t t-set="tax_val" t-value="data['subtotal'] * 0.16"/>
-                                                <t t-set="total_val" t-value="data['subtotal'] * 1.16"/>
-                                                <tr style="border-bottom: 1px solid #eee;">
-                                                    <td style="padding: 4px 5px; text-transform: uppercase;">
-                                                        <strong t-esc="data['name']"/>
-                                                        <t t-if="data['type'] == 'service'">
-                                                            <span style="font-style: italic; color: #888; font-size: 7px;"> (Servicio)</span>
-                                                        </t>
-                                                    </td>
-                                                    <td class="text-center" style="padding: 4px 5px;">
-                                                        <span t-if="data['type'] != 'service'" t-esc="data['placas']"/>
-                                                        <span t-else="" style="color: #aaa;">-</span>
-                                                    </td>
-                                                    <td class="text-end" style="padding: 4px 5px;">
-                                                        <strong t-esc="'%.2f' % data['m2']"/>
-                                                    </td>
-                                                    <td class="text-end" style="padding: 4px 5px;">
-                                                        <span t-esc="avg_price" t-options='{"widget": "monetary", "display_currency": data["currency"]}'/>
-                                                    </td>
-                                                    <td class="text-end" style="padding: 4px 5px;">
-                                                        <span t-esc="data['subtotal']" t-options='{"widget": "monetary", "display_currency": data["currency"]}'/>
-                                                    </td>
-                                                    <td class="text-end" style="padding: 4px 5px; color: #555;">
-                                                        <span t-esc="tax_val" t-options='{"widget": "monetary", "display_currency": data["currency"]}'/>
-                                                    </td>
-                                                    <td class="text-end" style="font-weight: bold; padding: 4px 5px;">
-                                                        <span t-esc="total_val" t-options='{"widget": "monetary", "display_currency": data["currency"]}'/>
-                                                    </td>
-                                                </tr>
-                                            </t>
-                                        </tbody>
-                                        <tfoot style="border-top: 2px solid #000; background-color: #eaeaea;">
-                                            <tr style="font-weight: bold; font-size: 9px;">
-                                                <td colspan="4" class="text-end pt-2 pb-2" style="padding: 4px 5px; text-transform: uppercase;">
-                                                    SUBTOTAL GENERAL DE LA ORDEN:
-                                                </td>
-                                                <td class="text-end pt-2 pb-2" style="padding: 4px 5px;">
-                                                    <span t-field="o.total_con_precio" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                                </td>
-                                                <td class="text-end pt-2 pb-2" style="padding: 4px 5px; color: #555;">
-                                                    <span t-esc="o.total_con_precio * 0.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                                </td>
-                                                <td class="text-end pt-2 pb-2" style="padding: 4px 5px; font-size: 10px;">
-                                                    <span t-esc="o.total_con_precio * 1.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                                </td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- ================= RESUMEN GENERAL (AGRUPADO POR TIPO) ================= -->
+                        <t t-set="show_prices" t-value="True"/>
+                        <t t-call="stock_lot_dimensions.hold_order_summary_body"/>
 
-                        <!-- ================= DESGLOSE POR LÍNEA CON PLACAS INDIVIDUALES ================= -->
-                        <t t-foreach="o.hold_line_ids" t-as="line">
-                            <div style="margin-bottom: 16px; border: 1px solid #bbb;">
-                                <!-- Header de la línea -->
-                                <div style="padding: 6px 8px; background: #2f2f2f; color: #fff; border-bottom: 1px solid #bbb;">
-                                    <div class="row">
-                                        <div class="col-5">
-                                            <strong style="text-transform: uppercase;" t-esc="line.product_id.display_name"/>
-                                        </div>
-                                        <div class="col-7 text-end" style="font-size: 9px;">
-                                            <strong>Placas:</strong> <span t-esc="len(line.lot_ids) if line.product_id.type != 'service' else '-'"/>
-                                            <span style="margin: 0 4px;">|</span>
-                                            <strong>m²:</strong> <span t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/>
-                                            <span style="margin: 0 4px;">|</span>
-                                            <strong>Precio/m²:</strong> <span t-esc="'%s %.2f' % ((o.currency_id.symbol or ''), (line.precio_unitario or 0.0))"/>
-                                            <span style="margin: 0 4px;">|</span>
-                                            <strong>Total:</strong> <span t-esc="'%s %.2f' % ((o.currency_id.symbol or ''), (line.precio_total or 0.0))"/>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Servicios: sin desglose -->
-                                <t t-if="line.product_id.type == 'service'">
-                                    <div style="padding: 8px; font-size: 9px; color: #666;">
-                                        Línea de servicio. No aplica desglose por placas.
-                                    </div>
-                                </t>
-
-                                <!-- Materiales: tabla placa por placa -->
-                                <t t-if="line.product_id.type != 'service'">
-                                    <table class="table table-sm mb-0" style="font-size: 8.5px; width: 100%;">
-                                        <thead>
-                                            <tr style="background-color: #2f2f2f;">
-                                                <th style="padding: 4px; width: 30px; color: #fff; background-color: #2f2f2f;">#</th>
-                                                <th style="padding: 4px; color: #fff; background-color: #2f2f2f;">Lote</th>
-                                                <th style="padding: 4px; color: #fff; background-color: #2f2f2f;">Bloque</th>
-                                                <th style="padding: 4px; color: #fff; background-color: #2f2f2f;">Atado</th>
-                                                <th style="padding: 4px; color: #fff; background-color: #2f2f2f;">No. Placa</th>
-                                                <th style="padding: 4px; color: #fff; background-color: #2f2f2f;">Color</th>
-                                                <th class="text-center" style="padding: 4px; color: #fff; background-color: #2f2f2f;">Grosor</th>
-                                                <th class="text-end" style="padding: 4px; color: #fff; background-color: #2f2f2f;">Alto</th>
-                                                <th class="text-end" style="padding: 4px; color: #fff; background-color: #2f2f2f;">Ancho</th>
-                                                <th class="text-end" style="padding: 4px; color: #fff; background-color: #2f2f2f;">m²</th>
-                                                <th class="text-end" style="padding: 4px; color: #fff; background-color: #2f2f2f;">Subtotal</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <t t-foreach="line.lot_ids" t-as="lot">
-                                                <t t-set="lot_m2" t-value="(lot.x_alto or 0.0) * (lot.x_ancho or 0.0)"/>
-                                                <t t-set="lot_subtotal" t-value="lot_m2 * (line.precio_unitario or 0.0)"/>
-                                                <tr style="border-bottom: 1px solid #e5e5e5;">
-                                                    <td class="text-center" style="padding: 4px;">
-                                                        <span t-esc="line.lot_ids.ids.index(lot.id) + 1"/>
-                                                    </td>
-                                                    <td style="padding: 4px; font-weight: 600;"><span t-esc="lot.name or ''"/></td>
-                                                    <td style="padding: 4px;"><span t-esc="lot.x_bloque or ''"/></td>
-                                                    <td style="padding: 4px;"><span t-esc="lot.x_atado or ''"/></td>
-                                                    <td style="padding: 4px;"><span t-esc="lot.x_numero_placa or ''"/></td>
-                                                    <td style="padding: 4px;"><span t-esc="lot.x_color or ''"/></td>
-                                                    <td class="text-center" style="padding: 4px;"><span t-esc="lot.x_grosor or ''"/></td>
-                                                    <td class="text-end" style="padding: 4px;">
-                                                        <span t-esc="'%.4f' % (lot.x_alto or 0.0)"/>
-                                                    </td>
-                                                    <td class="text-end" style="padding: 4px;">
-                                                        <span t-esc="'%.4f' % (lot.x_ancho or 0.0)"/>
-                                                    </td>
-                                                    <td class="text-end" style="padding: 4px; font-weight: 600;">
-                                                        <span t-esc="'%.2f' % lot_m2"/>
-                                                    </td>
-                                                    <td class="text-end" style="padding: 4px;">
-                                                        <span t-esc="'%s %.2f' % ((o.currency_id.symbol or ''), lot_subtotal)"/>
-                                                    </td>
-                                                </tr>
-                                            </t>
-                                        </tbody>
-                                        <tfoot>
-                                            <tr style="border-top: 2px solid #000; font-weight: bold; background-color: #f8f8f8;">
-                                                <td colspan="9" class="text-end" style="padding: 5px;">Total línea:</td>
-                                                <td class="text-end" style="padding: 5px;">
-                                                    <span t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/>
-                                                </td>
-                                                <td class="text-end" style="padding: 5px;">
-                                                    <span t-esc="'%s %.2f' % ((o.currency_id.symbol or ''), (line.precio_total or 0.0))"/>
-                                                </td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </t>
-                            </div>
-                        </t>
+                        <!-- ================= DESGLOSE POR TIPO Y PRODUCTO (PLACAS) ================= -->
+                        <t t-call="stock_lot_dimensions.hold_order_detail_body"/>
 
                         <!-- ================= NOTAS ================= -->
                         <div t-if="o.notas" class="row mt-2">
@@ -349,35 +169,6 @@
                                     <strong style="font-size: 9px; text-transform: uppercase; color: #555;">Notas:</strong>
                                     <div style="font-size: 9px; white-space: pre-wrap;" t-esc="o.notas"/>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- ================= TOTALES GENERALES ================= -->
-                        <div class="row mt-3">
-                            <div class="col-7"></div>
-                            <div class="col-5">
-                                <table style="font-size: 9.5px; width: 100%; border-collapse: collapse; border: 1px solid #bbb;">
-                                    <tbody>
-                                        <tr style="border-bottom: 1px solid #e5e5e5;">
-                                            <td style="padding: 5px 10px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.3px;">Subtotal</td>
-                                            <td style="padding: 5px 10px; width: 50%; text-align: right; font-weight: bold; font-variant-numeric: tabular-nums;">
-                                                <span t-field="o.total_con_precio" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                            </td>
-                                        </tr>
-                                        <tr style="border-bottom: 1px solid #e5e5e5;">
-                                            <td style="padding: 5px 10px; text-transform: uppercase; color: #555; letter-spacing: 0.3px;">Impuestos (16%)</td>
-                                            <td style="padding: 5px 10px; text-align: right; color: #555; font-variant-numeric: tabular-nums;">
-                                                <span t-esc="o.total_con_precio * 0.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                            </td>
-                                        </tr>
-                                        <tr style="background-color: #2f2f2f; color: #fff;">
-                                            <td style="padding: 8px 10px; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Total</td>
-                                            <td style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 11px; font-variant-numeric: tabular-nums;">
-                                                <span t-esc="o.total_con_precio * 1.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
                             </div>
                         </div>
 

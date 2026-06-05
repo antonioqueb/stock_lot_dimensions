@@ -395,6 +395,93 @@ class StockLotHoldOrder(models.Model):
         except Exception as e:
             raise UserError(f'Error al crear orden de venta: {str(e)}')
 
+    # ==================== HELPERS PARA REPORTES ====================
+    # Orden en que aparecen los tipos de material en los reportes.
+    _REPORT_TIPO_ORDER = ('placa', 'formato', 'pieza')
+
+    def _hold_line_is_backorder(self, line):
+        """Material sin existencia por pedir.
+
+        Una línea es "material sin existencia / por pedir" cuando es un producto
+        físico (no servicio), sin placas ni quant asignados, pero con cantidad
+        capturada manualmente desde el carrito (módulo inventory_shopping_cart).
+        Replica la lógica de `_hold_line_is_backorder` de ese módulo para que los
+        reportes la reconozcan aunque el carrito no esté instalado.
+        """
+        if not line.product_id or line.product_id.type == 'service':
+            return False
+        if line.lot_ids or line.lot_id or line.quant_id:
+            return False
+        return (line.cantidad_m2 or 0.0) > 0
+
+    def _report_line_tipo(self, line):
+        """Tipo (placa/formato/pieza) de una línea de material, tomado de sus placas."""
+        lot = line.lot_ids[:1] or line.lot_id
+        return lot.x_tipo or False
+
+    def get_report_sections(self):
+        """Estructura agrupada para los reportes de apartado.
+
+        Separa las líneas en tres bloques y agrupa los materiales en existencia
+        por tipo (Placa / Formato / Pieza) y, dentro de cada tipo, por línea de
+        producto.
+
+        Returns:
+            dict: {
+                'material_groups': [
+                    {
+                        'tipo_key': 'placa',
+                        'tipo_label': 'Placa',
+                        'lines': stock.lot.hold.order.line (recordset),
+                        'placas': int,
+                        'm2': float,
+                        'subtotal': float,
+                    }, ...
+                ],
+                'services':  stock.lot.hold.order.line (recordset),
+                'backorder': stock.lot.hold.order.line (recordset),
+            }
+        """
+        self.ensure_one()
+        tipo_labels = dict(self.env['stock.lot']._fields['x_tipo'].selection)
+        empty = self.env['stock.lot.hold.order.line']
+
+        services = self.hold_line_ids.filtered(lambda l: l.product_id.type == 'service')
+        backorder = self.hold_line_ids.filtered(self._hold_line_is_backorder)
+        materials = self.hold_line_ids - services - backorder
+
+        groups = {}
+        for line in materials:
+            key = self._report_line_tipo(line) or '_none'
+            group = groups.get(key)
+            if not group:
+                group = {
+                    'tipo_key': key,
+                    'tipo_label': tipo_labels.get(key) or 'Sin Clasificar',
+                    'lines': empty,
+                    'placas': 0,
+                    'm2': 0.0,
+                    'subtotal': 0.0,
+                }
+                groups[key] = group
+
+            group['lines'] |= line
+            group['placas'] += len(line.lot_ids)
+            group['m2'] += line.cantidad_m2 or 0.0
+            group['subtotal'] += line.precio_total or 0.0
+
+        order_index = {key: idx for idx, key in enumerate(self._REPORT_TIPO_ORDER)}
+        material_groups = sorted(
+            groups.values(),
+            key=lambda g: (order_index.get(g['tipo_key'], 99), g['tipo_label']),
+        )
+
+        return {
+            'material_groups': material_groups,
+            'services': services,
+            'backorder': backorder,
+        }
+
     @api.model
     def _migrate_legacy_lines(self):
         """

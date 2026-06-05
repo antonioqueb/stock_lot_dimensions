@@ -35,6 +35,7 @@
         'data/migrate_hold_lines.xml',
 
         'reports/company_bank_details_templates.xml',
+        'reports/stock_lot_hold_order_sections.xml',
         'reports/stock_lot_hold_order_report.xml',
         'reports/stock_lot_hold_order_summary_report.xml',
         'reports/stock_lot_hold_order_detail_report.xml',
