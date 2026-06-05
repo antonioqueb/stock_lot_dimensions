@@ -21,22 +21,8 @@
     <!-- Variables: sec_title (str), sec_count (int), sec_color (opcional) -->
     <template id="hold_order_section_header">
         <t t-set="sec_color" t-value="sec_color or '#222'"/>
-        <div style="margin-top: 14px; margin-bottom: 6px; width: 100%; page-break-inside: avoid;">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse; border-spacing: 0; table-layout: auto; border: 0; background: transparent;">
-                <tbody style="border: 0; background: transparent;">
-                    <tr style="border: 0; background: transparent;">
-                        <td style="width: 1%; vertical-align: middle; padding: 0 12px 0 0; white-space: nowrap; border: 0; background: transparent;">
-                            <span t-attf-style="font-family: Georgia, 'Times New Roman', serif; font-size: 13px; font-style: italic; font-weight: 400; color: #{sec_color}; text-transform: none;" t-esc="sec_title"/>
-                        </td>
-                        <td style="vertical-align: middle; padding: 0; border: 0; background: transparent;">
-                            <div t-attf-style="height: 0; line-height: 0; font-size: 0; overflow: hidden; margin: 0; padding: 0; border-top: 1px solid #{sec_color};">&#160;</div>
-                        </td>
-                        <td style="width: 120px; vertical-align: middle; padding: 0 0 0 12px; text-align: right; white-space: nowrap; border: 0; background: transparent;">
-                            <span style="font-size: 7.5px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 3px;" t-esc="'%s %s' % (sec_count, 'PARTIDA' if sec_count == 1 else 'PARTIDAS')"/>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <div style="margin-top: 14px; margin-bottom: 5px; width: 100%; page-break-inside: avoid;">
+            <span t-attf-style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #{sec_color};" t-esc="sec_title"/>
         </div>
     </template>
 
@@ -62,16 +48,15 @@
                 <thead>
                     <tr style="background-color: #2f2f2f; color: #fff;">
                         <th class="text-center" style="color: #fff; width: 4%; font-weight: bold;">#</th>
-                        <th style="color: #fff; width: 13%; font-weight: bold;">Lote</th>
-                        <th style="color: #fff; width: 10%; font-weight: bold;">Bloque</th>
-                        <th style="color: #fff; width: 10%; font-weight: bold;">Atado</th>
-                        <th class="text-center" style="color: #fff; width: 8%; font-weight: bold;">Espesor</th>
-                        <th class="text-center" style="color: #fff; width: 8%; font-weight: bold;">Alto</th>
-                        <th class="text-center" style="color: #fff; width: 8%; font-weight: bold;">Ancho</th>
-                        <th class="text-end" style="color: #fff; width: 9%; font-weight: bold;">m²</th>
+                        <th style="color: #fff; width: 16%; font-weight: bold;">Lote</th>
+                        <th style="color: #fff; width: 13%; font-weight: bold;">Bloque</th>
+                        <th class="text-center" style="color: #fff; width: 9%; font-weight: bold;">Espesor</th>
+                        <th class="text-center" style="color: #fff; width: 9%; font-weight: bold;">Alto</th>
+                        <th class="text-center" style="color: #fff; width: 9%; font-weight: bold;">Ancho</th>
+                        <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">m²</th>
                         <t t-if="show_prices">
-                            <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">P. Unitario</th>
-                            <th class="text-end" style="color: #fff; width: 12%; font-weight: bold;">Subtotal</th>
+                            <th class="text-end" style="color: #fff; width: 13%; font-weight: bold;">P. Unitario</th>
+                            <th class="text-end" style="color: #fff; width: 17%; font-weight: bold;">Subtotal</th>
                         </t>
                     </tr>
                 </thead>
@@ -80,7 +65,7 @@
                     <t t-foreach="grp['lines']" t-as="line">
                         <!-- Fila agrupadora de producto -->
                         <tr style="background-color: #f2f2f2; color: #222; page-break-inside: avoid;">
-                            <td t-att-colspan="10 if show_prices else 8" style="background-color: #f2f2f2; padding: 4px 8px !important; font-weight: 800; color: #222; font-size: 8.8px; text-transform: uppercase; border: 1px solid #d8d8d8; overflow-wrap: anywhere; word-break: break-word;">
+                            <td t-att-colspan="9 if show_prices else 7" style="background-color: #f2f2f2; padding: 4px 8px !important; font-weight: 800; color: #222; font-size: 8.8px; text-transform: uppercase; border: 1px solid #d8d8d8; overflow-wrap: anywhere; word-break: break-word;">
                                 <span t-field="line.product_id.display_name"/>
                                 <span style="font-weight: 400; font-size: 8px; font-style: italic; color: #555; text-transform: none;">
                                     · <span t-esc="len(line.lot_ids)"/> placas · <span t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/> m²
@@ -97,7 +82,6 @@
                                 </td>
                                 <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><strong t-esc="lot.name or ''"/></td>
                                 <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><span t-esc="lot.x_bloque or ''"/></td>
-                                <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><span t-esc="lot.x_atado or ''"/></td>
                                 <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="lot.x_grosor or ''"/></td>
                                 <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="'%.3f' % (lot.x_alto or 0.0)"/></td>
                                 <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="'%.3f' % (lot.x_ancho or 0.0)"/></td>
