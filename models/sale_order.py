@@ -224,4 +224,4 @@ class SaleOrder(models.Model):
         cleaner = PickingLotCleaner(self.env)
         for order in self:
             if order.picking_ids:
-                cleaner.clear_pickings_lots(order.picking_ids, protected_lot_ids=protected_lot_ids)pw
+                cleaner.clear_pickings_lots(order.picking_ids, protected_lot_ids=protected_lot_ids)
