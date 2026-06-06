@@ -299,29 +299,9 @@
 
                             <t t-if="section_lines">
 
-                                <!-- ENCABEZADO DE SECCIÓN - MISMO ESTILO DEL SUMMARY -->
-                                <div style="margin-top: 14px; margin-bottom: 6px; width: 100%; page-break-inside: avoid; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                    <table role="presentation" cellpadding="0" cellspacing="0" border="0"
-                                           style="width: 100%; border-collapse: collapse; border-spacing: 0; table-layout: auto; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                        <tbody style="border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                            <tr style="border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                                <td style="width: 1%; vertical-align: middle; padding: 0 12px 0 0; white-space: nowrap; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                                    <span style="font-family: Georgia, 'Times New Roman', serif; font-size: 13px; font-style: italic; font-weight: 400; color: #222; text-transform: none; border: 0 !important; background: transparent !important; box-shadow: none !important;"
-                                                          t-esc="section_title"/>
-                                                </td>
-
-                                                <td style="vertical-align: middle; padding: 0; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                                    <div style="height: 0; line-height: 0; font-size: 0; overflow: hidden; margin: 0; padding: 0; border: 0 !important; border-top: 1px solid #222 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">&#160;</div>
-                                                </td>
-
-                                                <td style="width: 120px; vertical-align: middle; padding: 0 0 0 12px; text-align: right; white-space: nowrap; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                                    <t t-set="section_count" t-value="len(section_lines)"/>
-                                                    <span style="font-size: 7.5px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 3px; border: 0 !important; background: transparent !important; box-shadow: none !important;"
-                                                          t-esc="'%s %s' % (section_count, 'PARTIDA' if section_count == 1 else 'PARTIDAS')"/>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                <!-- ENCABEZADO DE SECCIÓN -->
+                                <div style="margin-top: 14px; margin-bottom: 5px; width: 100%; page-break-inside: avoid;">
+                                    <span style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #222;" t-esc="section_title"/>
                                 </div>
 
                                 <table class="table table-sm table-striped"
@@ -329,9 +309,8 @@
                                     <thead>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
                                             <th class="text-center" style="color: #fff; width: 3%; font-weight: bold;">#</th>
-                                            <th style="color: #fff; width: 10%; font-weight: bold;">Lote</th>
-                                            <th style="color: #fff; width: 7%; font-weight: bold;">Bloque</th>
-                                            <th style="color: #fff; width: 7%; font-weight: bold;">Atado</th>
+                                            <th style="color: #fff; width: 14%; font-weight: bold;">Lote</th>
+                                            <th style="color: #fff; width: 10%; font-weight: bold;">Bloque</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Espesor</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Alto</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Ancho</th>
@@ -350,7 +329,7 @@
 
                                             <!-- FILA DE PRODUCTO AGRUPADOR -->
                                             <tr style="background-color: #f2f2f2; color: #222; page-break-inside: avoid;">
-                                                <td t-att-colspan="14 if has_line_discount_columns else 12"
+                                                <td t-att-colspan="13 if has_line_discount_columns else 11"
                                                     style="background-color: #f2f2f2; padding: 4px 8px !important; font-weight: 800; color: #222; font-size: 8.8px; text-transform: uppercase; border: 1px solid #d8d8d8 !important; overflow-wrap: anywhere; word-break: break-word;">
                                                     <span t-field="line.product_id.display_name"/>
                                                     <t t-if="line.name and line.name != line.product_id.display_name">
@@ -387,10 +366,6 @@
 
                                                         <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;">
                                                             <span t-esc="lot.x_bloque or ''"/>
-                                                        </td>
-
-                                                        <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;">
-                                                            <span t-esc="lot.x_atado or ''"/>
                                                         </td>
 
                                                         <td class="text-center align-middle" style="white-space: nowrap;">
@@ -453,7 +428,7 @@
                                                         <t t-set="global_seq" t-value="global_seq + 1"/>
                                                     </td>
 
-                                                    <td colspan="6" class="align-middle" style="font-style: italic; color: #555; font-size: 8px; overflow-wrap: anywhere; word-break: break-word;">
+                                                    <td colspan="5" class="align-middle" style="font-style: italic; color: #555; font-size: 8px; overflow-wrap: anywhere; word-break: break-word;">
                                                         <t t-if="section_key == 'placas'">(Sin selección de placas específicas)</t>
                                                         <t t-else="">(Sin selección de lotes específicos)</t>
                                                     </td>
@@ -510,29 +485,9 @@
 
                             <t t-if="section_lines">
 
-                                <!-- ENCABEZADO DE SECCIÓN - MISMO ESTILO DEL SUMMARY -->
-                                <div style="margin-top: 14px; margin-bottom: 6px; width: 100%; page-break-inside: avoid; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                    <table role="presentation" cellpadding="0" cellspacing="0" border="0"
-                                           style="width: 100%; border-collapse: collapse; border-spacing: 0; table-layout: auto; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                        <tbody style="border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                            <tr style="border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                                <td style="width: 1%; vertical-align: middle; padding: 0 12px 0 0; white-space: nowrap; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                                    <span style="font-family: Georgia, 'Times New Roman', serif; font-size: 13px; font-style: italic; font-weight: 400; color: #222; text-transform: none; border: 0 !important; background: transparent !important; box-shadow: none !important;"
-                                                          t-esc="section_title"/>
-                                                </td>
-
-                                                <td style="vertical-align: middle; padding: 0; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                                    <div style="height: 0; line-height: 0; font-size: 0; overflow: hidden; margin: 0; padding: 0; border: 0 !important; border-top: 1px solid #222 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">&#160;</div>
-                                                </td>
-
-                                                <td style="width: 120px; vertical-align: middle; padding: 0 0 0 12px; text-align: right; white-space: nowrap; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                                    <t t-set="section_count" t-value="len(section_lines)"/>
-                                                    <span style="font-size: 7.5px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 3px; border: 0 !important; background: transparent !important; box-shadow: none !important;"
-                                                          t-esc="'%s %s' % (section_count, 'PARTIDA' if section_count == 1 else 'PARTIDAS')"/>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                <!-- ENCABEZADO DE SECCIÓN -->
+                                <div style="margin-top: 14px; margin-bottom: 5px; width: 100%; page-break-inside: avoid;">
+                                    <span style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #222;" t-esc="section_title"/>
                                 </div>
 
                                 <table class="table table-sm table-striped"

@@ -324,31 +324,9 @@
                     <t t-set="section_title" t-value="section[1]"/>
 
                     <t t-if="section_lines">
-                        <div style="margin-top: 14px; margin-bottom: 6px; width: 100%; page-break-inside: avoid; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                            <table role="presentation" cellpadding="0" cellspacing="0" border="0"
-                                   style="width: 100%; border-collapse: collapse; border-spacing: 0; table-layout: auto; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                <tbody style="border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                    <tr style="border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                        <!-- TÍTULO DE LA SECCIÓN: Placas / Formatos / etc. -->
-                                        <td style="width: 1%; vertical-align: middle; padding: 0 12px 0 0; white-space: nowrap; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                            <span style="font-family: Georgia, 'Times New Roman', serif; font-size: 13px; font-style: italic; font-weight: 400; color: #222; text-transform: none; border: 0 !important; background: transparent !important; box-shadow: none !important;"
-                                                  t-esc="section_title"/>
-                                        </td>
-
-                                        <!-- LÍNEA HORIZONTAL ÚNICA -->
-                                        <td style="vertical-align: middle; padding: 0; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                            <div style="height: 0; line-height: 0; font-size: 0; overflow: hidden; margin: 0; padding: 0; border: 0 !important; border-top: 1px solid #222 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">&#160;</div>
-                                        </td>
-
-                                        <!-- CANTIDAD DE PARTIDAS -->
-                                        <td style="width: 120px; vertical-align: middle; padding: 0 0 0 12px; text-align: right; white-space: nowrap; border: 0 !important; border-top: 0 !important; border-bottom: 0 !important; background: transparent !important; box-shadow: none !important;">
-                                            <t t-set="section_count" t-value="len(section_lines)"/>
-                                            <span style="font-size: 7.5px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 3px; border: 0 !important; background: transparent !important; box-shadow: none !important;"
-                                                  t-esc="'%s %s' % (section_count, 'PARTIDA' if section_count == 1 else 'PARTIDAS')"/>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <!-- TÍTULO DE LA SECCIÓN: Placas / Formatos / etc. -->
+                        <div style="margin-top: 14px; margin-bottom: 5px; width: 100%; page-break-inside: avoid;">
+                            <span style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #222;" t-esc="section_title"/>
                         </div>
 
                         <table class="table table-sm table-striped"
