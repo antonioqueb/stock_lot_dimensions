@@ -481,8 +481,12 @@
     </template>
 
     <!-- ============ CAJA DE TOTALES (notas izquierda + totales derecha) ============ -->
+    <!-- El bloque completo es indivisible: si no cabe en la hoja actual,        -->
+    <!-- salta entero a la siguiente para que la tabla de totales nunca se        -->
+    <!-- parta entre páginas (page-break-inside: avoid en el contenedor y tabla). -->
     <template id="hold_order_totals_box">
-        <div class="row mt-3">
+        <div style="margin-top: 14px; width: 100%; page-break-inside: avoid; break-inside: avoid;">
+        <div class="row">
             <div class="col-7">
                 <div t-if="o.notas" style="border: 1px dashed #ccc; padding: 10px; margin-top: 5px;">
                     <strong style="font-size: 9px; text-transform: uppercase; color: #555;">Notas de la Reserva:</strong>
@@ -490,7 +494,12 @@
                 </div>
             </div>
             <div class="col-5">
-                <table style="font-size: 9.5px; width: 100%; border-collapse: collapse; border: 1px solid #bbb;">
+                <table style="font-size: 9.5px; width: 100%; border-collapse: collapse; border: 1px solid #bbb; page-break-inside: avoid; break-inside: avoid;">
+                    <thead>
+                        <tr style="background-color: #f2f2f2; color: #222;">
+                            <th colspan="2" style="padding: 5px 10px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #d8d8d8;">Resumen de Totales</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         <tr t-attf-style="#{'background-color: #2f2f2f; color: #fff;' if not show_prices else 'border-bottom: 1px solid #e5e5e5;'}">
                             <td t-attf-style="padding: #{'8px' if not show_prices else '5px'} 10px; text-transform: uppercase; #{'font-weight: 900; font-size: 11px; letter-spacing: 0.5px;' if not show_prices else 'color: #555; letter-spacing: 0.3px;'}">Total m²</td>
@@ -521,6 +530,7 @@
                     </tbody>
                 </table>
             </div>
+        </div>
         </div>
     </template>
 
