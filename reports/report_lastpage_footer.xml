@@ -113,28 +113,15 @@
          Va dentro del .footer; el contenido solo se renderiza para nuestros modelos
          (guardado por o._name), así NO afecta a otros reportes (facturas, etc.). -->
     <template id="aq_lastpage_footer_standard" inherit_id="web.external_layout_standard">
-        <xpath expr="//div[hasclass('footer')]" position="inside">
+        <xpath expr="//div[hasclass('footer') or contains(@t-attf-class, 'footer')]" position="inside">
             <t t-call="stock_lot_dimensions.aq_lastpage_footer_content"/>
         </xpath>
     </template>
 
-    <template id="aq_lastpage_footer_boxed" inherit_id="web.external_layout_boxed">
-        <xpath expr="//div[hasclass('footer')]" position="inside">
-            <t t-call="stock_lot_dimensions.aq_lastpage_footer_content"/>
-        </xpath>
-    </template>
-
-    <template id="aq_lastpage_footer_bold" inherit_id="web.external_layout_bold">
-        <xpath expr="//div[hasclass('footer')]" position="inside">
-            <t t-call="stock_lot_dimensions.aq_lastpage_footer_content"/>
-        </xpath>
-    </template>
-
-    <template id="aq_lastpage_footer_clean" inherit_id="web.external_layout_clean">
-        <xpath expr="//div[hasclass('footer')]" position="inside">
-            <t t-call="stock_lot_dimensions.aq_lastpage_footer_content"/>
-        </xpath>
-    </template>
+    <!-- NOTA: si la empresa usa otro layout de documento (Boxed / Bold / Clean),
+         duplicar el inherit de arriba cambiando inherit_id por:
+           web.external_layout_boxed / web.external_layout_bold / web.external_layout_clean
+         (se confirma en Ajustes > Compañías > Formato del documento). -->
 
     <!-- ============================================================= -->
     <!-- Activación por reporte: paperformat (margen inferior amplio) + -->
