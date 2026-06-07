@@ -25,7 +25,7 @@
                     <t t-set="address" t-value="False"/>
                     <t t-set="information_block" t-value="False"/>
 
-                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; line-height: 1.25;">
 
                         <style type="text/css">
                             /* Evita superposición del thead en saltos de página */
@@ -33,182 +33,61 @@
                             tbody { display: table-row-group; }
                             tfoot { display: table-row-group; }
                             tr { page-break-inside: avoid; break-inside: avoid; }
+
+                            /* Compacta únicamente las tablas de productos sin alterar estructura */
+                            table.table.table-sm.table-striped > thead > tr > th,
+                            table.table.table-sm > thead > tr > th {
+                                padding-top: 3px !important;
+                                padding-bottom: 3px !important;
+                                line-height: 1.05 !important;
+                            }
+
+                            table.table.table-sm.table-striped > tbody > tr > td,
+                            table.table.table-sm > tbody > tr > td {
+                                padding-top: 2px !important;
+                                padding-bottom: 2px !important;
+                                line-height: 1.08 !important;
+                            }
+
+                            table.table.table-sm.table-striped > tbody > tr,
+                            table.table.table-sm > tbody > tr {
+                                height: auto !important;
+                            }
+
+                            /* Legibilidad en datos bancarios y términos */
+                            .aq-bank-details,
+                            .aq-bank-details *,
+                            .aq-terms-conditions,
+                            .aq-terms-conditions * {
+                                font-size: 11px !important;
+                                line-height: 1.35 !important;
+                            }
+
+                            .aq-terms-conditions-title {
+                                font-size: 11px !important;
+                                line-height: 1.25 !important;
+                            }
+
+                            .aq-terms-conditions p {
+                                margin: 0 0 4px 0 !important;
+                            }
                         </style>
 
-                        <!-- ================= ENCABEZADO ================= -->
-                        <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
-                            <div class="col-8">
-                                <h4 class="text-uppercase mb-0" style="font-weight: 800; letter-spacing: 1px;">
-                                    Orden de Reserva <span t-field="o.name" style="margin-left: 10px; color: #333;"/>
-                                </h4>
-                            </div>
-                            <div class="col-4 text-end">
-                                <div style="font-size: 8px; color: #999; margin-top: 4px;">
-                                    Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- ENCABEZADO + INFORMACIÓN -->
+                        <t t-call="stock_lot_dimensions.hold_order_info_header"/>
 
-                        <!-- ================= ALERTA DE VENCIMIENTO ================= -->
-                        <div class="row mb-4" t-if="o.fecha_expiracion and o.state not in ['done', 'cancel']">
-                            <div class="col-12">
-                                <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%;">
-                                    <div style="color: #ff0000; font-weight: 900; font-size: 16px; text-transform: uppercase;">
-                                        ⚠️ RESERVA CON VENCIMIENTO: <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
-                                    </div>
-                                    <div style="color: #333; font-size: 12px; margin-top: 3px; font-style: italic;">
-                                        A partir de esa fecha, las placas se liberan automáticamente y podrán ser asignadas a otro proyecto sin previo aviso.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- ================= INFORMACIÓN GENERAL (3 COLUMNAS) ================= -->
-                        <div class="row mb-3" id="informations">
-                            <!-- CLIENTE -->
-                            <div class="col-4">
-                                <table style="font-size: 9px; width: 100%; border-collapse: collapse; border: 1px solid #bbb;">
-                                    <thead>
-                                        <tr style="background-color: #2f2f2f; color: #fff;">
-                                            <th style="padding: 5px 8px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Cliente</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr style="border-bottom: 1px solid #e5e5e5;">
-                                            <td style="padding: 6px 8px;">
-                                                <span style="font-weight: bold; font-size: 11px;" t-field="o.partner_id.name"/>
-                                                <span t-if="o.partner_id.vat" style="display: block; font-size: 8.5px; color: #555; margin-top: 2px;">RFC: <span t-field="o.partner_id.vat"/></span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 6px 8px;">
-                                                <strong style="font-size: 8.5px; text-transform: uppercase; color: #555; display: block; letter-spacing: 0.3px;">Dirección de Entrega</strong>
-                                                <div style="font-size: 9px; color: #333; line-height: 1.25; margin-top: 3px; white-space: pre-line;">
-                                                    <span t-field="o.delivery_address"/>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- REFERENCIA -->
-                            <div class="col-4">
-                                <table style="font-size: 9px; width: 100%; border-collapse: collapse; border: 1px solid #bbb;">
-                                    <thead>
-                                        <tr style="background-color: #2f2f2f; color: #fff;">
-                                            <th colspan="2" style="padding: 5px 8px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Referencia</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr t-if="o.project_id" style="border-bottom: 1px solid #e5e5e5;">
-                                            <td style="padding: 5px 8px; width: 38%; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Proyecto</td>
-                                            <td style="padding: 5px 8px; font-weight: 600;"><span t-field="o.project_id.name"/></td>
-                                        </tr>
-                                        <tr t-if="o.arquitecto_id" style="border-bottom: 1px solid #e5e5e5;">
-                                            <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Arquitecto</td>
-                                            <td style="padding: 5px 8px; font-weight: 600;"><span t-field="o.arquitecto_id.name"/></td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Vendedor</td>
-                                            <td style="padding: 5px 8px; font-weight: 600;"><span t-field="o.user_id.name"/></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- ESTADO -->
-                            <div class="col-4">
-                                <table style="font-size: 9px; width: 100%; border-collapse: collapse; border: 1px solid #bbb;">
-                                    <thead>
-                                        <tr style="background-color: #2f2f2f; color: #fff;">
-                                            <th colspan="2" style="padding: 5px 8px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Estado</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr style="border-bottom: 1px solid #e5e5e5;">
-                                            <td style="padding: 5px 8px; width: 50%; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Fecha Emisión</td>
-                                            <td style="padding: 5px 8px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;">
-                                                <span t-field="o.fecha_orden" t-options='{"widget": "date"}'/>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px;">Estatus</td>
-                                            <td style="padding: 5px 8px; text-align: right;">
-                                                <span style="font-weight: 900; text-transform: uppercase;">
-                                                    <t t-if="o.state == 'draft'">Borrador</t>
-                                                    <t t-if="o.state == 'confirmed'">Confirmada</t>
-                                                    <t t-if="o.state == 'done'">Finalizada</t>
-                                                    <t t-if="o.state == 'cancel'">Cancelada</t>
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- ================= RESUMEN GENERAL (AGRUPADO POR TIPO) ================= -->
+                        <!-- RESUMEN POR TIPO Y PRODUCTO (SIN PRECIOS) -->
                         <t t-set="show_prices" t-value="False"/>
                         <t t-call="stock_lot_dimensions.hold_order_summary_body"/>
 
-                        <!-- ================= DESGLOSE POR TIPO Y PRODUCTO (PLACAS) ================= -->
+                        <!-- DESGLOSE POR TIPO Y PRODUCTO (PLACAS, SIN PRECIOS) -->
                         <t t-call="stock_lot_dimensions.hold_order_detail_body"/>
 
-                        <!-- ================= NOTAS ================= -->
-                        <div t-if="o.notas" class="row mt-2">
-                            <div class="col-12">
-                                <div style="border: 1px dashed #ccc; padding: 10px; margin-top: 5px;">
-                                    <strong style="font-size: 9px; text-transform: uppercase; color: #555;">Notas:</strong>
-                                    <div style="font-size: 9px; white-space: pre-wrap;" t-esc="o.notas"/>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- TOTALES + NOTAS -->
+                        <t t-call="stock_lot_dimensions.hold_order_totals_box"/>
 
-                        <!-- ================= FOOTER / FIRMAS ================= -->
-                        <div style="margin-top: 50px; width: 100%; page-break-inside: avoid;">
-                            <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
-                                <div class="col-1"></div>
-                                <div class="col-4 text-center">
-                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                        <strong style="font-size: 9px; text-transform: uppercase;">FIRMA DEL VENDEDOR</strong>
-                                    </div>
-                                </div>
-                                <div class="col-2"></div>
-                                <div class="col-4 text-center">
-                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                        <strong style="font-size: 9px; text-transform: uppercase;">FIRMA DEL CLIENTE / ACEPTACIÓN DE LA RESERVA</strong>
-                                    </div>
-                                </div>
-                                <div class="col-1"></div>
-                            </div>
-
-                            <div class="row mb-3">
-                                <div class="col-12 text-center">
-                                    <p style="font-size: 9px; margin-top: 5px; padding: 0 20px;">
-                                        Al firmar este documento, el cliente confirma la selección de las placas y acepta que la <span style="font-weight: bold;">RESERVA ES VÁLIDA SOLO HASTA EL <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/></span>. Para garantizar la disponibilidad del material en su proyecto, se recomienda firmar y formalizar las condiciones comerciales antes de esa fecha.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="row mt-2">
-                                <div class="col-12">
-                                    <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
-                                        <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
-                                            Términos y Condiciones – Reserva de Material
-                                        </strong>
-                                        <div style="font-size: 8px; text-align: justify; color: #555;">
-                                            <p style="margin: 0 0 3px 0;">• La reserva de material tiene una vigencia de 7 días naturales a partir de la fecha de confirmación.</p>
-                                            <p style="margin: 0 0 3px 0;">• Durante este periodo, el material quedará separado exclusivamente para el cliente.</p>
-                                            <p style="margin: 0 0 3px 0;">• En caso de no recibir el pago total o parcial dentro del plazo establecido, la reserva se cancelará automáticamente y el material quedará disponible para venta.</p>
-                                            <p style="margin: 0 0 3px 0;">• La reserva no congela precios en caso de variación del tipo de cambio; el precio final será el vigente al momento del pago.</p>
-                                            <p style="margin: 0 0 3px 0;">• Pasado el periodo de reserva, la empresa no garantiza disponibilidad del material ni condiciones previamente cotizadas.</p>
-                                            <p style="margin: 0;">• El mármol y granito pueden presentar variaciones naturales propias del material.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- PIE: FIRMAS / BANCO / TÉRMINOS -->
+                        <t t-call="stock_lot_dimensions.hold_order_footer"/>
 
                     </div>
                 </t>

@@ -492,30 +492,32 @@
             <div class="col-5">
                 <table style="font-size: 9.5px; width: 100%; border-collapse: collapse; border: 1px solid #bbb;">
                     <tbody>
-                        <tr style="border-bottom: 1px solid #e5e5e5;">
-                            <td style="padding: 5px 10px; text-transform: uppercase; color: #555; letter-spacing: 0.3px;">Total m²</td>
-                            <td style="padding: 5px 10px; width: 50%; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                        <tr t-attf-style="#{'background-color: #2f2f2f; color: #fff;' if not show_prices else 'border-bottom: 1px solid #e5e5e5;'}">
+                            <td t-attf-style="padding: #{'8px' if not show_prices else '5px'} 10px; text-transform: uppercase; #{'font-weight: 900; font-size: 11px; letter-spacing: 0.5px;' if not show_prices else 'color: #555; letter-spacing: 0.3px;'}">Total m²</td>
+                            <td t-attf-style="padding: #{'8px' if not show_prices else '5px'} 10px; width: 50%; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; #{'font-weight: 900; font-size: 11px;' if not show_prices else ''}">
                                 <span t-esc="'%.2f' % o.total_m2"/>
                             </td>
                         </tr>
-                        <tr style="border-bottom: 1px solid #e5e5e5;">
-                            <td style="padding: 5px 10px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.3px;">Subtotal</td>
-                            <td style="padding: 5px 10px; text-align: right; font-weight: bold; font-variant-numeric: tabular-nums; white-space: nowrap;">
-                                <span t-field="o.total_con_precio" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                            </td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #e5e5e5;">
-                            <td style="padding: 5px 10px; text-transform: uppercase; color: #555; letter-spacing: 0.3px;">IVA 16%</td>
-                            <td style="padding: 5px 10px; text-align: right; color: #555; font-variant-numeric: tabular-nums; white-space: nowrap;">
-                                <span t-esc="o.total_con_precio * 0.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                            </td>
-                        </tr>
-                        <tr style="background-color: #2f2f2f; color: #fff;">
-                            <td style="padding: 8px 10px; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Total</td>
-                            <td style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap;">
-                                <span t-esc="o.total_con_precio * 1.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                            </td>
-                        </tr>
+                        <t t-if="show_prices">
+                            <tr style="border-bottom: 1px solid #e5e5e5;">
+                                <td style="padding: 5px 10px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.3px;">Subtotal</td>
+                                <td style="padding: 5px 10px; text-align: right; font-weight: bold; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                                    <span t-field="o.total_con_precio" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                </td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e5e5e5;">
+                                <td style="padding: 5px 10px; text-transform: uppercase; color: #555; letter-spacing: 0.3px;">IVA 16%</td>
+                                <td style="padding: 5px 10px; text-align: right; color: #555; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                                    <span t-esc="o.total_con_precio * 0.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                </td>
+                            </tr>
+                            <tr style="background-color: #2f2f2f; color: #fff;">
+                                <td style="padding: 8px 10px; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Total</td>
+                                <td style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                                    <span t-esc="o.total_con_precio * 1.16" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                </td>
+                            </tr>
+                        </t>
                     </tbody>
                 </table>
             </div>

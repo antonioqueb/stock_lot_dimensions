@@ -187,10 +187,12 @@ export class HoldStoneButton extends Component {
 
         const header = document.createElement("div");
         header.className = "hold-stone-selected-header";
+        const triggerIcon = currentLotIds.length > 0 ? "fa-pencil" : "fa-plus";
+        const triggerLabel = currentLotIds.length > 0 ? "Editar" : "Añadir Materiales";
         header.innerHTML = `
             <button class="hold-stone-add-btn hold-stone-add-btn-trigger hold-stone-add-btn-prominent">
-                <i class="fa fa-plus me-1"></i>
-                Agregar placas
+                <i class="fa ${triggerIcon} me-1"></i>
+                ${triggerLabel}
             </button>
 
             <span class="hold-stone-selected-title">
@@ -226,7 +228,7 @@ export class HoldStoneButton extends Component {
                 <div class="hold-stone-no-selection">
                     <i class="fa fa-info-circle me-2 text-muted"></i>
                     <span class="text-muted">
-                        Sin placas seleccionadas. Usa <strong>Agregar placas</strong> para comenzar.
+                        Sin materiales seleccionados. Usa <strong>Añadir Materiales</strong> para comenzar.
                     </span>
                 </div>
             `;
@@ -377,6 +379,13 @@ export class HoldStoneButton extends Component {
 
         const badge = this._detailsRow.querySelector(".hold-stone-sel-badge");
         if (badge) badge.textContent = ids.length;
+
+        const trigger = this._detailsRow.querySelector(".hold-stone-add-btn-trigger");
+        if (trigger) {
+            const triggerIcon = ids.length > 0 ? "fa-pencil" : "fa-plus";
+            const triggerLabel = ids.length > 0 ? "Editar" : "Añadir Materiales";
+            trigger.innerHTML = `<i class="fa ${triggerIcon} me-1"></i> ${triggerLabel}`;
+        }
 
         await this._renderDetail(body, ids);
     }
