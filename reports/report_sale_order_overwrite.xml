@@ -11,6 +11,42 @@
         </xpath>
 
         <xpath expr="//div[hasclass('page')]" position="replace">
+            <!-- Anchors ocultos para herencias de Odoo (proforma, portal). NO BORRAR.
+                 Deben permanecer en el arch del reporte estándar, no detrás de un t-call. -->
+            <div style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th name="th_description"/>
+                            <th name="th_quantity"/>
+                            <th name="th_priceunit"/>
+                            <th name="th_discount"/>
+                            <th name="th_taxes"/>
+                            <th name="th_subtotal"/>
+                            <th name="th_price_unit_display"/>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td name="td_name"/>
+                            <td name="td_quantity"/>
+                            <td name="td_priceunit"/>
+                            <td name="td_discount"/>
+                            <td name="td_taxes"/>
+                            <td name="td_subtotal"/>
+                            <td name="td_product_quantity"/>
+                            <td name="td_product_discount"/>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <t t-set="show_prices" t-value="True"/>
+            <t t-call="stock_lot_dimensions.report_sale_order_main_body"/>
+        </xpath>
+    </template>
+
+    <!-- ================= CUERPO COMPARTIDO (parametrizado por show_prices) ================= -->
+    <template id="report_sale_order_main_body">
             <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; line-height: 1.25;">
 
                 <style type="text/css">
@@ -55,35 +91,6 @@
                         margin: 0 0 4px 0 !important;
                     }
                 </style>
-
-                <!-- Anchors ocultos para herencias de Odoo (proforma, portal). NO BORRAR. -->
-                <div style="display: none;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th name="th_description"/>
-                                <th name="th_quantity"/>
-                                <th name="th_priceunit"/>
-                                <th name="th_discount"/>
-                                <th name="th_taxes"/>
-                                <th name="th_subtotal"/>
-                                <th name="th_price_unit_display"/>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td name="td_name"/>
-                                <td name="td_quantity"/>
-                                <td name="td_priceunit"/>
-                                <td name="td_discount"/>
-                                <td name="td_taxes"/>
-                                <td name="td_subtotal"/>
-                                <td name="td_product_quantity"/>
-                                <td name="td_product_discount"/>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
 
                 <!-- ENCABEZADO -->
                 <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
@@ -336,12 +343,14 @@
                                     <th class="text-center" style="color: #fff; width: 4%; font-weight: bold;">#</th>
                                     <th style="color: #fff; width: 32%; font-weight: bold;">Descripción</th>
                                     <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">Cantidad</th>
-                                    <th class="text-end" style="color: #fff; width: 12%; font-weight: bold;">P. Unitario</th>
-                                    <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 7%; font-weight: bold;">% Desc.</th>
-                                    <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 9%; font-weight: bold;">Descuento</th>
-                                    <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">Subtotal</th>
-                                    <th class="text-end" style="color: #fff; width: 8%; font-weight: bold;">IVA</th>
-                                    <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">Total</th>
+                                    <t t-if="show_prices">
+                                        <th class="text-end" style="color: #fff; width: 12%; font-weight: bold;">P. Unitario</th>
+                                        <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 7%; font-weight: bold;">% Desc.</th>
+                                        <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 9%; font-weight: bold;">Descuento</th>
+                                        <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">Subtotal</th>
+                                        <th class="text-end" style="color: #fff; width: 8%; font-weight: bold;">IVA</th>
+                                        <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">Total</th>
+                                    </t>
                                 </tr>
                             </thead>
                             <tbody>
@@ -365,33 +374,35 @@
                                             <span t-field="line.product_id.uom_id.name"/>
                                         </td>
 
-                                        <td class="text-end align-middle" style="white-space: nowrap;">
-                                            <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                        </td>
+                                        <t t-if="show_prices">
+                                            <td class="text-end align-middle" style="white-space: nowrap;">
+                                                <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                            </td>
 
-                                        <td t-if="has_line_discount_columns" class="text-end align-middle" style="white-space: nowrap;">
-                                            <span t-if="line_discount_pct &gt; 0" t-esc="'%.2f%%' % line_discount_pct"/>
-                                            <span t-else="" style="color: #999;">-</span>
-                                        </td>
+                                            <td t-if="has_line_discount_columns" class="text-end align-middle" style="white-space: nowrap;">
+                                                <span t-if="line_discount_pct &gt; 0" t-esc="'%.2f%%' % line_discount_pct"/>
+                                                <span t-else="" style="color: #999;">-</span>
+                                            </td>
 
-                                        <td t-if="has_line_discount_columns" class="text-end align-middle" style="white-space: nowrap;">
-                                            <span t-if="line_discount_amount &gt; 0" style="color: #b00020; font-weight: 700;">
-                                                -<span t-esc="line_discount_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                            </span>
-                                            <span t-else="" style="color: #999;">-</span>
-                                        </td>
+                                            <td t-if="has_line_discount_columns" class="text-end align-middle" style="white-space: nowrap;">
+                                                <span t-if="line_discount_amount &gt; 0" style="color: #b00020; font-weight: 700;">
+                                                    -<span t-esc="line_discount_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                                </span>
+                                                <span t-else="" style="color: #999;">-</span>
+                                            </td>
 
-                                        <td class="text-end align-middle" style="white-space: nowrap;">
-                                            <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                        </td>
+                                            <td class="text-end align-middle" style="white-space: nowrap;">
+                                                <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                            </td>
 
-                                        <td class="text-end align-middle" style="white-space: nowrap;">
-                                            <span t-field="line.price_tax" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                        </td>
+                                            <td class="text-end align-middle" style="white-space: nowrap;">
+                                                <span t-field="line.price_tax" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                            </td>
 
-                                        <td class="text-end align-middle" style="font-weight: bold; white-space: nowrap;">
-                                            <span t-field="line.price_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                        </td>
+                                            <td class="text-end align-middle" style="font-weight: bold; white-space: nowrap;">
+                                                <span t-field="line.price_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                            </td>
+                                        </t>
                                     </tr>
                                 </t>
                             </tbody>
@@ -400,7 +411,7 @@
                 </t>
 
                 <!-- ================= DESCUENTOS GLOBALES ================= -->
-                <div t-if="discount_lines" style="margin-top: 15px;">
+                <div t-if="discount_lines and show_prices" style="margin-top: 15px;">
                     <div class="mb-1">
                         <strong style="display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; background-color: #b00020; color: #fff; padding: 5px 10px; letter-spacing: 0.5px;">Descuentos Aplicados</strong>
                     </div>
@@ -437,7 +448,9 @@
                 </div>
 
                 <!-- ================= TOTALES ================= -->
-                <div class="row mt-3">
+                <!-- Bloque indivisible: si no cabe completo en la hoja, salta entero a la siguiente -->
+                <div style="margin-top: 14px; width: 100%; page-break-inside: avoid; break-inside: avoid;">
+                <div class="row">
                     <div class="col-7">
                         <div t-if="doc.note" style="border: 1px dashed #ccc; padding: 10px; margin-top: 5px;">
                             <strong style="font-size: 9px; text-transform: uppercase; color: #555;">Notas de la Orden:</strong>
@@ -446,7 +459,13 @@
                     </div>
 
                     <div class="col-5">
-                        <table style="font-size: 9.5px; width: 100%; border-collapse: collapse; border: 1px solid #bbb;">
+                        <t t-if="show_prices">
+                        <table style="font-size: 9.5px; width: 100%; border-collapse: collapse; border: 1px solid #bbb; page-break-inside: avoid; break-inside: avoid;">
+                            <thead>
+                                <tr style="background-color: #f2f2f2; color: #222;">
+                                    <th colspan="2" style="padding: 5px 10px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #d8d8d8;">Resumen de Totales</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 <tr t-if="line_discount_total_amount &gt; 0" style="border-bottom: 1px solid #e5e5e5;">
                                     <td style="padding: 5px 10px; text-transform: uppercase; color: #b00020; font-weight: bold; letter-spacing: 0.3px;">Descuento en Líneas</td>
@@ -486,7 +505,9 @@
                                 </tr>
                             </tbody>
                         </table>
+                        </t>
                     </div>
+                </div>
                 </div>
 
                 <!-- BLOQUE OCULTO -->
@@ -555,6 +576,30 @@
                 </div>
 
             </div>
-        </xpath>
     </template>
+
+    <!-- ================= REPORTE SIN PRECIOS (standalone) ================= -->
+    <template id="report_sale_order_main_no_prices_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <t t-set="address" t-value="False"/>
+                    <t t-set="information_block" t-value="False"/>
+                    <t t-set="show_prices" t-value="False"/>
+                    <t t-call="stock_lot_dimensions.report_sale_order_main_body"/>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_sale_order_main_no_prices" model="ir.actions.report">
+        <field name="name">Orden de Venta (Sin Precios)</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">stock_lot_dimensions.report_sale_order_main_no_prices_document</field>
+        <field name="report_file">stock_lot_dimensions.report_sale_order_main_no_prices_document</field>
+        <field name="print_report_name">'Orden de Venta - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
+    </record>
 </odoo>
