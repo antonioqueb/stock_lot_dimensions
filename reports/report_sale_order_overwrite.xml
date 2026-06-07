@@ -39,6 +39,13 @@
                         </tr>
                     </tbody>
                 </table>
+                <!-- Anchors de id requeridos por herencias estándar de Odoo que apuntan
+                     al reporte de venta (p. ej. report_saleorder_document_quote_expiry usa
+                     //div[@id='informations']). Van dentro del display:none para que el
+                     contenido que esas vistas inyecten quede oculto; nuestro cuerpo real
+                     renderiza su propia información y totales. -->
+                <div id="informations"/>
+                <div id="total" class="row" name="total"/>
             </div>
             <t t-set="show_prices" t-value="True"/>
             <t t-call="stock_lot_dimensions.report_sale_order_main_body"/>
