@@ -8,7 +8,7 @@
     <template id="report_sale_order_document_no_prices_custom">
         <t t-call="web.external_layout">
             <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)"/>
-            <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; display: flex; flex-direction: column; min-height: 100vh;">
+            <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; display: flex; flex-direction: column; min-height: 212mm;">
 
                 <!-- ================= ENCABEZADO ================= -->
                 <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
