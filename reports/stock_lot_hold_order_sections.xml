@@ -568,7 +568,7 @@
                         <t t-call="stock_lot_dimensions.company_bank_details_block"/>
                     </div>
 
-                    <div class="aq-terms-conditions" style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa; font-size: 11px; line-height: 1.35;">
+                    <div class="aq-terms-conditions" style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa; font-size: 11px; line-height: 1.35; page-break-inside: avoid; break-inside: avoid;">
                         <strong class="aq-terms-conditions-title" style="font-size: 11px; line-height: 1.25; display: block; border-bottom: 1px solid #eee; margin-bottom: 6px; text-transform: uppercase;">
                             Términos y Condiciones – Reserva de Material
                         </strong>

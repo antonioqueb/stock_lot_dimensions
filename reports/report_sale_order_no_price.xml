@@ -243,7 +243,7 @@
                             <t t-call="stock_lot_dimensions.company_bank_details_block"/>
 
                             <!-- Términos Comerciales -->
-                            <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa;">
+                            <div style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa; page-break-inside: avoid; break-inside: avoid;">
                                 <strong style="font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; text-transform: uppercase;">
                                     <t t-if="doc.state in ('draft', 'sent')">Términos y Condiciones – Cotización</t>
                                     <t t-if="doc.state in ('sale', 'done')">Términos y Condiciones – Orden de Venta</t>

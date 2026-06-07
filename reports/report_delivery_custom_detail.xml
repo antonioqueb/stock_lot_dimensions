@@ -249,7 +249,7 @@
                             <!-- Términos y Condiciones -->
                             <div class="row mt-2">
                                 <div class="col-12">
-                                    <div style="border: 1px solid #ccc; padding: 5px; background-color: #fafafa;">
+                                    <div style="border: 1px solid #ccc; padding: 5px; background-color: #fafafa; page-break-inside: avoid; break-inside: avoid;">
                                         <strong style="font-size: 12px; display: block; border-bottom: 1px solid #eee; margin-bottom: 3px; text-transform: uppercase;">
                                             Términos y Condiciones – Remisión de Entrega
                                         </strong>
