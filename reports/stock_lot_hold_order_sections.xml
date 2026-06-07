@@ -537,10 +537,8 @@
     <!-- ============ PIE: FIRMAS + DATOS BANCARIOS + TÉRMINOS ============ -->
     <template id="hold_order_footer">
         <!-- Empuja el bloque de firmas/banco/términos al fondo de la última hoja.
-             div.page se vuelve columna flexible y este spacer crece para ocupar el
-             espacio libre. (Selector div.page, no .page, para no afectar el
-             <span class="page"/> de numeración). -->
-        <style>div.page { display: flex; flex-direction: column; min-height: 100vh; }</style>
+             El div.page es columna flexible (display:flex inline en cada reporte) y
+             este spacer crece para ocupar el espacio libre. -->
         <div style="flex: 1 1 auto;"/>
         <div style="margin-top: 50px; width: 100%; page-break-inside: avoid;">
             <div class="row" style="margin-top: 40px; margin-bottom: 10px;">

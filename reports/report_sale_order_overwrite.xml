@@ -54,7 +54,7 @@
 
     <!-- ================= CUERPO COMPARTIDO (parametrizado por show_prices) ================= -->
     <template id="report_sale_order_main_body">
-            <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; line-height: 1.25;">
+            <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; line-height: 1.25; display: flex; flex-direction: column; min-height: 100vh;">
 
                 <style type="text/css">
                     /* Evita superposición del thead en saltos de página */
@@ -525,8 +525,7 @@
                 </div>
 
                 <!-- FOOTER / FIRMAS -->
-                <!-- Empuja el footer (firmas/banco/términos) al fondo de la última hoja. -->
-                <style>div.page { display: flex; flex-direction: column; min-height: 100vh; }</style>
+                <!-- Empuja el footer (firmas/banco/términos) al fondo de la última hoja (div.page es flex inline + spacer). -->
                 <div style="flex: 1 1 auto;"/>
                 <div style="margin-top: 50px; width: 100%; page-break-inside: avoid;">
                     <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
