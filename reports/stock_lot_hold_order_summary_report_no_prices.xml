@@ -25,7 +25,7 @@
                     <t t-set="address" t-value="False"/>
                     <t t-set="information_block" t-value="False"/>
 
-                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; line-height: 1.25; display: flex; flex-direction: column; min-height: 212mm;">
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; line-height: 1.25;">
 
                         <style type="text/css">
                             /* Evita superposición del thead en saltos de página */
@@ -73,6 +73,13 @@
                             }
                         </style>
 
+                        <!-- Tabla de página: ancla el footer al fondo (compatible con wkhtmltopdf/QtWebKit,
+                             que NO soporta flexbox). La fila de contenido absorbe el espacio libre y la
+                             fila del footer queda abajo. height = mínimo; si hay más contenido, crece y pagina. -->
+                        <div style="display: table; width: 100%; height: 212mm;">
+                            <div style="display: table-row; height: 100%;">
+                                <div style="display: table-cell; vertical-align: top;">
+
                         <!-- ENCABEZADO + INFORMACIÓN -->
                         <t t-call="stock_lot_dimensions.hold_order_info_header"/>
 
@@ -83,8 +90,15 @@
                         <!-- TOTALES + NOTAS -->
                         <t t-call="stock_lot_dimensions.hold_order_totals_box"/>
 
-                        <!-- PIE: FIRMAS / BANCO / TÉRMINOS -->
+                                </div>
+                            </div>
+                            <div style="display: table-row;">
+                                <div style="display: table-cell; vertical-align: bottom;">
+                        <!-- PIE: FIRMAS / BANCO / TÉRMINOS (anclado al fondo de la última hoja) -->
                         <t t-call="stock_lot_dimensions.hold_order_footer"/>
+                                </div>
+                            </div>
+                        </div>
 
                     </div>
                 </t>

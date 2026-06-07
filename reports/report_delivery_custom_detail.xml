@@ -39,8 +39,13 @@
                     <t t-set="address" t-value="False"/>
                     <t t-set="information_block" t-value="False"/>
 
-                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; display: flex; flex-direction: column; min-height: 212mm;">
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
                         
+                        <!-- Tabla de página: ancla el footer al fondo (wkhtmltopdf/QtWebKit, sin flexbox). -->
+                        <div style="display: table; width: 100%; height: 212mm;">
+                            <div style="display: table-row; height: 100%;">
+                                <div style="display: table-cell; vertical-align: top;">
+
                         <!-- ================= ENCABEZADO ================= -->
                         <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                             <div class="col-8">
@@ -210,10 +215,11 @@
                             </tfoot>
                         </table>
 
-                        <!-- ================= FOOTER / FIRMAS ================= -->
-                        <!-- Empuja el footer (notas/firma/términos) al fondo de la última hoja
-                             (div.page es flex inline + spacer). -->
-                        <div style="flex: 1 1 auto;"/>
+                                </div>
+                            </div>
+                            <div style="display: table-row;">
+                                <div style="display: table-cell; vertical-align: bottom;">
+                        <!-- ================= FOOTER / FIRMAS (anclado al fondo de la última hoja) ================= -->
                         <div style="margin-top: 30px; width: 100%; page-break-inside: avoid;">
 
                             <!-- Notas de entrega -->
@@ -271,6 +277,9 @@
                             
                             <div class="text-center text-muted mt-2" style="font-size: 6px;">
                                 Documento Interno | Página <span class="page"/>
+                            </div>
+                        </div>
+                                </div>
                             </div>
                         </div>
 

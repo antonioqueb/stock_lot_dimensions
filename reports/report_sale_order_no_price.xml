@@ -8,7 +8,12 @@
     <template id="report_sale_order_document_no_prices_custom">
         <t t-call="web.external_layout">
             <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)"/>
-            <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; display: flex; flex-direction: column; min-height: 212mm;">
+            <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000;">
+
+                <!-- Tabla de página: ancla el footer al fondo (wkhtmltopdf/QtWebKit, sin flexbox). -->
+                <div style="display: table; width: 100%; height: 212mm;">
+                    <div style="display: table-row; height: 100%;">
+                        <div style="display: table-cell; vertical-align: top;">
 
                 <!-- ================= ENCABEZADO ================= -->
                 <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
@@ -217,9 +222,11 @@
                     </div>
                 </div>
 
-                <!-- ================= FOOTER / FIRMAS ================= -->
-                <!-- Empuja el footer (firmas/banco/términos) al fondo de la última hoja (div.page es flex inline + spacer). -->
-                <div style="flex: 1 1 auto;"/>
+                        </div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div style="display: table-cell; vertical-align: bottom;">
+                <!-- ================= FOOTER / FIRMAS (anclado al fondo de la última hoja) ================= -->
                 <div style="margin-top: 50px; width: 100%; page-break-inside: avoid;">
                     <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                         <div class="col-1"></div>
@@ -271,6 +278,9 @@
                                 </div>
                             </div>
 
+                        </div>
+                    </div>
+                </div>
                         </div>
                     </div>
                 </div>
