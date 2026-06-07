@@ -141,12 +141,6 @@
                             }
                         </style>
 
-                        <!-- Tabla de página: ancla el footer al fondo (compatible con wkhtmltopdf/QtWebKit,
-                             que NO soporta flexbox). Fila de contenido absorbe el espacio libre; fila del footer abajo. -->
-                        <div style="display: table; width: 100%; height: 212mm;">
-                            <div style="display: table-row; height: 100%;">
-                                <div style="display: table-cell; vertical-align: top;">
-
                         <!-- ENCABEZADO -->
                         <div class="row border-bottom pb-2 mb-2" style="border-color: #000 !important; align-items: center;">
                             <div class="col-8">
@@ -736,11 +730,10 @@
                         </div>
                         </div>
 
-                                </div>
-                            </div>
-                            <div style="display: table-row;">
-                                <div style="display: table-cell; vertical-align: bottom;">
-                        <!-- FOOTER / FIRMAS (anclado al fondo de la última hoja) -->
+                        <!-- Firmas, banco y términos se renderizan en el PIE DINÁMICO del PDF
+                             (reports/report_lastpage_footer.xml), solo en la última hoja, cuando el
+                             flag 'aq_lastpage_tc' está activo. Si se desactiva, este bloque vuelve. -->
+                        <t t-if="not env.context.get('aq_lastpage_tc')">
                         <div style="margin-top: 50px; width: 100%; page-break-inside: avoid;">
                             <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                                 <div class="col-1"></div>
@@ -807,9 +800,7 @@
                                 </div>
                             </div>
                         </div>
-                                </div>
-                            </div>
-                        </div>
+                        </t>
 
                     </div>
     </template>

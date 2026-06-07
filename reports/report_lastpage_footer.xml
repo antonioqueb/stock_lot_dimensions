@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================= -->
+    <!-- PRUEBA DE MECANISMO: Footer dinámico de última hoja           -->
+    <!--                                                               -->
+    <!-- Objetivo: validar que en este wkhtmltopdf funciona la         -->
+    <!-- detección de última hoja (page == topage) vía JS y el margen  -->
+    <!-- inferior reservado. Cuando se confirme, aquí irán los         -->
+    <!-- Términos y Condiciones + Firmas reales por modelo.            -->
+    <!-- ============================================================= -->
+
+    <!-- Paperformat Carta con margen inferior amplio para alojar T&C en el pie -->
+    <record id="paperformat_aq_lastpage_carta" model="report.paperformat">
+        <field name="name">AQ Carta - T&amp;C en pie de última hoja</field>
+        <field name="format">Letter</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">30</field>
+        <field name="margin_bottom">80</field>
+        <field name="margin_left">7</field>
+        <field name="margin_right">7</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">10</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <!-- Contenido del pie dinámico: FIRMAS + BANCO + TÉRMINOS reales por modelo.
+         Se renderiza oculto (display:none) y el JS de abajo lo muestra SOLO en la
+         última hoja (page == topage). Usa 'o' (definido por external_layout). -->
+    <template id="aq_lastpage_footer_content">
+
+        <!-- ===================== VENTA (sale.order) ===================== -->
+        <!-- Solo se activa en los reportes marcados con el flag de contexto
+             'aq_lastpage_tc' (ver acciones más abajo), así NO afecta a la
+             cotización sin precios ni a la pro-forma estándar de Odoo. -->
+        <div t-if="env.context.get('aq_lastpage_tc') and o and o._name == 'sale.order'" class="aq-lastpage-only" style="display: none;">
+            <!-- Firmas -->
+            <div class="row" style="margin-bottom: 5px;">
+                <div class="col-1"></div>
+                <div class="col-4 text-center">
+                    <div style="border-top: 1px solid #000; padding-top: 3px;">
+                        <strong style="font-size: 8px; text-transform: uppercase;">FIRMA DEL VENDEDOR</strong>
+                    </div>
+                </div>
+                <div class="col-2"></div>
+                <div class="col-4 text-center">
+                    <div style="border-top: 1px solid #000; padding-top: 3px;">
+                        <strong style="font-size: 8px; text-transform: uppercase;">FIRMA DEL CLIENTE</strong>
+                    </div>
+                </div>
+                <div class="col-1"></div>
+            </div>
+
+            <!-- Datos bancarios -->
+            <t t-set="company" t-value="o.company_id"/>
+            <div class="aq-bank-details" style="font-size: 8px; line-height: 1.2; margin-bottom: 4px; overflow-wrap: anywhere; word-break: break-word;">
+                <t t-call="stock_lot_dimensions.company_bank_details_block"/>
+            </div>
+
+            <!-- Términos y Condiciones -->
+            <div style="border: 1px solid #ccc; padding: 5px; background-color: #fafafa;">
+                <strong style="font-size: 8px; display: block; border-bottom: 1px solid #eee; margin-bottom: 3px; text-transform: uppercase;">
+                    <t t-if="o.state in ('draft', 'sent')">Términos y Condiciones – Cotización</t>
+                    <t t-if="o.state in ('sale', 'done')">Términos y Condiciones – Orden de Venta</t>
+                </strong>
+                <div style="font-size: 7.5px; line-height: 1.2; text-align: justify; color: #555; overflow-wrap: anywhere; word-break: break-word;">
+                    <p style="margin: 0 0 2px 0;">• El mármol y granito son materiales naturales, por lo que pueden existir variaciones en coloración, vetas y tonalidad respecto a muestras o imágenes.</p>
+                    <t t-if="o.state in ('draft', 'sent')">
+                        <p style="margin: 0 0 2px 0;">• Los precios están sujetos a disponibilidad y no garantizan existencia hasta recibir confirmación de pago.</p>
+                        <p style="margin: 0 0 2px 0;">• En materiales de importación o bajo pedido, los tiempos de entrega son estimados y pueden variar por causas ajenas a la empresa.</p>
+                        <p style="margin: 0 0 2px 0;">• En caso de existir variación en el tipo de cambio entre la fecha de cotización y el pago, se realizará el ajuste correspondiente al día del pago.</p>
+                        <p style="margin: 0 0 2px 0;">• La cotización no incluye maniobras especiales de descarga ni servicios adicionales, salvo que se especifique por escrito.</p>
+                        <p style="margin: 0;">• Los precios pueden cambiar sin previo aviso en caso de incrementos por parte del proveedor.</p>
+                    </t>
+                    <t t-if="o.state in ('sale', 'done')">
+                        <p style="margin: 0 0 2px 0;">• La presente orden de venta confirma los materiales, cantidades y precios acordados con el cliente.</p>
+                        <p style="margin: 0 0 2px 0;">• En caso de devolución autorizada, el material deberá entregarse en las mismas condiciones en que fue recibido, sin daño, sin cortes y sin haber sido instalado.</p>
+                        <p style="margin: 0 0 2px 0;">• Después de 3 meses de almacenaje, se comenzará a generar un cargo de $7.00 MXN por m², por mes o fracción.</p>
+                        <p style="margin: 0 0 2px 0;">• La entrega del material está sujeta a que el pedido se encuentre liquidado al 100%.</p>
+                        <p style="margin: 0 0 2px 0;">• Cualquier aclaración deberá realizarse por escrito dentro de las 24 horas posteriores a la entrega.</p>
+                        <p style="margin: 0 0 2px 0;">• El cliente acepta las condiciones aquí descritas a partir del momento en que se recibe el anticipo y/o el pago total correspondiente a esta orden de venta.</p>
+                        <p style="margin: 0;">• El plazo de entrega será de 24 a 48 horas hábiles, contado a partir de la confirmación de disponibilidad del material y de la recepción del pago total correspondiente al pedido.</p>
+                    </t>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            (function () {
+                function aqToggleLastPage() {
+                    try {
+                        var qs = window.location.search || '';
+                        var get = function (k) {
+                            var m = qs.match(new RegExp('[?&amp;]' + k + '=(\\d+)'));
+                            return m ? parseInt(m[1], 10) : 0;
+                        };
+                        var page = get('page');
+                        var topage = get('topage');
+                        var isLast = page &amp;&amp; topage &amp;&amp; page === topage;
+                        var els = document.getElementsByClassName('aq-lastpage-only');
+                        for (var i = 0; i &lt; els.length; i++) {
+                            els[i].style.display = isLast ? 'block' : 'none';
+                        }
+                    } catch (e) { /* noop */ }
+                }
+                if (document.readyState !== 'loading') { aqToggleLastPage(); }
+                else { document.addEventListener('DOMContentLoaded', aqToggleLastPage); }
+                window.addEventListener('load', aqToggleLastPage);
+            })();
+        </script>
+    </template>
+
+    <!-- Inyectamos el pie en los 4 layouts estándar de Odoo (el que use la empresa).
+         Va dentro del .footer; el contenido solo se renderiza para nuestros modelos
+         (guardado por o._name), así NO afecta a otros reportes (facturas, etc.). -->
+    <template id="aq_lastpage_footer_standard" inherit_id="web.external_layout_standard">
+        <xpath expr="//div[hasclass('footer')]" position="inside">
+            <t t-call="stock_lot_dimensions.aq_lastpage_footer_content"/>
+        </xpath>
+    </template>
+
+    <template id="aq_lastpage_footer_boxed" inherit_id="web.external_layout_boxed">
+        <xpath expr="//div[hasclass('footer')]" position="inside">
+            <t t-call="stock_lot_dimensions.aq_lastpage_footer_content"/>
+        </xpath>
+    </template>
+
+    <template id="aq_lastpage_footer_bold" inherit_id="web.external_layout_bold">
+        <xpath expr="//div[hasclass('footer')]" position="inside">
+            <t t-call="stock_lot_dimensions.aq_lastpage_footer_content"/>
+        </xpath>
+    </template>
+
+    <template id="aq_lastpage_footer_clean" inherit_id="web.external_layout_clean">
+        <xpath expr="//div[hasclass('footer')]" position="inside">
+            <t t-call="stock_lot_dimensions.aq_lastpage_footer_content"/>
+        </xpath>
+    </template>
+
+    <!-- ============================================================= -->
+    <!-- Activación por reporte: paperformat (margen inferior amplio) + -->
+    <!-- flag de contexto 'aq_lastpage_tc' que enciende el pie dinámico. -->
+    <!-- Solo en: Orden de Venta y Detalle (con y sin precios).         -->
+    <!-- ============================================================= -->
+
+    <!-- Orden de Venta (estándar, usa nuestra plantilla) -->
+    <record id="sale.action_report_saleorder" model="ir.actions.report">
+        <field name="paperformat_id" ref="stock_lot_dimensions.paperformat_aq_lastpage_carta"/>
+        <field name="context">{'aq_lastpage_tc': True}</field>
+    </record>
+
+    <!-- Orden de Venta (Sin Precios) -->
+    <record id="stock_lot_dimensions.action_report_sale_order_main_no_prices" model="ir.actions.report">
+        <field name="paperformat_id" ref="stock_lot_dimensions.paperformat_aq_lastpage_carta"/>
+        <field name="context">{'aq_lastpage_tc': True}</field>
+    </record>
+
+    <!-- Orden de Venta - Detalle -->
+    <record id="stock_lot_dimensions.action_report_sale_order_custom_detail" model="ir.actions.report">
+        <field name="paperformat_id" ref="stock_lot_dimensions.paperformat_aq_lastpage_carta"/>
+        <field name="context">{'aq_lastpage_tc': True}</field>
+    </record>
+
+    <!-- Orden de Venta - Detalle (Sin Precios) -->
+    <record id="stock_lot_dimensions.action_report_sale_order_detail_no_prices" model="ir.actions.report">
+        <field name="paperformat_id" ref="stock_lot_dimensions.paperformat_aq_lastpage_carta"/>
+        <field name="context">{'aq_lastpage_tc': True}</field>
+    </record>
+</odoo>

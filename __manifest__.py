@@ -47,6 +47,7 @@
         'reports/pick_ticket_report.xml',
         'reports/report_sale_order_no_price.xml',
         'reports/sale_order_custom_detail_report.xml',
+        'reports/report_lastpage_footer.xml',
 
         'views/res_company_bank_info_views.xml',
         'views/stock_lot_views.xml',
