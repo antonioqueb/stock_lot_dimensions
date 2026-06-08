@@ -30,7 +30,6 @@
                     <t t-set="address" t-value="False"/>
                     <t t-set="information_block" t-value="False"/>
                     <t t-set="show_prices" t-value="True"/>
-                    <t t-set="o" t-value="o.with_context(aq_lastpage_tc=True)"/>
                     <t t-call="stock_lot_dimensions.report_sale_order_detail_body"/>
                 </t>
             </t>
@@ -45,7 +44,6 @@
                     <t t-set="address" t-value="False"/>
                     <t t-set="information_block" t-value="False"/>
                     <t t-set="show_prices" t-value="False"/>
-                    <t t-set="o" t-value="o.with_context(aq_lastpage_tc=True)"/>
                     <t t-call="stock_lot_dimensions.report_sale_order_detail_body"/>
                 </t>
             </t>
