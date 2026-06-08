@@ -32,7 +32,7 @@
         <!-- Solo se activa en los reportes marcados con el flag de contexto
              'aq_lastpage_tc' (ver acciones más abajo), así NO afecta a la
              cotización sin precios ni a la pro-forma estándar de Odoo. -->
-        <div t-if="env.context.get('aq_lastpage_tc') and o and o._name == 'sale.order'" class="aq-lastpage-only" style="display: none;">
+        <div t-if="o and o._name == 'sale.order' and o.env.context.get('aq_lastpage_tc')" class="aq-lastpage-only" style="display: none;">
             <!-- Firmas -->
             <div class="row" style="margin-bottom: 5px;">
                 <div class="col-1"></div>
@@ -132,24 +132,20 @@
     <!-- Orden de Venta (estándar, usa nuestra plantilla) -->
     <record id="sale.action_report_saleorder" model="ir.actions.report">
         <field name="paperformat_id" ref="stock_lot_dimensions.paperformat_aq_lastpage_carta"/>
-        <field name="context">{'aq_lastpage_tc': True}</field>
     </record>
 
     <!-- Orden de Venta (Sin Precios) -->
     <record id="stock_lot_dimensions.action_report_sale_order_main_no_prices" model="ir.actions.report">
         <field name="paperformat_id" ref="stock_lot_dimensions.paperformat_aq_lastpage_carta"/>
-        <field name="context">{'aq_lastpage_tc': True}</field>
     </record>
 
     <!-- Orden de Venta - Detalle -->
     <record id="stock_lot_dimensions.action_report_sale_order_custom_detail" model="ir.actions.report">
         <field name="paperformat_id" ref="stock_lot_dimensions.paperformat_aq_lastpage_carta"/>
-        <field name="context">{'aq_lastpage_tc': True}</field>
     </record>
 
     <!-- Orden de Venta - Detalle (Sin Precios) -->
     <record id="stock_lot_dimensions.action_report_sale_order_detail_no_prices" model="ir.actions.report">
         <field name="paperformat_id" ref="stock_lot_dimensions.paperformat_aq_lastpage_carta"/>
-        <field name="context">{'aq_lastpage_tc': True}</field>
     </record>
 </odoo>

@@ -4,6 +4,9 @@
 
         <xpath expr="//t[@t-set='address']" position="replace">
             <t t-set="address" t-value="False"/>
+            <!-- Flag para activar el PIE DINÁMICO (Términos+Firmas en última hoja).
+                 Se inyecta en el contexto del registro; el footer lo lee con o.env.context. -->
+            <t t-set="doc" t-value="doc.with_context(aq_lastpage_tc=True)"/>
         </xpath>
 
         <xpath expr="//t[@t-set='information_block']" position="replace">
@@ -528,7 +531,7 @@
                      (reports/report_lastpage_footer.xml), solo en la última hoja, cuando el
                      flag 'aq_lastpage_tc' está activo. Si se desactiva el flag, este bloque
                      del cuerpo vuelve a mostrarse (rollback automático). -->
-                <t t-if="not env.context.get('aq_lastpage_tc')">
+                <t t-if="not doc.env.context.get('aq_lastpage_tc')">
                 <div style="margin-top: 50px; width: 100%; page-break-inside: avoid;">
                     <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                         <div class="col-1"></div>
@@ -598,6 +601,7 @@
                     <t t-set="address" t-value="False"/>
                     <t t-set="information_block" t-value="False"/>
                     <t t-set="show_prices" t-value="False"/>
+                    <t t-set="doc" t-value="doc.with_context(aq_lastpage_tc=True)"/>
                     <t t-call="stock_lot_dimensions.report_sale_order_main_body"/>
                 </t>
             </t>

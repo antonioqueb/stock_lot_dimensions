@@ -30,6 +30,7 @@
                     <t t-set="address" t-value="False"/>
                     <t t-set="information_block" t-value="False"/>
                     <t t-set="show_prices" t-value="True"/>
+                    <t t-set="o" t-value="o.with_context(aq_lastpage_tc=True)"/>
                     <t t-call="stock_lot_dimensions.report_sale_order_detail_body"/>
                 </t>
             </t>
@@ -44,6 +45,7 @@
                     <t t-set="address" t-value="False"/>
                     <t t-set="information_block" t-value="False"/>
                     <t t-set="show_prices" t-value="False"/>
+                    <t t-set="o" t-value="o.with_context(aq_lastpage_tc=True)"/>
                     <t t-call="stock_lot_dimensions.report_sale_order_detail_body"/>
                 </t>
             </t>
@@ -733,7 +735,7 @@
                         <!-- Firmas, banco y términos se renderizan en el PIE DINÁMICO del PDF
                              (reports/report_lastpage_footer.xml), solo en la última hoja, cuando el
                              flag 'aq_lastpage_tc' está activo. Si se desactiva, este bloque vuelve. -->
-                        <t t-if="not env.context.get('aq_lastpage_tc')">
+                        <t t-if="not o.env.context.get('aq_lastpage_tc')">
                         <div style="margin-top: 50px; width: 100%; page-break-inside: avoid;">
                             <div class="row" style="margin-top: 40px; margin-bottom: 10px;">
                                 <div class="col-1"></div>
