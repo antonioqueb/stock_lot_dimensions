@@ -328,7 +328,37 @@ class StockLotHoldOrder(models.Model):
                 product_groups[pid]['quantity'] += quant.quantity
                 product_groups[pid]['selected_lots'].append(quant.id)
 
+            # Material sin existencia / "mandar a pedir": no tiene placas pero sí
+            # una cantidad capturada manualmente. Esa cantidad debe propagarse a
+            # la línea de la SO y la línea debe marcarse para envío a compra.
+            is_backorder = self._hold_line_is_backorder(line)
+            _logger.info(
+                "[HOLD→SO] Línea reserva product=%s lots=%s lot_id=%s quant_id=%s "
+                "cantidad_m2=%s backorder=%s",
+                line.product_id.display_name,
+                line.lot_ids.ids,
+                getattr(line, 'lot_id', False) and line.lot_id.id,
+                getattr(line, 'quant_id', False) and line.quant_id.id,
+                line.cantidad_m2,
+                is_backorder,
+            )
+            if is_backorder:
+                product_groups[pid]['quantity'] += line.cantidad_m2 or 0.0
+                product_groups[pid]['to_be_purchased'] = True
+
         products = list(product_groups.values())
+        _logger.info(
+            "[HOLD→SO] product_groups final: %s",
+            [
+                {
+                    'product_id': p['product_id'],
+                    'quantity': p['quantity'],
+                    'to_be_purchased': p.get('to_be_purchased', False),
+                    'n_lots': len(p['selected_lots']),
+                }
+                for p in products
+            ],
+        )
 
         notes = self.notas or ''
 
