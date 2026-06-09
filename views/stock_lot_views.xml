@@ -188,7 +188,7 @@
                                 </div>
                                 <div class="o_kanban_record_bottom">
                                     <span class="text-muted" style="font-size: 11px;">
-                                        <i class="fa fa-clock-o"/> 
+                                        <i class="fa fa-clock-o" title="Fecha de captura" role="img" aria-label="Fecha de captura"/>
                                         <field name="fecha_captura" widget="datetime"/>
                                     </span>
                                 </div>
