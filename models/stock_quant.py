@@ -21,7 +21,7 @@ class StockQuant(models.Model):
     x_peso = fields.Float(related='lot_id.x_peso', string='Peso (kg)', readonly=True)
     x_grosor = fields.Char(related='lot_id.x_grosor', string='Grosor', readonly=True)
     x_alto = fields.Float(related='lot_id.x_alto', string='Alto', readonly=True)
-    x_ancho = fields.Float(related='lot_id.x_ancho', string='Ancho', readonly=True)
+    x_ancho = fields.Float(related='lot_id.x_ancho', string='Largo', readonly=True)
     x_numero_placa = fields.Char(related='lot_id.x_numero_placa', string='No. Placa', readonly=True)
     x_bloque = fields.Char(related='lot_id.x_bloque', string='Bloque', readonly=True)
     x_tipo = fields.Selection(related='lot_id.x_tipo', string='Tipo', readonly=True)

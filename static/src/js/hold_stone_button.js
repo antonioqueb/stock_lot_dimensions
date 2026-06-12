@@ -327,7 +327,7 @@ export class HoldStoneButton extends Component {
                             <th>Bloque</th>
                             <th>Atado</th>
                             <th class="col-num">Alto</th>
-                            <th class="col-num">Ancho</th>
+                            <th class="col-num">Largo</th>
                             <th class="col-num">Espesor</th>
                             <th class="col-num">M²</th>
                             <th>Tipo</th>
@@ -507,7 +507,7 @@ export class HoldStoneButton extends Component {
                         </div>
 
                         <div class="hold-stone-filter-group">
-                            <label>Ancho mín.</label>
+                            <label>Largo mín.</label>
                             <input type="number" class="hold-stone-filter-input hold-stone-filter-sm" id="hold-filter-width" placeholder="0" step="0.01"/>
                         </div>
 
@@ -776,7 +776,7 @@ export class HoldStoneButton extends Component {
                             <th>Bloque</th>
                             <th>Atado</th>
                             <th class="col-num">Alto</th>
-                            <th class="col-num">Ancho</th>
+                            <th class="col-num">Largo</th>
                             <th class="col-num">Esp.</th>
                             <th class="col-num">M²</th>
                             <th>Tipo</th>

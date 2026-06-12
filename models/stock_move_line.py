@@ -48,9 +48,9 @@ class StockMoveLine(models.Model):
     )
 
     x_ancho_temp = fields.Float(
-        string='Ancho (m)',
+        string='Largo (m)',
         digits=(10, 4),
-        help='Ancho del producto en metros (se guardará en el lote)',
+        help='Largo del producto en metros (se guardará en el lote)',
     )
 
     x_tipo_temp = fields.Selection(
@@ -142,7 +142,7 @@ class StockMoveLine(models.Model):
 
     x_ancho_lote = fields.Float(
         related='lot_id.x_ancho',
-        string='Ancho Lote (m)',
+        string='Largo Lote (m)',
         readonly=True,
         store=False,
     )

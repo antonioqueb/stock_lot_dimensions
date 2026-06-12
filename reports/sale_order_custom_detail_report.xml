@@ -346,7 +346,7 @@
                                             <th style="color: #fff; width: 14%; font-weight: bold;">Lote</th>
                                             <th style="color: #fff; width: 10%; font-weight: bold;">Bloque</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Espesor</th>
-                                            <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Ancho</th>
+                                            <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Largo</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Alto</th>
                                             <th class="text-end" style="color: #fff; width: 7%; font-weight: bold;">m²</th>
                                             <t t-if="show_prices">

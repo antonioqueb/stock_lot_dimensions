@@ -110,7 +110,7 @@
                                     <th style="width: 8%; color: #fff; font-weight: bold;">BLOQUE</th>
                                     <th style="width: 8%; color: #fff; font-weight: bold;">ATADO</th>
                                     <th class="text-center" style="width: 8%; color: #fff; font-weight: bold;">GROSOR</th>
-                                    <th class="text-center" style="width: 8%; color: #fff; font-weight: bold;">ANCHO</th>
+                                    <th class="text-center" style="width: 8%; color: #fff; font-weight: bold;">LARGO</th>
                                     <th class="text-center" style="width: 8%; color: #fff; font-weight: bold;">ALTO</th>
                                     <th class="text-end" style="width: 10%; color: #fff; font-weight: bold;">CANTIDAD</th>
                                     <th class="text-center" style="width: 10%; color: #fff; font-weight: bold;">UDM</th>

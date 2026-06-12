@@ -28,9 +28,9 @@ class LotDimensionFields:
                 help='Alto del producto en metros'
             ),
             'x_ancho': fields.Float(
-                string='Ancho (m)',
+                string='Largo (m)',
                 digits=(10, 4),
-                help='Ancho del producto en metros'
+                help='Largo del producto en metros'
             ),
             'x_peso': fields.Float(
                 string='Peso (kg)',
