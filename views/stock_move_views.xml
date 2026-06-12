@@ -21,7 +21,7 @@
                        readonly="not x_is_incoming"/>
                 <field name="x_ancho_temp" 
                        optional="show" 
-                       string="Ancho (m)"
+                       string="Largo (m)"
                        readonly="not x_is_incoming"/>
                 <!-- NUEVO CAMPO COLOR (TEMPORAL) -->
                 <field name="x_color_temp" 
@@ -76,7 +76,7 @@
             <xpath expr="//field[@name='lot_id']" position="after">
                 <field name="x_grosor_lote" optional="hide" string="Espesor (cm)"/>
                 <field name="x_alto_lote" optional="hide" string="Alto (m)"/>
-                <field name="x_ancho_lote" optional="hide" string="Ancho (m)"/>
+                <field name="x_ancho_lote" optional="hide" string="Largo (m)"/>
                 <!-- NUEVO CAMPO COLOR (LOTE) -->
                 <field name="x_color_lote" optional="show" string="Color"/>
                 
@@ -123,7 +123,7 @@
                            string="Alto (m)"
                            readonly="not x_is_incoming"/>
                     <field name="x_ancho_temp" 
-                           string="Ancho (m)"
+                           string="Largo (m)"
                            readonly="not x_is_incoming"/>
 
                     <field name="x_peso_temp" 
