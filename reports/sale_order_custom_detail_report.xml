@@ -88,6 +88,10 @@
                         <t t-set="global_discount_total_amount" t-value="global_discount_total_amount + abs(disc_line.price_subtotal)"/>
                     </t>
 
+                    <!-- Redondeo con la moneda: evita residuos de punto flotante que
+                         mostrarían filas de descuento en $0.00 cuando no hay descuento -->
+                    <t t-set="line_discount_total_amount" t-value="o.currency_id.round(line_discount_total_amount)"/>
+                    <t t-set="global_discount_total_amount" t-value="o.currency_id.round(global_discount_total_amount)"/>
                     <t t-set="total_discount_amount" t-value="line_discount_total_amount + global_discount_total_amount"/>
 
                     <t t-set="state_label"
