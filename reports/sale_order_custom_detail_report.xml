@@ -765,6 +765,11 @@
 
                                     <div class="aq-bank-details" style="font-size: 11px; line-height: 1.35; margin-bottom: 8px; overflow-wrap: anywhere; word-break: break-word;">
                                         <t t-call="stock_lot_dimensions.company_bank_details_block"/>
+                                        <div t-if="show_prices" style="border: 1px solid #d8d8d8; border-left: 3px solid #2f2f2f; background-color: #f2f2f2; padding: 6px 8px; margin-top: 5px; font-size: 9px; color: #222;">
+                                            <strong style="text-transform: uppercase;">Importante:</strong>
+                                            En pagos por transferencia o depósito bancario, indicar como referencia el folio de esta orden:
+                                            <strong t-esc="o.name"/>.
+                                        </div>
                                     </div>
 
                                     <div class="aq-terms-conditions" style="border: 1px solid #ccc; padding: 8px; background-color: #fafafa; font-size: 11px; line-height: 1.35; page-break-inside: avoid; break-inside: avoid;">
