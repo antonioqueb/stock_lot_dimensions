@@ -51,8 +51,8 @@
                         <th style="color: #fff; width: 16%; font-weight: bold;">Lote</th>
                         <th style="color: #fff; width: 13%; font-weight: bold;">Bloque</th>
                         <th class="text-center" style="color: #fff; width: 9%; font-weight: bold;">Espesor</th>
-                        <th class="text-center" style="color: #fff; width: 9%; font-weight: bold;">Alto</th>
                         <th class="text-center" style="color: #fff; width: 9%; font-weight: bold;">Ancho</th>
+                        <th class="text-center" style="color: #fff; width: 9%; font-weight: bold;">Alto</th>
                         <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">m²</th>
                         <t t-if="show_prices">
                             <th class="text-end" style="color: #fff; width: 13%; font-weight: bold;">P. Unitario</th>
@@ -83,8 +83,8 @@
                                 <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><strong t-esc="lot.name or ''"/></td>
                                 <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><span t-esc="lot.x_bloque or ''"/></td>
                                 <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="lot.x_grosor or ''"/></td>
-                                <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="'%.3f' % (lot.x_alto or 0.0)"/></td>
                                 <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="'%.3f' % (lot.x_ancho or 0.0)"/></td>
+                                <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="'%.3f' % (lot.x_alto or 0.0)"/></td>
                                 <td class="text-end align-middle" style="white-space: nowrap;"><strong t-esc="'%.2f' % lot_m2"/></td>
                                 <t t-if="show_prices">
                                     <td class="text-end align-middle" style="white-space: nowrap;">

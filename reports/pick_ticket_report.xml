@@ -110,8 +110,8 @@
                                     <th style="width: 8%; color: #fff; font-weight: bold;">BLOQUE</th>
                                     <th style="width: 8%; color: #fff; font-weight: bold;">ATADO</th>
                                     <th class="text-center" style="width: 8%; color: #fff; font-weight: bold;">GROSOR</th>
-                                    <th class="text-center" style="width: 8%; color: #fff; font-weight: bold;">ALTO</th>
                                     <th class="text-center" style="width: 8%; color: #fff; font-weight: bold;">ANCHO</th>
+                                    <th class="text-center" style="width: 8%; color: #fff; font-weight: bold;">ALTO</th>
                                     <th class="text-end" style="width: 10%; color: #fff; font-weight: bold;">CANTIDAD</th>
                                     <th class="text-center" style="width: 10%; color: #fff; font-weight: bold;">UDM</th>
                                     <th class="text-center" style="width: 5%; color: #fff; font-weight: bold;">✓</th>
@@ -162,8 +162,8 @@
                                                 <td class="align-middle"><span t-field="line.lot_id.x_bloque"/></td>
                                                 <td class="align-middle"><span t-field="line.lot_id.x_atado"/></td>
                                                 <td class="text-center align-middle"><span t-field="line.lot_id.x_grosor"/></td>
-                                                <td class="text-center align-middle"><span t-field="line.lot_id.x_alto" t-options='{"widget": "float", "precision": 3}'/></td>
                                                 <td class="text-center align-middle"><span t-field="line.lot_id.x_ancho" t-options='{"widget": "float", "precision": 3}'/></td>
+                                                <td class="text-center align-middle"><span t-field="line.lot_id.x_alto" t-options='{"widget": "float", "precision": 3}'/></td>
                                                 
                                                 <td class="text-end align-middle">
                                                     <strong t-esc="qty_to_show" t-options='{"widget": "float", "precision": 2}'/>

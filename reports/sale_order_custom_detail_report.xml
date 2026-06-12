@@ -346,8 +346,8 @@
                                             <th style="color: #fff; width: 14%; font-weight: bold;">Lote</th>
                                             <th style="color: #fff; width: 10%; font-weight: bold;">Bloque</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Espesor</th>
-                                            <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Alto</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Ancho</th>
+                                            <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Alto</th>
                                             <th class="text-end" style="color: #fff; width: 7%; font-weight: bold;">m²</th>
                                             <t t-if="show_prices">
                                                 <th class="text-end" style="color: #fff; width: 8%; font-weight: bold;">P. Unitario</th>
@@ -410,13 +410,13 @@
                                                         </td>
 
                                                         <td class="text-center align-middle" style="white-space: nowrap;">
-                                                            <span t-if="lot.x_alto and str(lot.x_alto).strip().replace('.','',1).replace('-','',1).isdigit()" t-esc="'%.3f' % float(lot.x_alto)"/>
-                                                            <span t-else="" t-esc="lot.x_alto or ''"/>
+                                                            <span t-if="lot.x_ancho and str(lot.x_ancho).strip().replace('.','',1).replace('-','',1).isdigit()" t-esc="'%.3f' % float(lot.x_ancho)"/>
+                                                            <span t-else="" t-esc="lot.x_ancho or ''"/>
                                                         </td>
 
                                                         <td class="text-center align-middle" style="white-space: nowrap;">
-                                                            <span t-if="lot.x_ancho and str(lot.x_ancho).strip().replace('.','',1).replace('-','',1).isdigit()" t-esc="'%.3f' % float(lot.x_ancho)"/>
-                                                            <span t-else="" t-esc="lot.x_ancho or ''"/>
+                                                            <span t-if="lot.x_alto and str(lot.x_alto).strip().replace('.','',1).replace('-','',1).isdigit()" t-esc="'%.3f' % float(lot.x_alto)"/>
+                                                            <span t-else="" t-esc="lot.x_alto or ''"/>
                                                         </td>
 
                                                         <td class="text-end align-middle" style="white-space: nowrap;">
