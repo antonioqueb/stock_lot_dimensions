@@ -105,27 +105,20 @@ class StockLotHoldOrder(models.Model):
 
     @staticmethod
     def _format_partner_address(partner):
-        """Formatea la dirección postal de un contacto en texto multilínea."""
-        parts = []
-        if partner.street:
-            parts.append(partner.street)
-        if partner.street2:
-            parts.append(partner.street2)
+        """Dirección completa del contacto en texto multilínea.
 
-        city = []
-        if partner.city:
-            city.append(partner.city)
-        if partner.state_id:
-            city.append(partner.state_id.name)
-        if partner.zip:
-            city.append(f"C.P. {partner.zip}")
-
-        if city:
-            parts.append(', '.join(city))
-        if partner.country_id:
-            parts.append(partner.country_id.name)
-
-        return '\n'.join(parts) if parts else ''
+        Usa el formateador de direcciones de Odoo (_display_address), que
+        respeta el formato del país e incluye calle, calle2, ciudad, estado,
+        C.P. y país. Antepone el nombre del contacto de entrega cuando aporta
+        información (p. ej. "Bodega Norte").
+        """
+        address = partner._display_address(without_company=True) or ''
+        lines = []
+        if partner.name and partner.name not in address:
+            lines.append(partner.name)
+        if address:
+            lines.append(address)
+        return '\n'.join(lines).strip()
 
     @api.depends(
         'hold_line_ids',
