@@ -86,27 +86,46 @@ class StockLotHoldOrder(models.Model):
 
     @api.onchange('partner_id')
     def _onchange_partner_id(self):
-        if self.partner_id:
-            parts = []
-            if self.partner_id.street:
-                parts.append(self.partner_id.street)
-            if self.partner_id.street2:
-                parts.append(self.partner_id.street2)
+        # La dirección de entrega se toma del contacto de tipo "Dirección de
+        # entrega" del cliente. Si el cliente no tiene uno, se deja vacío
+        # (no se usa la dirección propia del cliente).
+        self.delivery_address = self._get_delivery_address_text(self.partner_id)
 
-            city = []
-            if self.partner_id.city:
-                city.append(self.partner_id.city)
-            if self.partner_id.state_id:
-                city.append(self.partner_id.state_id.name)
-            if self.partner_id.zip:
-                city.append(f"C.P. {self.partner_id.zip}")
+    def _get_delivery_address_text(self, partner):
+        """Texto de la dirección de entrega tomada del contacto hijo de tipo
+        'delivery' del cliente. Devuelve '' si no existe tal contacto."""
+        if not partner:
+            return ''
+        delivery = partner.child_ids.filtered(
+            lambda c: c.type == 'delivery'
+        )[:1]
+        if not delivery:
+            return ''
+        return self._format_partner_address(delivery)
 
-            if city:
-                parts.append(', '.join(city))
-            if self.partner_id.country_id:
-                parts.append(self.partner_id.country_id.name)
+    @staticmethod
+    def _format_partner_address(partner):
+        """Formatea la dirección postal de un contacto en texto multilínea."""
+        parts = []
+        if partner.street:
+            parts.append(partner.street)
+        if partner.street2:
+            parts.append(partner.street2)
 
-            self.delivery_address = '\n'.join(parts) if parts else ''
+        city = []
+        if partner.city:
+            city.append(partner.city)
+        if partner.state_id:
+            city.append(partner.state_id.name)
+        if partner.zip:
+            city.append(f"C.P. {partner.zip}")
+
+        if city:
+            parts.append(', '.join(city))
+        if partner.country_id:
+            parts.append(partner.country_id.name)
+
+        return '\n'.join(parts) if parts else ''
 
     @api.depends(
         'hold_line_ids',
