@@ -107,7 +107,19 @@ export class HoldStoneButton extends Component {
     // Cantidad / m²
     // ─────────────────────────────────────────────────────────────────────
 
-    async _computeM2ForLots(lotIds) {
+    _getCurrentBreakdownMap() {
+        // Lee el desglose por lote ya guardado en la línea (parcialidades de
+        // formatos/piezas). Devuelve {lotIdStr: cantidad}.
+        const raw = this.props.record.data.x_lot_breakdown_json;
+        if (!raw || typeof raw !== "object") return {};
+        const map = {};
+        for (const [key, value] of Object.entries(raw)) {
+            map[String(key)] = parseFloat(value) || 0;
+        }
+        return map;
+    }
+
+    async _computeM2ForLots(lotIds, breakdown = null) {
         if (!lotIds || !lotIds.length) return 0.0;
 
         try {
@@ -122,9 +134,22 @@ export class HoldStoneButton extends Component {
                 { limit: lotIds.length * 3 }
             );
 
-            let total = 0.0;
+            // Cantidad completa por lote (placas).
+            const qtyByLot = {};
             for (const quant of quants) {
-                total += quant.quantity || 0;
+                const lid = quant.lot_id ? quant.lot_id[0] : 0;
+                qtyByLot[String(lid)] = (qtyByLot[String(lid)] || 0) + (quant.quantity || 0);
+            }
+
+            let total = 0.0;
+            for (const lid of lotIds) {
+                const key = String(lid);
+                if (breakdown && breakdown[key] !== undefined) {
+                    // Parcialidad seleccionada (formato/pieza).
+                    total += parseFloat(breakdown[key]) || 0;
+                } else {
+                    total += qtyByLot[key] || 0;
+                }
             }
 
             return total;
@@ -134,13 +159,24 @@ export class HoldStoneButton extends Component {
         }
     }
 
-    async _updateLotsAndM2(newLotIds) {
-        const m2 = await this._computeM2ForLots(newLotIds);
+    async _updateLotsAndM2(newLotIds, breakdown = null) {
+        const m2 = await this._computeM2ForLots(newLotIds, breakdown);
 
-        await this.props.record.update({
+        const vals = {
             lot_ids: [[6, 0, newLotIds]],
             cantidad_m2: m2,
-        });
+        };
+        // Persistir el desglose de parcialidades (vacío => limpiar el campo).
+        // Solo si el campo está cargado en el record (módulo de carrito instalado
+        // y su vista actualizada), para no romper en otros contextos.
+        const hasBreakdownField =
+            this.props.record.fields && "x_lot_breakdown_json" in this.props.record.fields;
+        if (breakdown !== null && hasBreakdownField) {
+            vals.x_lot_breakdown_json =
+                breakdown && Object.keys(breakdown).length ? breakdown : false;
+        }
+
+        await this.props.record.update(vals);
 
         this._updateCount();
     }
@@ -424,7 +460,12 @@ export class HoldStoneButton extends Component {
             loadingMore: false,
             page: 0,
             pending: new Set(this.getCurrentLotIds()),
-            pendingQtyMap: {},
+            // Se siembra con las parcialidades ya guardadas (FORMATOS/PIEZAS) para
+            // no perderlas al reabrir el selector. Las PLACAS se completan al
+            // cargar sus quants (cantidad completa).
+            pendingQtyMap: this._getCurrentBreakdownMap(),
+            // lotId(str) -> 'placa' | 'formato' | 'pieza'
+            tipoByLot: {},
             filters: {
                 lot_name: "",
                 bloque: "",
@@ -590,7 +631,14 @@ export class HoldStoneButton extends Component {
         const rememberQuant = (quant) => {
             const lotId = quant.lot_id ? quant.lot_id[0] : 0;
             if (!lotId) return;
-            state.pendingQtyMap[String(lotId)] = quant.quantity || 0;
+            const lotIdStr = String(lotId);
+            // Registrar el tipo del lote para decidir si admite parcialidad.
+            state.tipoByLot[lotIdStr] = (quant.x_tipo || "placa").toLowerCase();
+            // No pisar una parcialidad ya seleccionada (sembrada del desglose o
+            // editada por el usuario); solo inicializar con el lote completo.
+            if (state.pendingQtyMap[lotIdStr] === undefined) {
+                state.pendingQtyMap[lotIdStr] = quant.quantity || 0;
+            }
         };
 
         const getQtyForLot = (lotId) => {
@@ -724,6 +772,16 @@ export class HoldStoneButton extends Component {
                     badge = `<span class="hold-stone-tag hold-stone-tag-warn">Reservado</span>`;
                 }
 
+                // FORMATOS/PIEZAS seleccionados: permitir capturar parcialidad
+                // (cantidad <= total del lote). PLACAS: siempre el lote completo.
+                const isFraction = tipo === "formato" || tipo === "pieza";
+                const qtyCell =
+                    selected && isFraction
+                        ? `<input type="number" class="hold-stone-qty-input" data-qty-lot="${lotId}"
+                                  value="${getQtyForLot(lotId)}" min="0" max="${quant.quantity || 0}"
+                                  step="0.01" style="width: 72px; text-align: right;"/>`
+                        : this._fmt(quant.quantity);
+
                 rows += `
                     <tr class="${selected ? "row-sel" : ""}"
                         data-lot-id="${lotId}"
@@ -739,7 +797,7 @@ export class HoldStoneButton extends Component {
                         <td class="col-num">${this._fmtDim(quant.x_alto)}</td>
                         <td class="col-num">${this._fmtDim(quant.x_ancho)}</td>
                         <td class="col-num">${this._fmtDim(quant.x_grosor)}</td>
-                        <td class="col-num fw-semibold">${this._fmt(quant.quantity)}</td>
+                        <td class="col-num fw-semibold">${qtyCell}</td>
                         <td>
                             <span class="hold-stone-tag hold-stone-tag-tipo-${this._escapeHtml(tipo)}">
                                 ${this._escapeHtml(this._tipoLabel(tipo))}
@@ -811,6 +869,27 @@ export class HoldStoneButton extends Component {
                     updateBadge();
                     renderTable();
                 });
+            });
+
+            // Inputs de parcialidad (formato/pieza): no deben togglear la fila.
+            body.querySelectorAll("input[data-qty-lot]").forEach((inp) => {
+                const stop = (event) => event.stopPropagation();
+                inp.addEventListener("click", stop);
+                inp.addEventListener("mousedown", stop);
+                const apply = (event) => {
+                    event.stopPropagation();
+                    const lotId = parseInt(inp.dataset.qtyLot, 10);
+                    if (!lotId) return;
+                    const quant = getQuantByLotId(lotId);
+                    const maxv = quant ? quant.quantity || 0 : 0;
+                    let val = parseFloat(inp.value);
+                    if (isNaN(val) || val < 0) val = 0;
+                    if (maxv && val > maxv) val = maxv;
+                    state.pendingQtyMap[String(lotId)] = val;
+                    inp.value = val;
+                    updateQtyDisplay();
+                };
+                inp.addEventListener("change", apply);
             });
 
             if (this._popupObserver) {
@@ -963,8 +1042,23 @@ export class HoldStoneButton extends Component {
 
         const confirm = async () => {
             const newIds = Array.from(state.pending);
+
+            // Desglose de parcialidades SOLO para formatos/piezas. Para placas se
+            // omite (siempre lote completo). Se incluye también cualquier lote que
+            // ya traía parcialidad guardada (sembrada del desglose previo).
+            const seeded = this._getCurrentBreakdownMap();
+            const breakdown = {};
+            for (const lotId of newIds) {
+                const key = String(lotId);
+                const tipo = state.tipoByLot[key];
+                const isFraction = tipo === "formato" || tipo === "pieza";
+                if (isFraction || seeded[key] !== undefined) {
+                    breakdown[key] = getQtyForLot(lotId);
+                }
+            }
+
             this.destroyPopup();
-            await this._updateLotsAndM2(newIds);
+            await this._updateLotsAndM2(newIds, breakdown);
             await this._refreshDetail();
         };
 
