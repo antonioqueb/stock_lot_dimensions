@@ -167,10 +167,10 @@ export class HoldStoneButton extends Component {
             cantidad_m2: m2,
         };
         // Persistir el desglose de parcialidades (vacío => limpiar el campo).
-        // Solo si el campo está cargado en el record (módulo de carrito instalado
-        // y su vista actualizada), para no romper en otros contextos.
-        const hasBreakdownField =
-            this.props.record.fields && "x_lot_breakdown_json" in this.props.record.fields;
+        // Solo si el campo está cargado en la vista (data tiene la clave), para
+        // no romper en contextos donde el campo no exista.
+        const recordData = this.props.record.data || {};
+        const hasBreakdownField = "x_lot_breakdown_json" in recordData;
         if (breakdown !== null && hasBreakdownField) {
             vals.x_lot_breakdown_json =
                 breakdown && Object.keys(breakdown).length ? breakdown : false;
@@ -319,6 +319,10 @@ export class HoldStoneButton extends Component {
                 lotMap[lot.id] = lot;
             }
 
+            // Desglose de parcialidades guardado (FORMATOS/PIEZAS): la cantidad
+            // mostrada debe ser la parcial, no el total del lote.
+            const breakdown = this._getCurrentBreakdownMap();
+
             let total = 0;
             let rows = "";
 
@@ -326,7 +330,9 @@ export class HoldStoneButton extends Component {
                 const lot = lotMap[lotId];
                 if (!lot) continue;
 
-                const qty = qtyMap[lotId] || 0;
+                const key = String(lotId);
+                const qty =
+                    breakdown[key] !== undefined ? breakdown[key] : qtyMap[lotId] || 0;
                 const tipo = (lot.x_tipo || "placa").toLowerCase();
 
                 total += qty;
@@ -893,6 +899,17 @@ export class HoldStoneButton extends Component {
                     inp.value = val;
                     updateQtyDisplay();
                 };
+                // 'input' actualiza en vivo (sin reescribir el value para no mover
+                // el cursor); 'change' aplica el límite del lote al salir.
+                inp.addEventListener("input", (event) => {
+                    event.stopPropagation();
+                    const lotId = parseInt(inp.dataset.qtyLot, 10);
+                    if (!lotId) return;
+                    let val = parseFloat(inp.value);
+                    if (isNaN(val) || val < 0) val = 0;
+                    state.pendingQtyMap[String(lotId)] = val;
+                    updateQtyDisplay();
+                });
                 inp.addEventListener("change", apply);
             });
 
