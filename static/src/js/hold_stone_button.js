@@ -401,7 +401,11 @@ export class HoldStoneButton extends Component {
 
     async _removeLot(lotId) {
         const newIds = this.getCurrentLotIds().filter((id) => id !== lotId);
-        await this._updateLotsAndM2(newIds);
+        // Conservar el desglose de los lotes restantes (parcialidades de
+        // formatos/piezas); descartar la entrada del lote removido.
+        const breakdown = this._getCurrentBreakdownMap();
+        delete breakdown[String(lotId)];
+        await this._updateLotsAndM2(newIds, breakdown);
         await this._refreshDetail();
     }
 
