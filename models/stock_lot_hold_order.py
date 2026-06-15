@@ -92,16 +92,47 @@ class StockLotHoldOrder(models.Model):
         self.delivery_address = self._get_delivery_address_text(self.partner_id)
 
     def _get_delivery_address_text(self, partner):
-        """Texto de la dirección de entrega tomada del contacto hijo de tipo
+        """Texto de la dirección de entrega tomada del contacto de tipo
         'delivery' del cliente. Devuelve '' si no existe tal contacto."""
         if not partner:
             return ''
-        delivery = partner.child_ids.filtered(
-            lambda c: c.type == 'delivery'
-        )[:1]
+        delivery = self._resolve_delivery_partner(partner)
         if not delivery:
+            _logger.info(
+                "[HOLD] Cliente %s (id=%s) sin contacto de entrega; "
+                "delivery_address vacío.", partner.display_name, partner.id
+            )
             return ''
-        return self._format_partner_address(delivery)
+        text = self._format_partner_address(delivery)
+        _logger.info(
+            "[HOLD] Cliente %s -> contacto entrega %s (id=%s); "
+            "delivery_address=%r", partner.display_name,
+            delivery.display_name, delivery.id, text
+        )
+        return text
+
+    def _resolve_delivery_partner(self, partner):
+        """Resuelve el contacto hijo de tipo entrega del cliente.
+
+        1) Usa address_get(['delivery']) — la forma canónica del sistema, que
+           recorre la jerarquía. Si devuelve un contacto distinto del cliente,
+           ése es el contacto de entrega.
+        2) Si address_get devuelve el propio cliente (no hay hijo de entrega),
+           busca explícitamente entre los hijos uno de tipo 'delivery'.
+
+        Devuelve un recordset vacío si el cliente no tiene contacto de entrega.
+        """
+        Partner = self.env['res.partner']
+        delivery_id = False
+        try:
+            delivery_id = (partner.address_get(['delivery']) or {}).get('delivery')
+        except Exception as exc:  # noqa: BLE001
+            _logger.warning("[HOLD] address_get falló para %s: %s", partner.id, exc)
+
+        if delivery_id and delivery_id != partner.id:
+            return Partner.browse(delivery_id)
+
+        return partner.child_ids.filtered(lambda c: c.type == 'delivery')[:1]
 
     @staticmethod
     def _format_partner_address(delivery):
