@@ -23,6 +23,19 @@ class StockLotHoldOrder(models.Model):
         readonly=True,
     )
     partner_id = fields.Many2one('res.partner', string='Cliente', required=True, tracking=True)
+    delivery_partner_id = fields.Many2one(
+        'res.partner',
+        string='Contacto de Entrega',
+        domain="[('id', 'in', available_delivery_partner_ids)]",
+        tracking=True,
+        help='Contacto de entrega del cliente. Si el cliente tiene varios '
+             'contactos de entrega/dirección, aquí eliges cuál usar.',
+    )
+    available_delivery_partner_ids = fields.Many2many(
+        'res.partner',
+        string='Contactos de entrega disponibles',
+        compute='_compute_available_delivery_partner_ids',
+    )
     delivery_address = fields.Text(string='Dirección de Entrega', tracking=True)
     user_id = fields.Many2one(
         'res.users',
@@ -84,32 +97,59 @@ class StockLotHoldOrder(models.Model):
 
     dias_restantes = fields.Integer(string='Días Restantes', compute='_compute_dias_restantes')
 
+    @api.depends('partner_id')
+    def _compute_available_delivery_partner_ids(self):
+        for order in self:
+            order.available_delivery_partner_ids = order._get_delivery_partners(
+                order.partner_id
+            )
+
+    def _get_delivery_partners(self, partner):
+        """Contactos hijos del cliente de tipo entrega/dirección, entre los
+        que el usuario puede elegir en el hold. Recordset vacío si no hay."""
+        if not partner:
+            return self.env['res.partner']
+        return partner.child_ids.filtered(lambda c: c.type in ('delivery', 'other'))
+
     @api.onchange('partner_id')
     def _onchange_partner_id(self):
-        # La dirección de entrega se toma del contacto de tipo "Dirección de
-        # entrega" del cliente. Si el cliente no tiene uno, se deja vacío
-        # (no se usa la dirección propia del cliente).
-        self.delivery_address = self._get_delivery_address_text(self.partner_id)
+        # Al cambiar el cliente, preselecciona el contacto de entrega que el
+        # sistema resuelve (address_get). Si el cliente tiene varios, el usuario
+        # puede cambiarlo en el campo "Contacto de Entrega". Si no hay ninguno,
+        # queda vacío y la dirección también.
+        available = self._get_delivery_partners(self.partner_id)
+        default = self._resolve_delivery_partner(self.partner_id)
+        if default and default in available:
+            self.delivery_partner_id = default
+        elif available:
+            self.delivery_partner_id = available[:1]
+        else:
+            self.delivery_partner_id = False
+        self._apply_delivery_address()
 
-    def _get_delivery_address_text(self, partner):
-        """Texto de la dirección de entrega tomada del contacto de tipo
-        'delivery' del cliente. Devuelve '' si no existe tal contacto."""
-        if not partner:
-            return ''
-        delivery = self._resolve_delivery_partner(partner)
-        if not delivery:
-            _logger.info(
-                "[HOLD] Cliente %s (id=%s) sin contacto de entrega; "
-                "delivery_address vacío.", partner.display_name, partner.id
+    @api.onchange('delivery_partner_id')
+    def _onchange_delivery_partner_id(self):
+        self._apply_delivery_address()
+
+    def _apply_delivery_address(self):
+        """Rellena el texto de Dirección de Entrega desde el contacto elegido."""
+        if self.delivery_partner_id:
+            self.delivery_address = self._format_partner_address(
+                self.delivery_partner_id
             )
-            return ''
-        text = self._format_partner_address(delivery)
-        _logger.info(
-            "[HOLD] Cliente %s -> contacto entrega %s (id=%s); "
-            "delivery_address=%r", partner.display_name,
-            delivery.display_name, delivery.id, text
-        )
-        return text
+            _logger.info(
+                "[HOLD] Cliente %s -> contacto entrega %s (id=%s); "
+                "delivery_address=%r",
+                self.partner_id.display_name,
+                self.delivery_partner_id.display_name,
+                self.delivery_partner_id.id, self.delivery_address,
+            )
+        else:
+            self.delivery_address = ''
+            _logger.info(
+                "[HOLD] Cliente %s sin contacto de entrega; "
+                "delivery_address vacío.", self.partner_id.display_name
+            )
 
     def _resolve_delivery_partner(self, partner):
         """Resuelve el contacto hijo de tipo entrega del cliente.
