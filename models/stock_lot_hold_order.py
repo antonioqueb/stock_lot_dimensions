@@ -104,21 +104,28 @@ class StockLotHoldOrder(models.Model):
         return self._format_partner_address(delivery)
 
     @staticmethod
-    def _format_partner_address(partner):
-        """Dirección completa del contacto en texto multilínea.
+    def _format_partner_address(delivery):
+        """Texto completo de la dirección de entrega, igual que el wizard de
+        entregas (_som_get_delivery_address_text).
 
-        Usa el formateador de direcciones de Odoo (_display_address), que
-        respeta el formato del país e incluye calle, calle2, ciudad, estado,
-        C.P. y país. Antepone el nombre del contacto de entrega cuando aporta
-        información (p. ej. "Bodega Norte").
+        Concatena el nombre del contacto de entrega + su dirección completa
+        (calle, calle2, ciudad, estado, C.P., país con el formato del país).
+        Si el contacto de entrega no tiene su propia calle/ciudad/CP, usa la
+        dirección del contacto comercial (padre).
         """
-        address = partner._display_address(without_company=True) or ''
-        lines = []
-        if partner.name and partner.name not in address:
-            lines.append(partner.name)
+        addr_partner = delivery
+        if not (delivery.street or delivery.street2 or delivery.city or delivery.zip):
+            commercial = delivery.commercial_partner_id
+            if commercial and commercial != delivery and (
+                commercial.street or commercial.city or commercial.zip
+            ):
+                addr_partner = commercial
+
+        lines = [delivery.name or '']
+        address = (addr_partner._display_address(without_company=True) or '').strip()
         if address:
             lines.append(address)
-        return '\n'.join(lines).strip()
+        return '\n'.join(part for part in lines if part).strip()
 
     @api.depends(
         'hold_line_ids',
