@@ -924,6 +924,25 @@ export class HoldStoneButton extends Component {
                     badge = `<span class="hold-stone-tag hold-stone-tag-warn">Reservado</span>`;
                 }
 
+                // M²: FORMATOS/PIEZAS seleccionados muestran un input para ajustar
+                // la cantidad a apartar de ese lote (parcialidad), sin salir del
+                // popup. PLACAS y filas no seleccionadas muestran el total del lote.
+                const isPartial = tipo === "formato" || tipo === "pieza";
+                let m2Cell = this._fmt(quant.quantity);
+                if (selected && isPartial) {
+                    const chosenQty = getQtyForLot(lotId);
+                    const step = tipo === "pieza" ? "1" : "0.01";
+                    const unit = tipo === "pieza" ? "pzas" : "m²";
+                    m2Cell = `
+                        <input type="number" class="hold-stone-popup-qty-input"
+                               data-lot-id="${lotId}" data-max="${quant.quantity}"
+                               step="${step}" min="0" max="${quant.quantity}"
+                               value="${chosenQty}"
+                               style="width: 76px; text-align: right;"/>
+                        <span class="text-muted" style="font-size: 10px; margin-left: 2px;">/ ${this._fmt(quant.quantity)} ${unit}</span>
+                    `;
+                }
+
                 rows += `
                     <tr class="${selected ? "row-sel" : ""}"
                         data-lot-id="${lotId}"
@@ -939,7 +958,7 @@ export class HoldStoneButton extends Component {
                         <td class="col-num">${this._fmtDim(quant.x_alto)}</td>
                         <td class="col-num">${this._fmtDim(quant.x_ancho)}</td>
                         <td class="col-num">${this._fmtDim(quant.x_grosor)}</td>
-                        <td class="col-num fw-semibold">${this._fmt(quant.quantity)}</td>
+                        <td class="col-num fw-semibold col-qty-input">${m2Cell}</td>
                         <td>
                             <span class="hold-stone-tag hold-stone-tag-tipo-${this._escapeHtml(tipo)}">
                                 ${this._escapeHtml(this._tipoLabel(tipo))}
@@ -1010,6 +1029,36 @@ export class HoldStoneButton extends Component {
 
                     updateBadge();
                     renderTable();
+                });
+            });
+
+            // Inputs de parcialidad (FORMATO/PIEZA): editar la cantidad no debe
+            // alternar la selección de la fila (stopPropagation) y actualiza el
+            // total en vivo sin re-render para no perder el foco del campo.
+            body.querySelectorAll(".hold-stone-popup-qty-input").forEach((input) => {
+                const stop = (event) => event.stopPropagation();
+                input.addEventListener("click", stop);
+                input.addEventListener("mousedown", stop);
+
+                const apply = (normalize) => {
+                    const lotId = parseInt(input.dataset.lotId, 10);
+                    if (!lotId) return;
+                    const maxQty = parseFloat(input.dataset.max) || 0;
+                    let val = parseFloat(input.value);
+                    if (Number.isNaN(val) || val < 0) val = 0;
+                    if (maxQty && val > maxQty) val = maxQty;
+                    state.pendingQtyMap[String(lotId)] = val;
+                    if (normalize) input.value = val;
+                    updateQtyDisplay();
+                };
+
+                input.addEventListener("input", (event) => {
+                    event.stopPropagation();
+                    apply(false);
+                });
+                input.addEventListener("change", (event) => {
+                    event.stopPropagation();
+                    apply(true);
                 });
             });
 
@@ -1164,15 +1213,21 @@ export class HoldStoneButton extends Component {
         const confirm = async () => {
             const newIds = Array.from(state.pending);
 
-            // El popup solo selecciona lotes (como sale_stone_selection). Se
-            // conservan las parcialidades ya guardadas de los lotes que siguen
-            // seleccionados; los lotes nuevos quedan como lote completo y su
-            // parcialidad se ajusta luego en la tabla de detalle.
+            // Se guarda la parcialidad por lote elegida en el popup:
+            // - FORMATO/PIEZA: la cantidad ajustada (default = lote completo).
+            // - PLACA: sin entrada (siempre se aparta el lote completo).
+            // - Lotes preseleccionados que no se cargaron en el popup (filtros):
+            //   se conserva su parcialidad previamente guardada.
             const prev = this._getCurrentBreakdownMap();
             const breakdown = {};
             for (const lotId of newIds) {
                 const key = String(lotId);
-                if (prev[key] !== undefined) breakdown[key] = prev[key];
+                const tipo = state.tipoByLot[key];
+                if (tipo === "formato" || tipo === "pieza") {
+                    breakdown[key] = getQtyForLot(lotId);
+                } else if (tipo === undefined && prev[key] !== undefined) {
+                    breakdown[key] = prev[key];
+                }
             }
 
             this.destroyPopup();
