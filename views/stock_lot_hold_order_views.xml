@@ -80,7 +80,7 @@
                         <field name="sale_order_id" readonly="1"/>
                     </div>
                     <group>
-                        <group string="Cliente">
+                        <group string="Datos del Cliente">
                             <field name="partner_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
                             <field name="delivery_address" readonly="state in ['done', 'cancel'] or sale_order_id"/>
                             <field name="project_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
