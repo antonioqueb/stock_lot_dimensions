@@ -75,9 +75,16 @@ class HoldValidator:
             if quant.x_hold_activo_id:
                 # Verificar que sea de la misma compañía
                 if quant.x_hold_activo_id.company_id.id == company_id:
-                    # Hold de la misma compañía → verificar cliente
-                    hold_partner_id = quant.x_hold_activo_id.partner_id.id
-                    if hold_partner_id == customer_id:
+                    # Hold de la misma compañía → verificar cliente por su
+                    # PARTNER COMERCIAL: el hold puede estar a nombre del
+                    # contacto y la operación a nombre de la empresa (o la
+                    # dirección de entrega) y siguen siendo el MISMO cliente.
+                    hold_commercial = quant.x_hold_activo_id.partner_id.commercial_partner_id.id
+                    customer_commercial = (
+                        self.env['res.partner'].browse(customer_id).commercial_partner_id.id
+                        if customer_id else False
+                    )
+                    if hold_commercial == customer_commercial:
                         available_lots.append(quant.lot_id.id)
                 else:
                     # Hold de otra compañía → lote disponible
@@ -136,10 +143,16 @@ class HoldValidator:
             )
             return  # Hold de otra compañía no aplica
         
-        # Hold de la misma compañía → verificar cliente
+        # Hold de la misma compañía → verificar cliente por PARTNER COMERCIAL
+        # (el picking trae la dirección de ENTREGA; el hold puede estar a
+        # nombre del contacto o de la empresa — mismo cliente, no bloquear).
         hold_partner = quant.x_hold_activo_id.partner_id
-        
-        if hold_partner.id != customer_id:
+        customer_commercial_id = (
+            self.env['res.partner'].browse(customer_id).commercial_partner_id.id
+            if customer_id else False
+        )
+
+        if hold_partner.commercial_partner_id.id != customer_commercial_id:
             # 🔑 Cargar objetos completos ANTES de construir el mensaje
             lot = self.env['stock.lot'].browse(lot_id)
             customer = self.env['res.partner'].browse(customer_id)
