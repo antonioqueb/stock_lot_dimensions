@@ -130,6 +130,31 @@ class StockLotHold(models.Model):
     # _sql_constraints eliminado porque genera error en Odoo 19 al cargar el registro.
     # Se reemplaza por una restricción de Python.
     
+    def init(self):
+        """Garantía a nivel BASE DE DATOS de 'solo un hold ACTIVO por quant y
+        compañía'. El constraint Python no protege contra dos transacciones
+        simultáneas (ninguna ve la fila no confirmada de la otra); el índice
+        único parcial sí: la segunda revienta al confirmar, sin excepciones."""
+        # Sanear duplicados históricos ANTES de crear el índice: se conserva
+        # el hold activo más antiguo y los posteriores se marcan expirados.
+        self.env.cr.execute("""
+            UPDATE stock_lot_hold h
+               SET estado = 'expirado'
+             WHERE h.estado = 'activo'
+               AND EXISTS (
+                   SELECT 1 FROM stock_lot_hold h2
+                    WHERE h2.quant_id = h.quant_id
+                      AND h2.company_id = h.company_id
+                      AND h2.estado = 'activo'
+                      AND h2.id < h.id
+               )
+        """)
+        self.env.cr.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS stock_lot_hold_unique_active_idx
+                ON stock_lot_hold (quant_id, company_id)
+             WHERE estado = 'activo'
+        """)
+
     @api.constrains('quant_id', 'company_id', 'estado')
     def _check_unique_active_hold(self):
         """
@@ -198,6 +223,16 @@ class StockLotHold(models.Model):
             # Nota: Aunque tenemos el @api.constrains, mantenemos esta validación en create
             # para dar un mensaje de error más amigable antes de intentar guardar.
             if vals.get('quant_id') and vals.get('company_id'):
+                # CANDADO TRANSACCIONAL: serializa a dos operaciones que
+                # intenten comprometer el MISMO quant al mismo tiempo (galería
+                # digital, torre de control, botón de hold, carrito — TODAS
+                # crean el hold por aquí). La transacción competidora espera
+                # el lock y, al reanudar, la búsqueda de abajo ya ve el hold
+                # confirmado por la otra.
+                self.env.cr.execute(
+                    "SELECT id FROM stock_quant WHERE id = %s FOR UPDATE",
+                    [int(vals['quant_id'])],
+                )
                 hold_existente = self.search([
                     ('quant_id', '=', vals['quant_id']),
                     ('company_id', '=', vals['company_id']),
