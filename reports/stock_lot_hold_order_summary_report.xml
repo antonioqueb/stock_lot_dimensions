@@ -27,51 +27,7 @@
 
                     <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; line-height: 1.25;">
 
-                        <style type="text/css">
-                            /* Evita superposición del thead en saltos de página */
-                            thead { display: table-row-group; }
-                            tbody { display: table-row-group; }
-                            tfoot { display: table-row-group; }
-                            tr { page-break-inside: avoid; break-inside: avoid; }
-
-                            /* Compacta únicamente las tablas de productos sin alterar estructura */
-                            table.table.table-sm.table-striped > thead > tr > th,
-                            table.table.table-sm > thead > tr > th {
-                                padding-top: 3px !important;
-                                padding-bottom: 3px !important;
-                                line-height: 1.05 !important;
-                            }
-
-                            table.table.table-sm.table-striped > tbody > tr > td,
-                            table.table.table-sm > tbody > tr > td {
-                                padding-top: 2px !important;
-                                padding-bottom: 2px !important;
-                                line-height: 1.08 !important;
-                            }
-
-                            table.table.table-sm.table-striped > tbody > tr,
-                            table.table.table-sm > tbody > tr {
-                                height: auto !important;
-                            }
-
-                            /* Legibilidad en datos bancarios y términos */
-                            .aq-bank-details,
-                            .aq-bank-details *,
-                            .aq-terms-conditions,
-                            .aq-terms-conditions * {
-                                font-size: 11px !important;
-                                line-height: 1.35 !important;
-                            }
-
-                            .aq-terms-conditions-title {
-                                font-size: 11px !important;
-                                line-height: 1.25 !important;
-                            }
-
-                            .aq-terms-conditions p {
-                                margin: 0 0 4px 0 !important;
-                            }
-                        </style>
+                        <t t-call="stock_lot_dimensions.som_report_style"/>
 
                         <!-- Tabla de página: empuja el footer al fondo (técnica compatible con
                              wkhtmltopdf/QtWebKit, que NO soporta flexbox). La fila de contenido
