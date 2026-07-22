@@ -56,7 +56,7 @@
                             <span style="font-weight: bold; font-size: 12px;" t-field="doc.partner_id.name"/><br/>
                             <span t-if="doc.partner_id.vat">RFC: <span t-field="doc.partner_id.vat"/></span>
                         </div>
-                        <div class="mt-1" style="border-top: 1px dotted #9f9f9f; padding-top: 1px;">
+                        <div class="mt-1" t-if="doc.state not in ['draft', 'sent']" style="border-top: 1px dotted #9f9f9f; padding-top: 1px;">
                             <strong style="font-size: 9px; text-transform: uppercase; color: #555; display: block;">Dirección Fiscal / Entrega:</strong>
                             <div style="font-size: 9px; color: #333; line-height: 1.1; margin-top: 2px;">
                                 <span t-field="doc.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>

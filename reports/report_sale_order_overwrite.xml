@@ -127,15 +127,19 @@
                                         </span>
                                     </div>
 
-                                    <div style="padding: 6px 8px; border-bottom: 1px solid #d8d8d8 !important; overflow-wrap: anywhere; word-break: break-word;">
-                                        <strong style="font-size: 8.5px; text-transform: uppercase; color: #555; display: block; letter-spacing: 0.3px;">
-                                            Dirección Fiscal / Entrega
-                                        </strong>
-                                    </div>
+                                    <!-- La dirección solo se imprime en órdenes CONFIRMADAS:
+                                         en cotización aún no es un dato comprometido. -->
+                                    <t t-if="doc.state not in ['draft', 'sent']">
+                                        <div style="padding: 6px 8px; border-bottom: 1px solid #d8d8d8 !important; overflow-wrap: anywhere; word-break: break-word;">
+                                            <strong style="font-size: 8.5px; text-transform: uppercase; color: #555; display: block; letter-spacing: 0.3px;">
+                                                Dirección Fiscal / Entrega
+                                            </strong>
+                                        </div>
 
-                                    <div style="padding: 6px 8px; font-size: 9px; color: #333; line-height: 1.25; overflow-wrap: anywhere; word-break: break-word;">
-                                        <span t-field="doc.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
-                                    </div>
+                                        <div style="padding: 6px 8px; font-size: 9px; color: #333; line-height: 1.25; overflow-wrap: anywhere; word-break: break-word;">
+                                            <span t-field="doc.partner_shipping_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
+                                        </div>
+                                    </t>
 
                                 </td>
 
