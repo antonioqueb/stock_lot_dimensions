@@ -83,7 +83,9 @@
                         <group string="Datos del Cliente">
                             <field name="partner_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
                             <field name="delivery_address" readonly="state in ['done', 'cancel'] or sale_order_id"/>
-                            <field name="project_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
+                            <field name="project_id" readonly="state in ['done', 'cancel'] or sale_order_id"
+                                   domain="['|', ('partner_id', '=', False), ('partner_id', 'child_of', partner_id)]"
+                                   context="{'default_partner_id': partner_id}"/>
                             <field name="arquitecto_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
                         </group>
                         <group string="Información">
