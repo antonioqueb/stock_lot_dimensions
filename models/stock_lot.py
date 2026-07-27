@@ -103,8 +103,11 @@ class StockLot(models.Model):
         # Esto es extremadamente rápido en memoria RAM y no carga la DB
         valid_lots = candidates.filtered(lambda l: l.id in available_lots_ids)
         
-        # 6. Devolver resultados formateados respetando el límite original
-        return valid_lots[:limit].name_get()
+        # 6. Devolver resultados formateados respetando el límite original.
+        # Odoo 19 eliminó name_get(): llamarlo aquí reventaba con
+        # AttributeError justo al buscar un lote por nombre en una salida de
+        # un cliente con holds activos (camino caliente de despacho).
+        return [(lot.id, lot.display_name) for lot in valid_lots[:limit]]
 
     # ==================== MÉTODOS COMPUTADOS ====================
     @api.depends('x_fotografia_ids')

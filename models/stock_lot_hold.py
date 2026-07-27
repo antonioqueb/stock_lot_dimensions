@@ -280,12 +280,13 @@ class StockLotHold(models.Model):
         Se ejecuta cada hora para TODAS las compañías
         """
         ahora = fields.Datetime.now()
-        
-        # Buscar holds expirados de la compañía actual
-        holds_expirados = self.search([
+
+        # TODAS las compañías: el filtro por self.env.company dejaba las
+        # reservas de las demás compañías sin expirar NUNCA (inventario
+        # bloqueado indefinidamente y ventas perdidas en silencio).
+        holds_expirados = self.sudo().search([
             ('estado', '=', 'activo'),
             ('fecha_expiracion', '<=', ahora),
-            ('company_id', '=', self.env.company.id)
         ])
         
         if holds_expirados:
