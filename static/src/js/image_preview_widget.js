@@ -39,11 +39,3 @@ ImagePreviewWidget.template = "stock_lot_dimensions.ImagePreviewWidget";
 registry.category("fields").add("image_preview_clickable", {
     component: ImagePreviewWidget,
 });
-
-// Las vistas de quants/movimientos/lotes piden widget="image_preview";
-// registrarlo solo como "image_preview_clickable" hacía que Odoo no
-// encontrara el widget y cayera al render por defecto (la vista previa
-// clicable no funcionaba). Se registra con AMBOS nombres.
-registry.category("fields").add("image_preview", {
-    component: ImagePreviewWidget,
-});

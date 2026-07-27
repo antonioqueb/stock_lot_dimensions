@@ -149,7 +149,7 @@
                 <field name="x_contenedor" optional="show" string="Contenedor"/>
                 <field name="x_referencia_proveedor" optional="show" string="Ref. Proveedor"/>
                 <field name="x_fotografia_principal" 
-                       widget="image_preview" 
+                       widget="image_preview_clickable" 
                        options="{'size': [60, 60]}" 
                        optional="hide"/>
                 <field name="x_cantidad_fotos" optional="show" string="Fotos"/>

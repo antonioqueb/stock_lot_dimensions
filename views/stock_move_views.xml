@@ -90,7 +90,7 @@
                 <field name="x_referencia_proveedor_lote" optional="show" string="Ref. Proveedor"/>
                 <field name="x_proveedor_lote" optional="show" string="Proveedor"/>
                 <field name="x_origen_lote" optional="show" string="Origen"/>
-                <field name="x_fotografia_principal_lote" widget="image_preview" options="{'size': [60, 60]}" optional="hide"/>
+                <field name="x_fotografia_principal_lote" widget="image_preview_clickable" options="{'size': [60, 60]}" optional="hide"/>
                 <field name="x_cantidad_fotos_lote" optional="show" string="Fotos"/>
             </xpath>
         </field>
