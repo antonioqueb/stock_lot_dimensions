@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data>
+    <data noupdate="1">
         <!--
-            Migración automática: al actualizar el módulo, consolida las líneas legacy
-            (1 lote por línea) en líneas agrupadas por producto (1 línea = N lotes).
-            
-            Es idempotente: puede ejecutarse múltiples veces sin problema.
+            Migración de líneas legacy (1 lote por línea → agrupadas por
+            producto). noupdate: los datos legacy ya no pueden generarse con
+            el código actual, así que correrla en CADA actualización del
+            módulo solo alentaba los deploys. Corre una vez en instalaciones
+            nuevas; en bases existentes ya se ejecutó.
         -->
         <function model="stock.lot.hold.order" name="_migrate_legacy_lines"/>
     </data>
