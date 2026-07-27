@@ -628,8 +628,10 @@ class StockMoveLine(models.Model):
         if not self.picking_id:
             return
 
+        qty_field = self._get_qty_field_name()
+
         if self.picking_id.picking_type_code == 'incoming':
-            self.qty_done = LotDimensionSync.calculate_area(
+            self[qty_field] = LotDimensionSync.calculate_area(
                 self.lot_id.x_alto,
                 self.lot_id.x_ancho,
             )
@@ -637,7 +639,7 @@ class StockMoveLine(models.Model):
         elif self.picking_id.picking_type_code == 'outgoing':
             move_qty = self.move_id.product_uom_qty if self.move_id else None
 
-            self.qty_done = LotDimensionSync.get_available_quantity(
+            self[qty_field] = LotDimensionSync.get_available_quantity(
                 self.env,
                 self.lot_id.id,
                 self.location_id.id,
@@ -651,7 +653,7 @@ class StockMoveLine(models.Model):
         if not self.picking_id or self.picking_id.picking_type_code != 'incoming':
             return
 
-        self.qty_done = LotDimensionSync.calculate_area(
+        self[self._get_qty_field_name()] = LotDimensionSync.calculate_area(
             self.x_alto_temp,
             self.x_ancho_temp,
         )
@@ -698,7 +700,9 @@ class StockMoveLine(models.Model):
 
     def _update_qty_done_if_needed(self, vals):
         """Actualiza qty_done si cambiaron dimensiones."""
-        if ('x_alto_temp' not in vals and 'x_ancho_temp' not in vals) or 'qty_done' in vals:
+        qty_field = self._get_qty_field_name()
+
+        if ('x_alto_temp' not in vals and 'x_ancho_temp' not in vals) or qty_field in vals:
             return
 
         for line in self:
@@ -711,7 +715,7 @@ class StockMoveLine(models.Model):
             )
 
             if qty_done > 0:
-                super(StockMoveLine, line).write({'qty_done': qty_done})
+                super(StockMoveLine, line).write({qty_field: qty_done})
 
     # ==================== CREATE ====================
 
@@ -728,7 +732,7 @@ class StockMoveLine(models.Model):
                         vals.get('x_ancho_temp'),
                     )
                     if qty_done > 0:
-                        vals['qty_done'] = qty_done
+                        vals[self._get_qty_field_name()] = qty_done
 
         lines = super().create(vals_list)
 
