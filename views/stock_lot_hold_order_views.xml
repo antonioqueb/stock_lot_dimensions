@@ -123,5 +123,7 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <menuitem id="menu_holds_root" name="Holds" parent="sale.sale_menu_root" action="action_stock_lot_hold_order" sequence="3"/>
+    <menuitem id="menu_holds_root" name="Holds" parent="sale.sale_menu_root"
+              action="action_stock_lot_hold_order" sequence="3"
+              groups="sales_team.group_sale_salesman"/>
 </odoo>
