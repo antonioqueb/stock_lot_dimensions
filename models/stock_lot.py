@@ -44,7 +44,7 @@ class StockLot(models.Model):
 
     # ==================== BÚSQUEDA OPTIMIZADA ====================
     @api.model
-    def name_search(self, name='', args=None, operator='ilike', limit=100):
+    def name_search(self, name='', domain=None, operator='ilike', limit=100):
         """
         Búsqueda optimizada para evitar errores de 'Query too large' en PostgreSQL.
         1. Si no hay contexto de picking, usa la búsqueda nativa.
@@ -52,25 +52,26 @@ class StockLot(models.Model):
         3. Realiza la búsqueda SQL solo por nombre y producto (rápido).
         4. Filtra los resultados en memoria (Python) contra la lista de válidos.
         """
-        args = args or []
+        # Odoo 19: la firma nativa usa "domain" (el kwarg "args" ya no existe).
+        domain = domain or []
         move_line_id = self.env.context.get('move_line_id')
         
         # 1. Si no venimos de una línea de movimiento, comportamiento normal
         if not move_line_id:
-            return super(StockLot, self).name_search(name, args, operator, limit)
+            return super(StockLot, self).name_search(name, domain, operator, limit)
         
         move_line = self.env['stock.move.line'].browse(move_line_id)
         
         # Validar que sea una salida (outgoing) y tenga picking
         if not (move_line.picking_id and move_line.picking_id.picking_type_code == 'outgoing'):
-            return super(StockLot, self).name_search(name, args, operator, limit)
+            return super(StockLot, self).name_search(name, domain, operator, limit)
             
         validator = HoldValidator(self.env)
         partner = validator.get_customer_from_picking(move_line)
         
         # Si no hay cliente para validar holds, comportamiento normal
         if not partner:
-            return super(StockLot, self).name_search(name, args, operator, limit)
+            return super(StockLot, self).name_search(name, domain, operator, limit)
 
         # 2. Obtener lista de IDs permitidos (Lógica de Negocio)
         company_id = (
@@ -90,7 +91,7 @@ class StockLot(models.Model):
 
         # 3. Preparar argumentos para búsqueda SQL ligera
         # Forzamos el producto para reducir el universo de búsqueda inicial en DB
-        search_domain = args + [('product_id', '=', move_line.product_id.id)]
+        search_domain = domain + [('product_id', '=', move_line.product_id.id)]
         
         # 4. Buscar candidatos en base de datos (SQL)
         # Pedimos más del límite (x5) para tener margen de descarte tras filtrar en Python
