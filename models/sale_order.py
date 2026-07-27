@@ -87,12 +87,19 @@ class SaleOrder(models.Model):
         
         company_id = self.env.context.get('company_id') or self.env.company.id
         
+        # Comparación por CLIENTE COMERCIAL (igual que el HoldValidator
+        # canónico): un hold a nombre del contacto de compras y una venta a
+        # nombre de la empresa madre son el mismo cliente — antes se comparaba
+        # el partner exacto y se rechazaba la venta legítima.
+        order_partner = self.env['res.partner'].browse(partner_id)
+        order_commercial = order_partner.commercial_partner_id
+
         for product in products:
             for quant_id in product['selected_lots']:
                 quant = self.env['stock.quant'].browse(quant_id)
                 if quant.x_tiene_hold:
                     hold_partner = quant.x_hold_activo_id.partner_id
-                    if hold_partner.id != partner_id:
+                    if hold_partner.commercial_partner_id != order_commercial:
                         raise UserError(f"El lote {quant.lot_id.name} está apartado para {hold_partner.name}")
         
         sale_order = self.with_company(company_id).create({

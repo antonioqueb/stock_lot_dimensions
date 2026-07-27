@@ -255,6 +255,13 @@ class StockLotHoldOrder(models.Model):
 
     def action_confirm(self):
         for order in self:
+            # Guard de estado: sin esto, una orden cancelada podía re-confirmarse
+            # (vía RPC/acción de servidor) quedando "confirmada" sin crear ningún
+            # hold real (bloqueo fantasma), porque los lotes se saltaban por
+            # tener holds viejos cancelados/expirados.
+            if order.state != 'draft':
+                raise UserError('Solo puedes confirmar órdenes de reserva en borrador.')
+
             if not order.hold_line_ids:
                 raise UserError('Debe agregar al menos una línea a la reserva.')
 
@@ -265,7 +272,11 @@ class StockLotHoldOrder(models.Model):
                 if not line.lot_ids:
                     raise UserError(f'La línea de {line.product_id.display_name} no tiene placas seleccionadas.')
 
-                already_held_lot_ids = line.hold_ids.mapped('lot_id').ids
+                # Solo un hold ACTIVO cuenta como "ya apartado": los cancelados
+                # o expirados no reservan nada y el lote debe apartarse de nuevo.
+                already_held_lot_ids = line.hold_ids.filtered(
+                    lambda h: h.estado == 'activo'
+                ).mapped('lot_id').ids
 
                 for lot in line.lot_ids:
                     if lot.id in already_held_lot_ids:
@@ -315,19 +326,79 @@ class StockLotHoldOrder(models.Model):
         self.write({'state': 'done'})
 
     def action_renew(self):
+        """Renueva la orden completa: extiende los holds activos y REACTIVA los
+        expirados (si su placa sigue libre).
+
+        Fixes:
+        - Antes llamaba `action_renovar_hold()` (ensure_one) sobre un recordset
+          de N holds → "Expected singleton" con 2+ placas y también con 0.
+        - Los holds 'expirado' eran un callejón sin salida: convertir exigía
+          todo activo, renovar solo tocaba activos y nada los reactivaba.
+        """
+        Hold = self.env['stock.lot.hold']
+
         for order in self:
             if order.state != 'confirmed':
                 raise UserError('Solo puede renovar órdenes confirmadas.')
 
-            all_holds = self.env['stock.lot.hold']
-            for line in order.hold_line_ids:
-                all_holds |= line.hold_ids.filtered(lambda h: h.estado == 'activo')
+            nueva_expiracion = BusinessDaysCalculator.get_expiration_date(days=5)
+            all_holds = order.hold_line_ids.mapped('hold_ids')
 
-            all_holds.action_renovar_hold()
-            order.fecha_expiracion = BusinessDaysCalculator.get_expiration_date(days=5)
+            active_holds = all_holds.filtered(lambda h: h.estado == 'activo')
+            expired_holds = all_holds.filtered(lambda h: h.estado == 'expirado')
+
+            if not active_holds and not expired_holds:
+                raise UserError(
+                    'La orden no tiene reservas activas ni expiradas que renovar. '
+                    'Cancélala y crea una nueva.'
+                )
+
+            # Reactivar expirados solo si nadie más apartó la placa mientras
+            # tanto (el índice único de holds activos respalda contra carreras).
+            for hold in expired_holds:
+                conflict = Hold.search([
+                    ('quant_id', '=', hold.quant_id.id),
+                    ('estado', '=', 'activo'),
+                    ('id', '!=', hold.id),
+                ], limit=1)
+                if conflict:
+                    raise UserError(
+                        f'No se puede renovar: la placa {hold.lot_id.name} expiró y '
+                        f'ya fue apartada por {conflict.partner_id.name}. '
+                        'Quítala de la orden o cancela la orden.'
+                    )
+                if not hold.quant_id or (hold.quant_id.quantity or 0.0) <= 0:
+                    raise UserError(
+                        f'No se puede renovar: la placa {hold.lot_id.name} ya no '
+                        'tiene existencias. Quítala de la orden.'
+                    )
+
+            if active_holds:
+                active_holds.write({'fecha_expiracion': nueva_expiracion})
+            if expired_holds:
+                expired_holds.write({
+                    'estado': 'activo',
+                    'fecha_expiracion': nueva_expiracion,
+                })
+
+            order.fecha_expiracion = nueva_expiracion
+            order.message_post(body=(
+                f'Reserva renovada hasta {nueva_expiracion.strftime("%d/%m/%Y %H:%M")}: '
+                f'{len(active_holds)} hold(s) extendido(s)'
+                + (f', {len(expired_holds)} reactivado(s).' if expired_holds else '.')
+            ))
 
     def action_convert_to_sale_order(self):
         self.ensure_one()
+
+        # Candado de fila contra doble conversión concurrente (dos pestañas /
+        # dos usuarios): la segunda transacción espera aquí y, al liberarse,
+        # re-lee los guards con datos ya confirmados por la primera.
+        self.env.cr.execute(
+            "SELECT id FROM stock_lot_hold_order WHERE id = %s FOR UPDATE",
+            (self.id,),
+        )
+        self.invalidate_recordset(['state', 'sale_order_id'])
 
         if self.state != 'confirmed':
             raise UserError('Solo puede convertir órdenes de reserva confirmadas.')
@@ -373,6 +444,21 @@ class StockLotHoldOrder(models.Model):
                 ], limit=1)
 
                 if not quant:
+                    # Distinguir "en tránsito" de "sin stock": el hold pudo
+                    # confirmarse sobre una placa en tránsito, pero la venta
+                    # solo puede reservar stock interno. Mensaje honesto.
+                    transit_quant = self.env['stock.quant'].search([
+                        ('lot_id', '=', lot.id),
+                        ('quantity', '>', 0),
+                        ('location_id.usage', '=', 'transit'),
+                        ('company_id', '=', self.company_id.id),
+                    ], limit=1)
+                    if transit_quant:
+                        raise UserError(
+                            f'El lote {lot.name} está EN TRÁNSITO (aún no llega al '
+                            'almacén). Convierte la reserva cuando el material haya '
+                            'sido recibido, o renueva el hold mientras tanto.'
+                        )
                     raise UserError(f'El lote {lot.name} ya no tiene stock disponible.')
 
                 product_groups[pid]['quantity'] += quant.quantity
@@ -449,7 +535,17 @@ class StockLotHoldOrder(models.Model):
                     }
                 }
 
+        except UserError:
+            # Los errores de negocio legibles se propagan tal cual (antes se
+            # doble-envolvían perdiendo claridad).
+            raise
         except Exception as e:
+            # Errores inesperados: dejar el traceback completo en el log antes
+            # de traducirlos a un mensaje de usuario.
+            _logger.exception(
+                '[HOLD ORDER] Error inesperado al convertir %s a orden de venta.',
+                self.name,
+            )
             raise UserError(f'Error al crear orden de venta: {str(e)}')
 
     # ==================== HELPERS PARA REPORTES ====================
