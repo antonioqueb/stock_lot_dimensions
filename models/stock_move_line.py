@@ -338,12 +338,20 @@ class StockMoveLine(models.Model):
 
         blockers = StockMoveLine.search(domain)
 
-        # No bloquear recepciones. Sí bloquear internos/salidas/hechos/no cancelados.
+        # No bloquear recepciones. Sí bloquear internos ABIERTOS, salidas y
+        # hechos de venta. Un traslado INTERNO ya HECHO es historia: el lote
+        # solo cambió de ubicación (y pudo regresar); no es un compromiso y
+        # bloqueaba para siempre re-mover el lote desde esa ubicación
+        # (p. ej. movimientos del carrito/escáner SOM/INT hechos).
         blockers = blockers.filtered(
             lambda ml:
                 ml.picking_id
                 and ml.picking_id.picking_type_code != 'incoming'
                 and ml.state != 'cancel'
+                and not (
+                    ml.state == 'done'
+                    and ml.picking_id.picking_type_code == 'internal'
+                )
         )
 
         # Excluir líneas del mismo pedido de venta: no es un conflicto real.
