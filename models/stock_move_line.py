@@ -323,14 +323,23 @@ class StockMoveLine(models.Model):
         move = line.move_id
         if move and move.sale_line_id:
             return False
-        if (
-            move and move.group_id
-            and 'sale_id' in move.group_id._fields
-            and move.group_id.sale_id
-        ):
-            return False
+        # Odoo 19: stock.move ya NO tiene group_id (AttributeError); el grupo
+        # de aprovisionamiento se consulta por nombre de campo, tolerando
+        # renombres entre builds.
+        if move:
+            for group_field in ('group_id', 'procure_group_id'):
+                if group_field not in move._fields:
+                    continue
+                group = move[group_field]
+                if group and 'sale_id' in group._fields and group.sale_id:
+                    return False
+                break
         if 'sale_id' in picking._fields and picking.sale_id:
             return False
+        if 'group_id' in picking._fields and picking.group_id:
+            group = picking.group_id
+            if 'sale_id' in group._fields and group.sale_id:
+                return False
 
         return bool(
             line.location_dest_id
