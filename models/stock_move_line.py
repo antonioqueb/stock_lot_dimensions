@@ -296,7 +296,46 @@ class StockMoveLine(models.Model):
         if self._get_line_reserved_qty(line) <= 0:
             return False
 
+        # Un MOVIMIENTO DE BIN (reacomodo físico) siempre está permitido,
+        # aunque el lote esté reservado por una venta: la reserva se
+        # traspasa a la ubicación nueva (ver inventory_shopping_cart,
+        # _som_displace_strong_reservations / reanclaje al validar).
+        if self._is_bin_move_line(line):
+            return False
+
         return True
+
+    def _is_bin_move_line(self, line):
+        """Reacomodo físico puro: traslado interno→interna SIN liga a venta.
+
+        Cubre los traslados del carrito/escáner ('Carrito - %') y los
+        traslados internos manuales del backend. Un picking interno que SÍ
+        pertenece a la cadena de una venta (sale_line_id, group con venta,
+        picking.sale_id) NO es reacomodo y sigue validándose.
+        """
+        picking = line.picking_id
+        if not picking or picking.picking_type_code != 'internal':
+            return False
+
+        if (picking.origin or '').startswith('Carrito - '):
+            return True
+
+        move = line.move_id
+        if move and move.sale_line_id:
+            return False
+        if (
+            move and move.group_id
+            and 'sale_id' in move.group_id._fields
+            and move.group_id.sale_id
+        ):
+            return False
+        if 'sale_id' in picking._fields and picking.sale_id:
+            return False
+
+        return bool(
+            line.location_dest_id
+            and line.location_dest_id.usage == 'internal'
+        )
 
     def _get_duplicate_lot_blockers(self, line):
         """
