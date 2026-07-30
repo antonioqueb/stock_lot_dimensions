@@ -352,6 +352,18 @@ class StockMoveLine(models.Model):
                     ml.state == 'done'
                     and ml.picking_id.picking_type_code == 'internal'
                 )
+                # Un traslado interno de carrito/escáner ABIERTO es una
+                # reserva DÉBIL (reacomodo de ubicación): nunca bloquea a
+                # ventas, entregas, apartados ni a otros traslados. Los
+                # flujos fuertes lo liberan solos vía
+                # stock.picking._release_cart_internal_reservations()
+                # (inventory_shopping_cart); aquí simplemente no cuenta
+                # como compromiso. Al revés SÍ: una venta/entrega activa
+                # sigue bloqueando que el escáner mueva el lote.
+                and not (
+                    ml.picking_id.picking_type_code == 'internal'
+                    and (ml.picking_id.origin or '').startswith('Carrito - ')
+                )
         )
 
         # Excluir líneas del mismo pedido de venta: no es un conflicto real.
@@ -538,6 +550,18 @@ class StockMoveLine(models.Model):
                 ml.picking_id
                 and ml.picking_id.picking_type_code != 'incoming'
                 and ml.state != 'cancel'
+                # Mismos criterios que _get_duplicate_lot_blockers: un
+                # interno HECHO es historia y un interno de carrito/escáner
+                # ABIERTO es reserva débil — ninguno debe esconder el lote
+                # del selector.
+                and not (
+                    ml.state == 'done'
+                    and ml.picking_id.picking_type_code == 'internal'
+                )
+                and not (
+                    ml.picking_id.picking_type_code == 'internal'
+                    and (ml.picking_id.origin or '').startswith('Carrito - ')
+                )
         )
 
         # No considerar bloqueadores de la misma venta.
