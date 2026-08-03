@@ -219,6 +219,12 @@ class StockLotHoldOrder(models.Model):
 
         return super().create(vals_list)
 
+    def unlink(self):
+        # Borrar la orden borra sus líneas por cascada SQL (sin pasar por el
+        # unlink de la línea), así que los holds activos se liberan aquí.
+        self._release_related_holds()
+        return super().unlink()
+
     def _release_related_holds(self):
         for order in self:
             active_holds = self.env['stock.lot.hold']
@@ -281,41 +287,49 @@ class StockLotHoldOrder(models.Model):
                 for lot in line.lot_ids:
                     if lot.id in already_held_lot_ids:
                         continue
-
-                    quant = order._find_quant_for_lot(lot, order.company_id.id)
-                    if not quant:
-                        raise UserError(f'El lote {lot.name} no tiene stock disponible para reservar.')
-
-                    existing = self.env['stock.lot.hold'].search([
-                        ('quant_id', '=', quant.id),
-                        ('estado', '=', 'activo'),
-                        ('company_id', '=', order.company_id.id),
-                    ], limit=1)
-
-                    if existing:
-                        raise UserError(
-                            f'El lote {lot.name} ya tiene reserva activa para {existing.partner_id.name}.'
-                        )
-
-                    notas_hold = f'Orden: {order.name}\n'
-                    if order.notas:
-                        notas_hold += f'\n{order.notas}'
-
-                    hold = self.env['stock.lot.hold'].create({
-                        'lot_id': lot.id,
-                        'quant_id': quant.id,
-                        'partner_id': order.partner_id.id,
-                        'user_id': order.user_id.id,
-                        'project_id': order.project_id.id if order.project_id else False,
-                        'arquitecto_id': order.arquitecto_id.id if order.arquitecto_id else False,
-                        'fecha_inicio': order.fecha_orden,
-                        'fecha_expiracion': order.fecha_expiracion,
-                        'notas': notas_hold,
-                        'company_id': order.company_id.id,
-                    })
-                    line.write({'hold_ids': [(4, hold.id)]})
+                    order._create_hold_for_line_lot(line, lot)
 
             order.state = 'confirmed'
+
+    def _create_hold_for_line_lot(self, line, lot):
+        """Crea (y liga a la línea) el hold de una placa, con las mismas
+        validaciones de la confirmación: quant con stock y placa sin hold
+        activo de otro documento. Lo usan action_confirm y la sincronización
+        de holds cuando se agregan placas a una orden ya confirmada."""
+        self.ensure_one()
+        quant = self._find_quant_for_lot(lot, self.company_id.id)
+        if not quant:
+            raise UserError(f'El lote {lot.name} no tiene stock disponible para reservar.')
+
+        existing = self.env['stock.lot.hold'].search([
+            ('quant_id', '=', quant.id),
+            ('estado', '=', 'activo'),
+            ('company_id', '=', self.company_id.id),
+        ], limit=1)
+
+        if existing:
+            raise UserError(
+                f'El lote {lot.name} ya tiene reserva activa para {existing.partner_id.name}.'
+            )
+
+        notas_hold = f'Orden: {self.name}\n'
+        if self.notas:
+            notas_hold += f'\n{self.notas}'
+
+        hold = self.env['stock.lot.hold'].create({
+            'lot_id': lot.id,
+            'quant_id': quant.id,
+            'partner_id': self.partner_id.id,
+            'user_id': self.user_id.id,
+            'project_id': self.project_id.id if self.project_id else False,
+            'arquitecto_id': self.arquitecto_id.id if self.arquitecto_id else False,
+            'fecha_inicio': self.fecha_orden,
+            'fecha_expiracion': self.fecha_expiracion,
+            'notas': notas_hold,
+            'company_id': self.company_id.id,
+        })
+        line.write({'hold_ids': [(4, hold.id)]})
+        return hold
 
     def action_cancel(self):
         self._release_related_holds()
@@ -783,18 +797,78 @@ class StockLotHoldOrderLine(models.Model):
         for line in self:
             line.lot_count = len(line.lot_ids)
 
+    def write(self, vals):
+        res = super().write(vals)
+        if 'lot_ids' in vals:
+            self._sync_holds_with_lots()
+        return res
+
+    def unlink(self):
+        # Al borrar una línea se liberan sus apartados activos. Sin esto los
+        # holds quedaban huérfanos (activos pero ya sin línea que los apunte):
+        # la placa se quedaba bloqueada para siempre y ni cancelar la orden
+        # la liberaba, porque la liberación recorre las líneas.
+        self._release_active_holds()
+        return super().unlink()
+
+    def _release_active_holds(self, only_lots=None):
+        """Cancela los holds ACTIVOS de la línea (todos, o solo los de
+        `only_lots`) y lo deja asentado en el chatter de la orden."""
+        for line in self:
+            holds = line.hold_ids.filtered(lambda h: h.estado == 'activo')
+            if only_lots is not None:
+                holds = holds.filtered(lambda h: h.lot_id in only_lots)
+            if not holds:
+                continue
+            lot_names = ', '.join(holds.mapped('lot_id.name'))
+            holds.write({'estado': 'cancelado'})
+            if line.order_id:
+                line.order_id.message_post(body=(
+                    f'Se liberaron {len(holds)} apartado(s) al quitar placas '
+                    f'de la reserva: {lot_names}.'
+                ))
+
+    def _sync_holds_with_lots(self):
+        """Mantiene el invariante «placas de la línea ⇔ holds activos».
+
+        - Placa quitada: su hold activo se cancela al momento (la placa vuelve
+          a estar disponible en carrito/apartados).
+        - Placa agregada con la orden CONFIRMADA: se crea su hold de inmediato,
+          con las mismas validaciones que la confirmación (si la placa ya está
+          apartada por otro documento, el cambio truena y no se guarda a medias).
+        """
+        for line in self:
+            active = line.hold_ids.filtered(lambda h: h.estado == 'activo')
+            stale = active.filtered(lambda h: h.lot_id not in line.lot_ids)
+            if stale:
+                line._release_active_holds(only_lots=stale.mapped('lot_id'))
+
+            order = line.order_id
+            if (
+                order
+                and order.state == 'confirmed'
+                and line.product_id
+                and line.product_id.type != 'service'
+            ):
+                held_lots = (active - stale).mapped('lot_id')
+                for lot in (line.lot_ids - held_lots):
+                    order._create_hold_for_line_lot(line, lot)
+
     @api.depends('lot_ids', 'product_id')
     def _compute_cantidad_m2(self):
         for line in self:
             if line.lot_ids:
                 total = 0.0
                 for lot in line.lot_ids:
-                    quant = self.env['stock.quant'].search([
+                    # TODOS los quants internos del lote (no limit=1 sin orden:
+                    # con stock repartido devolvía un quant arbitrario y la
+                    # cantidad salía "de la nada").
+                    quants = self.env['stock.quant'].search([
                         ('lot_id', '=', lot.id),
                         ('quantity', '>', 0),
                         ('location_id.usage', '=', 'internal'),
-                    ], limit=1)
-                    total += quant.quantity if quant else 0.0
+                    ])
+                    total += sum(quants.mapped('quantity'))
                 line.cantidad_m2 = total
             elif line.product_id and line.product_id.type == 'service':
                 if not line.cantidad_m2:
@@ -822,15 +896,16 @@ class StockLotHoldOrderLine(models.Model):
             ], limit=1)
             self.quant_id = quant.id if quant else False
 
-            # Refrescar valores visuales en formulario
+            # Refrescar valores visuales en formulario (TODOS los quants
+            # internos de cada lote, igual que el cómputo almacenado)
             total = 0.0
             for lot in self.lot_ids:
-                quant_line = self.env['stock.quant'].search([
+                quants_line = self.env['stock.quant'].search([
                     ('lot_id', '=', lot.id),
                     ('quantity', '>', 0),
                     ('location_id.usage', '=', 'internal'),
-                ], limit=1)
-                total += quant_line.quantity if quant_line else 0.0
+                ])
+                total += sum(quants_line.mapped('quantity'))
             self.cantidad_m2 = total
         else:
             self.lot_id = False
