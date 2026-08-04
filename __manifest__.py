@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Atributos Adicionales para Lotes',
-    'version': '19.0.2.14.0',
+    'version': '19.0.2.15.0',
     'category': 'Inventory/Inventory',
     'summary': 'Captura dimensiones, fotografías y gestión de reservas manuales (hold) en lotes',
     'description': """
@@ -23,6 +23,11 @@
         'project',
         'mail',
         'sale_stock',
+        # La clase duplicada de packing.list.import.wizard (models/stock_picking.py)
+        # tiene un Many2one a documents.document: sin declarar 'documents', en una
+        # instalación desde cero el grafo carga este módulo antes que Documents y
+        # el registro muere con "unknown comodel_name 'documents.document'".
+        'documents',
     ],
     'data': [
         'security/stock_lot_hold_security.xml',
