@@ -559,6 +559,26 @@
                                                     </td>
                                                 </t>
                                             </tr>
+
+                                            <!-- DESGLOSE DE LOTES de la línea (bultos/piezas
+                                                 seleccionados o asignados). Antes solo Placas y
+                                                 Formatos mostraban lotes; adhesivos/accesorios/otros
+                                                 con lote no imprimían su desglose. Sin precios:
+                                                 los importes viven en la fila principal. -->
+                                            <t t-set="generic_lots" t-value="line._get_all_sale_lots_with_qty() if line.product_id.type != 'service' else []"/>
+                                            <t t-if="generic_lots">
+                                                <tr style="page-break-inside: avoid;">
+                                                    <td style="border-top: 0;"></td>
+                                                    <td t-att-colspan="((8 if has_line_discount_columns else 6) if show_prices else 2)"
+                                                        style="padding: 2px 8px 6px !important; border-top: 0;">
+                                                        <t t-foreach="generic_lots" t-as="glot">
+                                                            <span style="display: inline-block; margin: 1px 6px 1px 0; padding: 1px 7px; border: 1px solid #d8d8d8; border-radius: 4px; font-size: 8px; background: #fafafa; white-space: nowrap;">
+                                                                Lote <strong t-esc="glot['lot'].name"/> × <t t-esc="'%g' % float(glot['quantity'] or 0)"/>
+                                                            </span>
+                                                        </t>
+                                                    </td>
+                                                </tr>
+                                            </t>
                                         </t>
                                     </tbody>
                                 </table>
