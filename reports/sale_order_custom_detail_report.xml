@@ -303,8 +303,9 @@
                                     <thead>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
                                             <th class="text-center" style="color: #fff; width: 3%; font-weight: bold;">#</th>
-                                            <th style="color: #fff; width: 14%; font-weight: bold;">Lote</th>
-                                            <th style="color: #fff; width: 10%; font-weight: bold;">Bloque</th>
+                                            <th style="color: #fff; width: 12%; font-weight: bold;">Lote</th>
+                                            <th style="color: #fff; width: 9%; font-weight: bold;">Bloque</th>
+                                            <th style="color: #fff; width: 8%; font-weight: bold;">Ubicación</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Espesor</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Largo</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Alto</th>
@@ -325,7 +326,7 @@
 
                                             <!-- FILA DE PRODUCTO AGRUPADOR -->
                                             <tr style="background-color: #f2f2f2; color: #222; page-break-inside: avoid;">
-                                                <td t-att-colspan="((13 if has_line_discount_columns else 11) if show_prices else 7)"
+                                                <td t-att-colspan="((14 if has_line_discount_columns else 12) if show_prices else 8)"
                                                     style="background-color: #f2f2f2; padding: 4px 8px !important; font-weight: 800; color: #222; font-size: 8.8px; text-transform: uppercase; border: 1px solid #d8d8d8 !important; overflow-wrap: anywhere; word-break: break-word;">
                                                     <span t-field="line.product_id.display_name"/>
                                                     <t t-if="line.name and line.name != line.product_id.display_name">
@@ -362,6 +363,10 @@
 
                                                         <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;">
                                                             <span t-esc="lot.x_bloque or ''"/>
+                                                        </td>
+
+                                                        <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word; color: #555;">
+                                                            <span t-esc="lot.som_short_location() or ''"/>
                                                         </td>
 
                                                         <td class="text-center align-middle" style="white-space: nowrap;">
@@ -426,7 +431,7 @@
                                                         <t t-set="global_seq" t-value="global_seq + 1"/>
                                                     </td>
 
-                                                    <td colspan="5" class="align-middle" style="font-style: italic; color: #555; font-size: 8px; overflow-wrap: anywhere; word-break: break-word;">
+                                                    <td colspan="6" class="align-middle" style="font-style: italic; color: #555; font-size: 8px; overflow-wrap: anywhere; word-break: break-word;">
                                                         <t t-if="section_key == 'placas'">(Sin selección de placas específicas)</t>
                                                         <t t-else="">(Sin selección de lotes específicos)</t>
                                                     </td>
@@ -574,6 +579,8 @@
                                                         <t t-foreach="generic_lots" t-as="glot">
                                                             <span style="display: inline-block; margin: 1px 6px 1px 0; padding: 1px 7px; border: 1px solid #d8d8d8; border-radius: 4px; font-size: 8px; background: #fafafa; white-space: nowrap;">
                                                                 Lote <strong t-esc="glot['lot'].name"/> × <t t-esc="'%g' % float(glot['quantity'] or 0)"/>
+                                                                <t t-set="glot_loc" t-value="glot['lot'].som_short_location()"/>
+                                                                <t t-if="glot_loc"> · <span style="color: #777;" t-esc="glot_loc"/></t>
                                                             </span>
                                                         </t>
                                                     </td>

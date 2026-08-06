@@ -114,6 +114,22 @@ class StockLot(models.Model):
         # un cliente con holds activos (camino caliente de despacho).
         return [(lot.id, lot.display_name) for lot in valid_lots[:limit]]
 
+    # ==================== HELPERS ====================
+    def som_short_location(self):
+        """Ubicación actual del lote RECORTADA a último padre / último hijo
+        (p. ej. 'PATIO A/R1'). Usada por reportes y selectores para que la
+        columna no se coma la tabla con la ruta completa."""
+        self.ensure_one()
+        quant = self.quant_ids.filtered(
+            lambda q: q.quantity > 0
+            and q.location_id.usage == 'internal')[:1]
+        if not quant:
+            return ''
+        parts = [p for p in (quant.location_id.complete_name
+                             or quant.location_id.display_name
+                             or '').split('/') if p]
+        return '/'.join(parts[-2:]) if parts else ''
+
     # ==================== MÉTODOS COMPUTADOS ====================
     @api.depends('x_fotografia_ids')
     def _compute_fotografia_principal(self):
