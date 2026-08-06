@@ -19,6 +19,11 @@ class StockLot(models.Model):
     x_tipo = LotDimensionFields.get_classification_fields()['x_tipo']
     x_numero_placa = LotDimensionFields.get_classification_fields()['x_numero_placa']
     x_bloque = LotDimensionFields.get_classification_fields()['x_bloque']
+    x_fecha_bloque = fields.Date(
+        string='Fecha del bloque',
+        help='Fecha del bloque (corte/llegada). Complementa la '
+             'identificación del bloque.',
+    )
     x_atado = LotDimensionFields.get_classification_fields()['x_atado']
     x_grupo = LotDimensionFields.get_classification_fields()['x_grupo']
     x_color = LotDimensionFields.get_classification_fields()['x_color']
