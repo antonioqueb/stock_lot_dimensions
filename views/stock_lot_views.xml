@@ -51,7 +51,7 @@
                                        placeholder="Selecciona tipo..."/>
                                 <field name="x_bloque" 
                                        placeholder="Identificación del bloque"/>
-                                <field name="x_fecha_bloque"/>
+                                <field name="x_fecha_lote"/>
                                 <field name="x_atado" 
                                     placeholder="Identificación del atado"/>
                                 <field name="x_numero_placa" optional="show" string="No. Placa"/>
@@ -143,7 +143,7 @@
                 <field name="x_color" optional="show" string="Color"/>
                 <field name="x_tipo" optional="show" string="Tipo"/>
                 <field name="x_bloque" optional="show" string="Bloque"/>
-                <field name="x_fecha_bloque" optional="hide" string="Fecha bloque"/>
+                <field name="x_fecha_lote" optional="hide" string="Fecha lote"/>
                 <field name="x_atado" optional="show" string="Atado"/>
                 <field name="x_numero_placa" optional="show" string="No. Placa"/>
                 <field name="x_grupo" widget="many2many_tags" optional="show" string="Grupo"/>
