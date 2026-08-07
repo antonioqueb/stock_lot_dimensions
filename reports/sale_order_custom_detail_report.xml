@@ -576,13 +576,36 @@
                                                     <td style="border-top: 0;"></td>
                                                     <td t-att-colspan="((8 if has_line_discount_columns else 6) if show_prices else 2)"
                                                         style="padding: 2px 8px 6px !important; border-top: 0;">
-                                                        <t t-foreach="generic_lots" t-as="glot">
-                                                            <span style="display: inline-block; margin: 1px 6px 1px 0; padding: 1px 7px; border: 1px solid #d8d8d8; border-radius: 4px; font-size: 8px; background: #fafafa; white-space: nowrap;">
-                                                                Lote <strong t-esc="glot['lot'].name"/> × <t t-esc="'%g' % float(glot['quantity'] or 0)"/>
-                                                                <t t-set="glot_loc" t-value="glot['lot'].som_short_location()"/>
-                                                                <t t-if="glot_loc"> · <span style="color: #777;" t-esc="glot_loc"/></t>
-                                                            </span>
-                                                        </t>
+                                                        <!-- Una FILA por lote (igual que placas), con la cantidad
+                                                             ASIGNADA a esta línea — no etiquetas ni stock físico. -->
+                                                        <table style="width: 60%; min-width: 320px; font-size: 8.5px; border-collapse: collapse; margin: 2px 0 4px;">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th style="width: 6%; text-align: center; padding: 3px 6px; background: #f2f2f2; border: 1px solid #d8d8d8; font-size: 7.5px; text-transform: uppercase;">#</th>
+                                                                    <th style="width: 40%; text-align: left; padding: 3px 8px; background: #f2f2f2; border: 1px solid #d8d8d8; font-size: 7.5px; text-transform: uppercase;">Lote</th>
+                                                                    <th style="width: 30%; text-align: left; padding: 3px 8px; background: #f2f2f2; border: 1px solid #d8d8d8; font-size: 7.5px; text-transform: uppercase;">Ubicación</th>
+                                                                    <th style="width: 24%; text-align: right; padding: 3px 8px; background: #f2f2f2; border: 1px solid #d8d8d8; font-size: 7.5px; text-transform: uppercase;">Cantidad</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <t t-set="glot_seq" t-value="1"/>
+                                                                <tr t-foreach="generic_lots" t-as="glot">
+                                                                    <td style="text-align: center; padding: 3px 6px; border: 1px solid #e5e5e5; color: #888;">
+                                                                        <t t-esc="glot_seq"/>
+                                                                        <t t-set="glot_seq" t-value="glot_seq + 1"/>
+                                                                    </td>
+                                                                    <td style="padding: 3px 8px; border: 1px solid #e5e5e5; font-weight: 700;">
+                                                                        <t t-esc="glot['lot'].name"/>
+                                                                    </td>
+                                                                    <td style="padding: 3px 8px; border: 1px solid #e5e5e5; color: #777;">
+                                                                        <t t-esc="glot['lot'].som_short_location() or ''"/>
+                                                                    </td>
+                                                                    <td style="text-align: right; padding: 3px 8px; border: 1px solid #e5e5e5; font-weight: 700;">
+                                                                        <t t-esc="'%g' % float(glot['quantity'] or 0)"/>
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
                                                     </td>
                                                 </tr>
                                             </t>
