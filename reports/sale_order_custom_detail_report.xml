@@ -366,7 +366,7 @@
                                                         </td>
 
                                                         <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word; color: #555;">
-                                                            <span t-esc="lot.som_short_location() or ''"/>
+                                                            <span t-esc="lot.som_short_location(1) or ''"/>
                                                         </td>
 
                                                         <td class="text-center align-middle" style="white-space: nowrap;">
@@ -472,6 +472,23 @@
                                                 </tr>
                                             </t>
                                         </t>
+
+                                        <!-- TOTAL DE LA SECCIÓN: m² o piezas según la unidad de cada producto -->
+                                        <t t-set="sec_m2_total" t-value="sum([l.product_uom_qty for l in section_lines if 'm2' in (l.product_id.uom_id.name or '').lower().replace('²', '2')])"/>
+                                        <t t-set="sec_pz_total" t-value="sum([l.product_uom_qty for l in section_lines if 'm2' not in (l.product_id.uom_id.name or '').lower().replace('²', '2')])"/>
+                                        <tr style="background-color: #2f2f2f; color: #fff; page-break-inside: avoid;">
+                                            <td colspan="7" class="text-end" style="color: #fff; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px; padding: 5px 8px;">
+                                                Total <t t-esc="section_title"/>
+                                            </td>
+                                            <td class="text-end" style="color: #fff; font-weight: 900; white-space: nowrap; padding: 5px 8px;">
+                                                <t t-if="sec_m2_total"><span t-esc="'%.2f' % sec_m2_total"/> m²</t>
+                                                <t t-if="sec_m2_total and sec_pz_total"><br/></t>
+                                                <t t-if="sec_pz_total"><span t-esc="'%g' % sec_pz_total"/> pzas</t>
+                                            </td>
+                                            <t t-if="show_prices">
+                                                <td t-att-colspan="6 if has_line_discount_columns else 4" style="background-color: #2f2f2f;"/>
+                                            </t>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </t>
@@ -598,7 +615,7 @@
                                                                         <t t-esc="glot['lot'].name"/>
                                                                     </td>
                                                                     <td style="padding: 3px 8px; border: 1px solid #e5e5e5; color: #777;">
-                                                                        <t t-esc="glot['lot'].som_short_location() or ''"/>
+                                                                        <t t-esc="glot['lot'].som_short_location(1) or ''"/>
                                                                     </td>
                                                                     <td style="text-align: right; padding: 3px 8px; border: 1px solid #e5e5e5; font-weight: 700;">
                                                                         <t t-esc="'%g' % float(glot['quantity'] or 0)"/>
@@ -609,6 +626,25 @@
                                                     </td>
                                                 </tr>
                                             </t>
+                                        </t>
+
+                                        <!-- TOTAL DE LA SECCIÓN: m² o piezas según la unidad de cada producto -->
+                                        <t t-if="section_title != 'Servicios'">
+                                            <t t-set="sec_m2_total" t-value="sum([l.product_uom_qty for l in section_lines if 'm2' in (l.product_id.uom_id.name or '').lower().replace('²', '2')])"/>
+                                            <t t-set="sec_pz_total" t-value="sum([l.product_uom_qty for l in section_lines if 'm2' not in (l.product_id.uom_id.name or '').lower().replace('²', '2')])"/>
+                                            <tr style="background-color: #2f2f2f; color: #fff; page-break-inside: avoid;">
+                                                <td colspan="2" class="text-end" style="color: #fff; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px; padding: 5px 8px;">
+                                                    Total <t t-esc="section_title"/>
+                                                </td>
+                                                <td class="text-end" style="color: #fff; font-weight: 900; white-space: nowrap; padding: 5px 8px;">
+                                                    <t t-if="sec_m2_total"><span t-esc="'%.2f' % sec_m2_total"/> m²</t>
+                                                    <t t-if="sec_m2_total and sec_pz_total"><br/></t>
+                                                    <t t-if="sec_pz_total"><span t-esc="'%g' % sec_pz_total"/> pzas</t>
+                                                </td>
+                                                <t t-if="show_prices">
+                                                    <td t-att-colspan="6 if has_line_discount_columns else 4" style="background-color: #2f2f2f;"/>
+                                                </t>
+                                            </tr>
                                         </t>
                                     </tbody>
                                 </table>
