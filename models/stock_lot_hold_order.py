@@ -856,16 +856,35 @@ class StockLotHoldOrderLine(models.Model):
                     order._create_hold_for_line_lot(line, lot)
 
     def _som_lot_free_qty(self, lot):
-        """m² LIBRES del lote: físico interno menos lo ya asignado
-        (reserved_quantity de entregas/pedidos). El apartado jamás debe
-        proponer ni aceptar material que otro documento ya comprometió."""
+        """m² LIBRES del lote: físico interno menos lo ya asignado.
+
+        'Asignado' cubre las dos rutas reales:
+        - reserved_quantity del quant (reservas estándar de inventario), y
+        - move lines VIVAS ligadas a una venta confirmada (la asignación
+          para entrega de una SO que crea el wizard, que no siempre
+          reserva el quant).
+        Se toma el MÁXIMO de ambas para no restar doble cuando la reserva
+        estándar sí existe. El apartado jamás propone ni acepta material
+        que otro documento ya comprometió."""
         quants = self.env['stock.quant'].sudo().search([
             ('lot_id', '=', lot.id),
             ('quantity', '>', 0),
             ('location_id.usage', '=', 'internal'),
         ])
         fisico = sum(quants.mapped('quantity'))
-        asignado = sum(quants.mapped('reserved_quantity'))
+        reservado = sum(quants.mapped('reserved_quantity'))
+
+        Ml = self.env['stock.move.line'].sudo()
+        qty_field = 'quantity' if 'quantity' in Ml._fields else 'qty_done'
+        mls = Ml.search([
+            ('lot_id', '=', lot.id),
+            ('state', 'not in', ('done', 'cancel')),
+            ('move_id.sale_line_id', '!=', False),
+            ('move_id.sale_line_id.order_id.state', 'in', ('sale', 'done')),
+        ])
+        asignado_so = sum(mls.mapped(qty_field))
+
+        asignado = max(reservado, asignado_so)
         return fisico, asignado, max(fisico - asignado, 0.0)
 
     @api.depends('lot_ids', 'product_id')
