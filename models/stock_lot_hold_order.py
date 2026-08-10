@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # models/stock_lot_hold_order.py
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
+from odoo.tools.float_utils import float_compare
 from .utils.business_days import BusinessDaysCalculator
 import logging
 
@@ -854,27 +855,63 @@ class StockLotHoldOrderLine(models.Model):
                 for lot in (line.lot_ids - held_lots):
                     order._create_hold_for_line_lot(line, lot)
 
+    def _som_lot_free_qty(self, lot):
+        """m² LIBRES del lote: físico interno menos lo ya asignado
+        (reserved_quantity de entregas/pedidos). El apartado jamás debe
+        proponer ni aceptar material que otro documento ya comprometió."""
+        quants = self.env['stock.quant'].sudo().search([
+            ('lot_id', '=', lot.id),
+            ('quantity', '>', 0),
+            ('location_id.usage', '=', 'internal'),
+        ])
+        fisico = sum(quants.mapped('quantity'))
+        asignado = sum(quants.mapped('reserved_quantity'))
+        return fisico, asignado, max(fisico - asignado, 0.0)
+
     @api.depends('lot_ids', 'product_id')
     def _compute_cantidad_m2(self):
         for line in self:
             if line.lot_ids:
                 total = 0.0
                 for lot in line.lot_ids:
-                    # TODOS los quants internos del lote (no limit=1 sin orden:
-                    # con stock repartido devolvía un quant arbitrario y la
-                    # cantidad salía "de la nada").
-                    quants = self.env['stock.quant'].search([
-                        ('lot_id', '=', lot.id),
-                        ('quantity', '>', 0),
-                        ('location_id.usage', '=', 'internal'),
-                    ])
-                    total += sum(quants.mapped('quantity'))
+                    # Solo lo LIBRE del lote: el físico total incluía m² ya
+                    # asignados a pedidos y sembraba sobre-asignación.
+                    total += line._som_lot_free_qty(lot)[2]
                 line.cantidad_m2 = total
             elif line.product_id and line.product_id.type == 'service':
                 if not line.cantidad_m2:
                     line.cantidad_m2 = 1.0
             else:
                 line.cantidad_m2 = 0.0
+
+    @api.constrains('cantidad_m2', 'lot_ids', 'product_id')
+    def _check_cantidad_vs_libre(self):
+        """La cantidad manual del apartado no puede superar lo LIBRE de
+        sus lotes (físico interno − asignado a pedidos/entregas). Antes se
+        podía teclear cualquier cantidad y, con parte del lote ya asignada
+        a una orden, el hold rebasaba el material real."""
+        for line in self:
+            if not line.lot_ids or not line.product_id \
+                    or line.product_id.type == 'service':
+                continue
+            total_libre = 0.0
+            detalle = []
+            for lot in line.lot_ids:
+                fisico, asignado, libre = line._som_lot_free_qty(lot)
+                total_libre += libre
+                detalle.append(
+                    '%s: %.2f libres (físico %.2f − asignado %.2f)'
+                    % (lot.name, libre, fisico, asignado))
+            if float_compare(line.cantidad_m2 or 0.0, total_libre,
+                             precision_digits=2) > 0:
+                raise ValidationError(_(
+                    'La cantidad del apartado (%(qty).2f m²) supera el '
+                    'material LIBRE de sus lotes (%(free).2f m²).\n\n'
+                    'Detalle por lote:\n%(det)s\n\n'
+                    'El material asignado a pedidos o entregas no puede '
+                    'apartarse de nuevo.',
+                    qty=line.cantidad_m2, free=total_libre,
+                    det='\n'.join(detalle)))
 
     @api.depends('cantidad_m2', 'precio_unitario')
     def _compute_precio_total(self):
