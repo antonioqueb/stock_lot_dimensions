@@ -884,7 +884,29 @@ class StockLotHoldOrderLine(models.Model):
         ])
         asignado_so = sum(mls.mapped(qty_field))
 
-        asignado = max(reservado, asignado_so)
+        # Asignación CAPTURADA en órdenes/cotizaciones vivas (lot_ids +
+        # desglose de parcialidades): existe antes de cualquier move line
+        # y también debe respetarla el apartado. Sin esto, con material
+        # seleccionado en un pedido el hold aceptaba el lote completo.
+        asignado_sol = 0.0
+        Sol = self.env['sale.order.line'].sudo()
+        if 'lot_ids' in Sol._fields:
+            sols = Sol.search([
+                ('lot_ids', 'in', lot.id),
+                ('order_id.state', 'in', ('draft', 'sent', 'sale')),
+            ])
+            for sol in sols:
+                qty = None
+                if hasattr(sol, '_som_breakdown_qty_for_lot'):
+                    bd = getattr(sol, 'x_lot_breakdown_json', None)
+                    if bd:
+                        qty = sol._som_breakdown_qty_for_lot(bd, lot)
+                if qty is None:
+                    # Sin desglose = lote tomado completo (placas).
+                    qty = fisico
+                asignado_sol += float(qty or 0.0)
+
+        asignado = max(reservado, asignado_so, min(asignado_sol, fisico))
         return fisico, asignado, max(fisico - asignado, 0.0)
 
     @api.depends('lot_ids', 'product_id')
