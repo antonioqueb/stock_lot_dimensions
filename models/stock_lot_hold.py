@@ -88,7 +88,7 @@ class StockLotHold(models.Model):
     
     arquitecto_id = fields.Many2one(
         'res.partner',
-        string='Arquitecto',
+        string='Embajador',
         readonly=True
     )
     

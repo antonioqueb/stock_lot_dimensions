@@ -78,7 +78,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td class="p-0"><strong>Arquitecto:</strong></td>
+                                <td class="p-0"><strong>Embajador:</strong></td>
                                 <td class="p-0">
                                     <span t-if="doc.x_architect_id" t-field="doc.x_architect_id.name"/>
                                     <span t-else="">-</span>

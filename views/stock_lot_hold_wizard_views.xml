@@ -47,7 +47,7 @@
                 </group>
                 
                 <div class="alert alert-info" role="alert">
-                    <strong>Campos obligatorios:</strong> Vendedor, Cliente, Proyecto y Arquitecto son requeridos para crear la reserva.
+                    <strong>Campos obligatorios:</strong> Vendedor, Cliente, Proyecto y Embajador son requeridos para crear la reserva.
                     La reserva expirará automáticamente en 10 días.
                 </div>
                 

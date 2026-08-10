@@ -25,7 +25,7 @@ class BulkHoldCreator:
         Args:
             partner_id: int - ID del cliente
             project_id: int - ID del proyecto
-            architect_id: int - ID del arquitecto
+            architect_id: int - ID del embajador
             selected_lots: list - IDs de quants
             notes: str - Notas adicionales
             currency_code: str - Código de divisa
@@ -96,7 +96,7 @@ class BulkHoldCreator:
                 'success': 0,
                 'errors': 1,
                 'holds': [],
-                'failed': [{'error': 'Debe seleccionar un arquitecto'}]
+                'failed': [{'error': 'Debe seleccionar un embajador'}]
             }
         
         return None

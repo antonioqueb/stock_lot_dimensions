@@ -1491,7 +1491,7 @@ class StockQuant(models.Model):
             return {'error': 'Debe seleccionar un proyecto'}
         
         if not architect_id:
-            return {'error': 'Debe seleccionar un arquitecto'}
+            return {'error': 'Debe seleccionar un embajador'}
         
         try:
             quant = self.browse(quant_id)
@@ -1577,7 +1577,7 @@ class StockQuant(models.Model):
                 'success': 0,
                 'errors': 1,
                 'holds': [],
-                'failed': [{'error': 'Debe seleccionar un arquitecto'}]
+                'failed': [{'error': 'Debe seleccionar un embajador'}]
             }
         
         # Calcular fecha de expiración (5 días hábiles)
@@ -1733,7 +1733,7 @@ class StockQuant(models.Model):
     
     @api.model
     def get_architects(self, search_term=''):
-        """Buscar arquitectos"""
+        """Buscar embajadores"""
         domain = [('x_es_arquitecto', '=', True)]
         
         if search_term:
@@ -1811,7 +1811,7 @@ class StockQuant(models.Model):
     
     @api.model
     def create_architect(self, name, vat='', ref=''):
-        """Crear un nuevo arquitecto"""
+        """Crear un nuevo embajador"""
         try:
             architect = self.env['res.partner'].create({
                 'name': name,

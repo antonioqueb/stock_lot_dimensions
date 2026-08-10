@@ -34,7 +34,7 @@ class StockLotHoldOrder(models.Model):
     project_id = fields.Many2one('project.project', string='Proyecto', tracking=True)
     arquitecto_id = fields.Many2one(
         'res.partner',
-        string='Arquitecto',
+        string='Embajador',
         domain=[('x_es_arquitecto', '=', True)],
         tracking=True,
     )

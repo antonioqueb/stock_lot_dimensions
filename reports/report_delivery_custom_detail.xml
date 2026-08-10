@@ -123,7 +123,7 @@
                                         <td class="p-0 text-end"><span t-field="o.sale_id.x_project_id.name"/></td>
                                     </tr>
                                     <tr t-if="o.sale_id and o.sale_id.x_architect_id">
-                                        <td class="p-0"><strong>Arquitecto:</strong></td>
+                                        <td class="p-0"><strong>Embajador:</strong></td>
                                         <td class="p-0 text-end"><span t-field="o.sale_id.x_architect_id.name"/></td>
                                     </tr>
                                 </table>

@@ -70,14 +70,14 @@ class StockLotHoldWizard(models.TransientModel):
     
     arquitecto_id = fields.Many2one(
         'res.partner',
-        string='Arquitecto',
+        string='Embajador',
         domain=[('x_es_arquitecto', '=', True)],
-        help='Arquitecto responsable del proyecto'
+        help='Embajador responsable del proyecto'
     )
     
     arquitecto_name = fields.Char(
-        string='Nombre del Arquitecto',
-        help='Ingrese el nombre del nuevo arquitecto'
+        string='Nombre del Embajador',
+        help='Ingrese el nombre del nuevo embajador'
     )
     
     fecha_expiracion = fields.Datetime(
@@ -139,7 +139,7 @@ class StockLotHoldWizard(models.TransientModel):
     def _check_arquitecto(self):
         for record in self:
             if not record.arquitecto_id and not record.arquitecto_name:
-                raise ValidationError('Debe seleccionar un arquitecto existente o ingresar el nombre de uno nuevo.')
+                raise ValidationError('Debe seleccionar un embajador existente o ingresar el nombre de uno nuevo.')
 
     def action_crear_hold(self):
         """Crear una nueva reserva manual"""
@@ -166,7 +166,7 @@ class StockLotHoldWizard(models.TransientModel):
             })
             project_id = project.id
         
-        # Obtener o crear arquitecto
+        # Obtener o crear embajador
         arquitecto_id = self.arquitecto_id.id
         if self.arquitecto_name:
             arquitecto = self.env['res.partner'].create({
