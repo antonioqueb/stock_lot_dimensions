@@ -590,19 +590,16 @@
                 </div>
             </div>
             <div class="col-5">
-                <table style="font-size: 9.5px; width: 100%; border-collapse: collapse; border: 1px solid #bbb; page-break-inside: avoid; break-inside: avoid;">
+                <!-- Regla del negocio: el Resumen de Totales lleva únicamente
+                     importes — el Total m² se retiró (difería del desglose de
+                     las líneas). Sin precios no hay resumen que mostrar. -->
+                <table t-if="show_prices" style="font-size: 9.5px; width: 100%; border-collapse: collapse; border: 1px solid #bbb; page-break-inside: avoid; break-inside: avoid;">
                     <thead>
                         <tr style="background-color: #f2f2f2; color: #222;">
                             <th colspan="2" style="padding: 5px 10px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #d8d8d8;">Resumen de Totales</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr t-attf-style="#{'background-color: #2f2f2f; color: #fff;' if not show_prices else 'border-bottom: 1px solid #e5e5e5;'}">
-                            <td t-attf-style="padding: #{'8px' if not show_prices else '5px'} 10px; text-transform: uppercase; #{'font-weight: 900; font-size: 11px; letter-spacing: 0.5px;' if not show_prices else 'color: #555; letter-spacing: 0.3px;'}">Total m²</td>
-                            <td t-attf-style="padding: #{'8px' if not show_prices else '5px'} 10px; width: 50%; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; #{'font-weight: 900; font-size: 11px;' if not show_prices else ''}">
-                                <span t-esc="'%.2f' % o.total_m2"/>
-                            </td>
-                        </tr>
                         <t t-if="show_prices">
                             <tr style="border-bottom: 1px solid #e5e5e5;">
                                 <td style="padding: 5px 10px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.3px;">Subtotal</td>
