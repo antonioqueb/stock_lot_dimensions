@@ -394,7 +394,7 @@
                                                             </td>
 
                                                             <td t-if="has_line_discount_columns" class="text-end align-middle" style="white-space: nowrap;">
-                                                                <span t-if="line_discount_pct &gt; 0" t-esc="'%.2f%%' % line_discount_pct"/>
+                                                                <span t-if="line_discount_pct &gt; 0" t-esc="('%.2f' % line_discount_pct) + '%'"/>
                                                                 <span t-else="" style="color: #999;">-</span>
                                                             </td>
 
@@ -446,7 +446,7 @@
                                                         </td>
 
                                                         <td t-if="has_line_discount_columns" class="text-end align-middle" style="white-space: nowrap;">
-                                                            <span t-if="line_discount_pct &gt; 0" t-esc="'%.2f%%' % line_discount_pct"/>
+                                                            <span t-if="line_discount_pct &gt; 0" t-esc="('%.2f' % line_discount_pct) + '%'"/>
                                                             <span t-else="" style="color: #999;">-</span>
                                                         </td>
 
@@ -557,7 +557,7 @@
                                                     </td>
 
                                                     <td t-if="has_line_discount_columns" class="text-end align-middle" style="white-space: nowrap;">
-                                                        <span t-if="line_discount_pct &gt; 0" t-esc="'%.2f%%' % line_discount_pct"/>
+                                                        <span t-if="line_discount_pct &gt; 0" t-esc="('%.2f' % line_discount_pct) + '%'"/>
                                                         <span t-else="" style="color: #999;">-</span>
                                                     </td>
 
