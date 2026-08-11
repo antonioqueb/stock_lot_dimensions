@@ -28,6 +28,54 @@ class StockQuant(models.Model):
     x_atado = fields.Char(related='lot_id.x_atado', string='Atado', readonly=True)
     x_grupo = fields.Many2many(related='lot_id.x_grupo', string='Grupo', readonly=True)
     x_pedimento = fields.Char(related='lot_id.x_pedimento', string='Pedimento', readonly=True)
+
+    # ── APARTADO PARCIAL (canónico) ──
+    # Un hold sobre un FORMATO/PIEZA solo retiene la parcialidad del
+    # desglose de su orden de reserva; el resto del lote sigue usable.
+    # Las PLACAS son atómicas: su hold retiene el quant completo.
+    def som_hold_held_qty(self):
+        self.ensure_one()
+        hold = self.x_hold_activo_id if getattr(self, 'x_tiene_hold', False) else False
+        if not hold:
+            return 0.0
+        lot = self.lot_id
+        tipo = str(getattr(lot, 'x_tipo', '') or '').lower()
+        if tipo not in ('formato', 'pieza'):
+            return self.quantity or 0.0
+        Line = self.env['stock.lot.hold.order.line'].sudo()
+        line = Line.search([('hold_ids', 'in', hold.id)], limit=1)
+        if not line:
+            line = Line.search([('hold_id', '=', hold.id)], limit=1)
+        if not line:
+            return self.quantity or 0.0
+        bd = {}
+        if 'x_lot_breakdown_json' in line._fields and line.x_lot_breakdown_json:
+            bd = line.x_lot_breakdown_json
+            if isinstance(bd, str):
+                import json as _json
+                try:
+                    bd = _json.loads(bd)
+                except (TypeError, ValueError):
+                    bd = {}
+        qty = bd.get(str(lot.id)) if isinstance(bd, dict) else None
+        if qty is None:
+            return self.quantity or 0.0
+        try:
+            return min(float(qty or 0.0), self.quantity or 0.0)
+        except (TypeError, ValueError):
+            return self.quantity or 0.0
+
+    def som_hold_free_qty(self):
+        """m² del quant NO retenidos por su hold activo."""
+        self.ensure_one()
+        return max((self.quantity or 0.0) - self.som_hold_held_qty(), 0.0)
+
+    def som_hold_blocks_fully(self):
+        """True si el hold activo retiene el quant COMPLETO."""
+        self.ensure_one()
+        if not getattr(self, 'x_tiene_hold', False):
+            return False
+        return self.som_hold_free_qty() <= 0.0001
     x_contenedor = fields.Char(related='lot_id.x_contenedor', string='Contenedor', readonly=True)
     x_referencia_proveedor = fields.Char(related='lot_id.x_referencia_proveedor', string='Ref. Proveedor', readonly=True)
     x_proveedor = fields.Char(related='lot_id.x_proveedor', string='Proveedor', readonly=True)

@@ -86,6 +86,11 @@ class HoldValidator:
                     )
                     if hold_commercial == customer_commercial:
                         available_lots.append(quant.lot_id.id)
+                    elif quant.som_hold_free_qty() > 0.0001:
+                        # APARTADO PARCIAL: el hold de otro cliente solo
+                        # retiene su parcialidad — el remanente del lote
+                        # sigue disponible.
+                        available_lots.append(quant.lot_id.id)
                 else:
                     # Hold de otra compañía → lote disponible
                     available_lots.append(quant.lot_id.id)
@@ -151,6 +156,11 @@ class HoldValidator:
             self.env['res.partner'].browse(customer_id).commercial_partner_id.id
             if customer_id else False
         )
+
+        # APARTADO PARCIAL: si el hold no retiene el quant completo, el
+        # remanente es usable por cualquier cliente — no se bloquea.
+        if not quant.som_hold_blocks_fully():
+            return
 
         if hold_partner.commercial_partner_id.id != customer_commercial_id:
             # 🔑 Cargar objetos completos ANTES de construir el mensaje

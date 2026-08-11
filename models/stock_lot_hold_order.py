@@ -1009,8 +1009,20 @@ class StockLotHoldOrderLine(models.Model):
                     qty = fisico
                 asignado_sol += float(qty or 0.0)
 
+        # Retenido por holds ACTIVOS de otras órdenes de reserva (el
+        # apartado parcial solo retiene su parcialidad; placas completas).
+        own_hold_ids = set()
+        if self and 'hold_ids' in self._fields:
+            own_hold_ids = set(self.hold_ids.ids)
+        retenido = 0.0
+        for q in quants:
+            h = getattr(q, 'x_hold_activo_id', False)
+            if not h or h.id in own_hold_ids:
+                continue
+            retenido += q.som_hold_held_qty()
+
         asignado = max(reservado, asignado_so, min(asignado_sol, fisico))
-        return fisico, asignado, max(fisico - asignado, 0.0)
+        return fisico, asignado, max(fisico - asignado - retenido, 0.0)
 
     @api.depends('lot_ids', 'product_id')
     def _compute_cantidad_m2(self):
