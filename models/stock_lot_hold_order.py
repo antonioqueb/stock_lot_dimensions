@@ -191,6 +191,73 @@ class StockLotHoldOrder(models.Model):
         # Fuerza refresco visual en la cabecera del formulario
         self._compute_totals()
 
+    # ── Ciclo de vencimiento ──
+    # 1er vencimiento: franja roja, el material SE MANTIENE.
+    # Renovación: la franja se quita (el contador se conserva).
+    # 2º vencimiento: se elimina TODO el material de la reserva dejando
+    # el detalle en el log (chatter).
+    x_expired_count = fields.Integer(
+        string='Veces vencida', default=0, copy=False, readonly=True,
+        tracking=True)
+    x_expired_flag = fields.Boolean(
+        string='En ciclo vencido', default=False, copy=False,
+        help='True mientras la orden está vencida sin renovar; se apaga al renovar.')
+    x_is_expired = fields.Boolean(
+        string='Vencida', compute='_compute_x_is_expired')
+
+    def _compute_x_is_expired(self):
+        ahora = fields.Datetime.now()
+        for order in self:
+            order.x_is_expired = bool(
+                order.state == 'confirmed'
+                and order.fecha_expiracion
+                and order.fecha_expiracion <= ahora)
+
+    def _som_process_expiration_cycle(self):
+        """Procesa el vencimiento de órdenes confirmadas (llamado por el
+        cron de holds ANTES de expirar holds sueltos). Devuelve los ids de
+        holds que deben MANTENERSE activos (1er vencimiento)."""
+        kept_hold_ids = set()
+        for order in self:
+            active_holds = order.hold_line_ids.mapped('hold_ids').filtered(
+                lambda h: h.estado == 'activo')
+
+            if not order.x_expired_flag:
+                order.x_expired_flag = True
+                order.x_expired_count += 1
+                if order.x_expired_count == 1:
+                    order.message_post(body=(
+                        '⚠ RESERVA VENCIDA (1ª vez). El material se '
+                        'mantiene apartado. Renueva para quitar la franja; '
+                        'al SEGUNDO vencimiento el material se eliminará '
+                        'automáticamente de la reserva.'))
+
+            if order.x_expired_count <= 1:
+                # Primer vencimiento: el material se mantiene.
+                kept_hold_ids.update(active_holds.ids)
+                continue
+
+            # Segundo vencimiento: registrar el detalle y eliminar TODO el
+            # material. El log del chatter queda como único rastro.
+            if order.hold_line_ids:
+                detalle = []
+                for line in order.hold_line_ids:
+                    lots = ', '.join(line.lot_ids.mapped('name')) or '—'
+                    detalle.append(
+                        '• %s — %.2f m² — lotes: %s — total %s%.2f' % (
+                            line.product_id.display_name or '',
+                            line.cantidad_m2 or 0.0,
+                            lots,
+                            (order.currency_id.symbol or '$'),
+                            line.precio_total or 0.0,
+                        ))
+                order.message_post(body=(
+                    '⛔ SEGUNDO VENCIMIENTO: se eliminó todo el material '
+                    'de la reserva. Detalle de lo eliminado:\n%s'
+                ) % '\n'.join(detalle))
+                order.hold_line_ids.unlink()
+        return kept_hold_ids
+
     @api.depends('fecha_expiracion', 'state')
     def _compute_dias_restantes(self):
         ahora = fields.Datetime.now()
@@ -397,6 +464,7 @@ class StockLotHoldOrder(models.Model):
                 })
 
             order.fecha_expiracion = nueva_expiracion
+            order.x_expired_flag = False
             order.message_post(body=(
                 f'Reserva renovada hasta {nueva_expiracion.strftime("%d/%m/%Y %H:%M")}: '
                 f'{len(active_holds)} hold(s) extendido(s)'

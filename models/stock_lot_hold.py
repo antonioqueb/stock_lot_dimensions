@@ -288,7 +288,21 @@ class StockLotHold(models.Model):
             ('estado', '=', 'activo'),
             ('fecha_expiracion', '<=', ahora),
         ])
-        
+
+        # CICLO DE LAS ÓRDENES DE RESERVA: en su PRIMER vencimiento el
+        # material se mantiene (sus holds NO se expiran); en el segundo,
+        # la orden misma libera todo y deja el detalle en su log.
+        HoldOrder = self.env['stock.lot.hold.order'].sudo()
+        expired_orders = HoldOrder.search([
+            ('state', '=', 'confirmed'),
+            ('fecha_expiracion', '<=', ahora),
+        ])
+        if expired_orders:
+            kept_ids = expired_orders._som_process_expiration_cycle()
+            if kept_ids:
+                holds_expirados = holds_expirados.filtered(
+                    lambda h: h.id not in kept_ids)
+
         if holds_expirados:
             holds_expirados.write({'estado': 'expirado'})
             _logger.info(
