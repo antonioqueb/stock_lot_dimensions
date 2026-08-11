@@ -365,6 +365,7 @@ class StockLotHoldOrder(models.Model):
         activo de otro documento. Lo usan action_confirm y la sincronización
         de holds cuando se agregan placas a una orden ya confirmada."""
         self.ensure_one()
+        self._som_assert_lots_not_committed_to_sale(lot)
         quant = self._find_quant_for_lot(lot, self.company_id.id)
         if not quant:
             raise UserError(f'El lote {lot.name} no tiene stock disponible para reservar.')
@@ -407,6 +408,34 @@ class StockLotHoldOrder(models.Model):
         self._release_related_holds()
         self.write({'state': 'done'})
 
+    def _som_assert_lots_not_committed_to_sale(self, lots):
+        """Un lote que ya vive en una orden de venta ACTIVA (borrador,
+        enviada o confirmada) no puede apartarse, confirmarse ni renovarse
+        en una reserva: truena nombrando lote → orden → cliente. Cierra el
+        hueco de renovar una reserva expirada cuyo material ya se vendió."""
+        self.ensure_one()
+        Sol = self.env['sale.order.line'].sudo()
+        if 'lot_ids' not in Sol._fields or not lots:
+            return
+        sols = Sol.search([
+            ('lot_ids', 'in', lots.ids),
+            ('order_id.state', 'in', ('draft', 'sent', 'sale')),
+        ])
+        if not sols:
+            return
+        conflicts = set()
+        for sol in sols:
+            for lot in (sol.lot_ids & lots):
+                conflicts.add('• %s → %s (%s)' % (
+                    lot.name, sol.order_id.name,
+                    sol.order_id.partner_id.display_name or ''))
+        if conflicts:
+            raise UserError(
+                'No se puede reservar ni renovar: estos lotes ya están en '
+                'una orden de venta activa:\n%s\n\n'
+                'Quita esos lotes de la reserva, o libéralos de la venta '
+                'primero.' % '\n'.join(sorted(conflicts)))
+
     def action_renew(self):
         """Renueva la orden completa: extiende los holds activos y REACTIVA los
         expirados (si su placa sigue libre).
@@ -434,6 +463,12 @@ class StockLotHoldOrder(models.Model):
                     'La orden no tiene reservas activas ni expiradas que renovar. '
                     'Cancélala y crea una nueva.'
                 )
+
+            # Material ya vendido ⇒ la renovación completa se rechaza (no
+            # se renueva "lo que se pueda": el vendedor debe depurar la
+            # orden de reserva primero).
+            order._som_assert_lots_not_committed_to_sale(
+                order.hold_line_ids.mapped('lot_ids'))
 
             # Reactivar expirados solo si nadie más apartó la placa mientras
             # tanto (el índice único de holds activos respalda contra carreras).
