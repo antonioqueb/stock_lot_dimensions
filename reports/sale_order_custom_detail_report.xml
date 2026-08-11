@@ -366,7 +366,7 @@
                                                         </td>
 
                                                         <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word; color: #555;">
-                                                            <span t-esc="lot.som_short_location(1) or ''"/>
+                                                            <span t-esc="lot.som_short_location(0) or ''"/>
                                                         </td>
 
                                                         <td class="text-center align-middle" style="white-space: nowrap;">
@@ -613,7 +613,7 @@
                                                                         <t t-esc="glot['lot'].name"/>
                                                                     </td>
                                                                     <td style="padding: 3px 8px; border: 1px solid #e5e5e5; color: #777;">
-                                                                        <t t-esc="glot['lot'].som_short_location(1) or ''"/>
+                                                                        <t t-esc="glot['lot'].som_short_location(0) or ''"/>
                                                                     </td>
                                                                     <td style="text-align: right; padding: 3px 8px; border: 1px solid #e5e5e5; font-weight: 700;">
                                                                         <t t-esc="'%g' % float(glot['quantity'] or 0)"/>

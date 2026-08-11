@@ -116,10 +116,12 @@ class StockLot(models.Model):
 
     # ==================== HELPERS ====================
     def som_short_location(self, depth=2):
-        """Ubicación actual del lote RECORTADA a los últimos `depth` niveles
-        (depth=2 → 'PATIO A/R1'; depth=1 → solo la última hija 'R1'). Usada
-        por reportes y selectores para que la columna no se coma la tabla con
-        la ruta completa."""
+        """Ubicación actual del lote RECORTADA:
+        - depth=N → los últimos N niveles (depth=2 → 'PATIO A/R1').
+        - depth=0 → DESDE EL SEGUNDO nivel: la ruta completa omitiendo solo
+          la raíz padre ('SOM/PATIO A/R1' → 'PATIO A/R1').
+        Usada por reportes y selectores para que la columna no se coma la
+        tabla con la ruta completa."""
         self.ensure_one()
         quant = self.quant_ids.filtered(
             lambda q: q.quantity > 0
@@ -129,7 +131,11 @@ class StockLot(models.Model):
         parts = [p for p in (quant.location_id.complete_name
                              or quant.location_id.display_name
                              or '').split('/') if p]
-        return '/'.join(parts[-depth:]) if parts else ''
+        if not parts:
+            return ''
+        if depth == 0:
+            return '/'.join(parts[1:]) if len(parts) > 1 else parts[0]
+        return '/'.join(parts[-depth:])
 
     # ==================== MÉTODOS COMPUTADOS ====================
     @api.depends('x_fotografia_ids')

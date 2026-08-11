@@ -51,8 +51,9 @@
                     <tr style="background-color: #2f2f2f; color: #fff;">
                         <th class="text-center" style="color: #fff; width: 4%; font-weight: bold;">#</th>
                         <th style="color: #fff; width: 16%; font-weight: bold;">Lote</th>
-                        <th style="color: #fff; width: 13%; font-weight: bold;">Bloque</th>
-                        <th class="text-center" style="color: #fff; width: 9%; font-weight: bold;">Espesor</th>
+                        <th style="color: #fff; width: 11%; font-weight: bold;">Bloque</th>
+                        <th style="color: #fff; width: 12%; font-weight: bold;">Ubicación</th>
+                        <th class="text-center" style="color: #fff; width: 8%; font-weight: bold;">Espesor</th>
                         <th class="text-center" style="color: #fff; width: 9%; font-weight: bold;">Largo</th>
                         <th class="text-center" style="color: #fff; width: 9%; font-weight: bold;">Alto</th>
                         <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">m²</th>
@@ -67,7 +68,7 @@
                     <t t-foreach="grp['lines']" t-as="line">
                         <!-- Fila agrupadora de producto -->
                         <tr style="background-color: #f2f2f2; color: #222; page-break-inside: avoid;">
-                            <td t-att-colspan="9 if show_prices else 7" style="background-color: #f2f2f2; padding: 4px 8px !important; font-weight: 800; color: #222; font-size: 8.8px; text-transform: uppercase; border: 1px solid #d8d8d8; overflow-wrap: anywhere; word-break: break-word;">
+                            <td t-att-colspan="10 if show_prices else 8" style="background-color: #f2f2f2; padding: 4px 8px !important; font-weight: 800; color: #222; font-size: 8.8px; text-transform: uppercase; border: 1px solid #d8d8d8; overflow-wrap: anywhere; word-break: break-word;">
                                 <span t-field="line.product_id.display_name"/>
                                 <span style="font-weight: 400; font-size: 8px; font-style: italic; color: #555; text-transform: none;">
                                     · <span t-esc="len(line.lot_ids)"/> placas · <span t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/> m²
@@ -84,6 +85,7 @@
                                 </td>
                                 <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><strong t-esc="lot.name or ''"/></td>
                                 <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><span t-esc="lot.x_bloque or ''"/></td>
+                                <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><span t-esc="lot.som_short_location(0) or ''"/></td>
                                 <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="lot.x_grosor or ''"/></td>
                                 <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="'%.3f' % (lot.x_ancho or 0.0)"/></td>
                                 <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="'%.3f' % (lot.x_alto or 0.0)"/></td>
