@@ -468,6 +468,26 @@ class StockMoveLine(models.Model):
 
             blockers = line._get_duplicate_lot_blockers(line)
 
+            # PARCIALIDADES (FORMATO/PIEZA): el mismo lote SÍ puede vivir en
+            # varias operaciones activas mientras la SUMA comprometida quepa
+            # en el físico del quant — es la base del apartado/venta parcial.
+            # Las PLACAS siguen siendo todo-o-nada.
+            if blockers and line.lot_id:
+                tipo = str(getattr(line.lot_id, 'x_tipo', '') or '').lower()
+                if tipo in ('formato', 'pieza'):
+                    qty_field = self._get_qty_field_name()
+                    quants = self.env['stock.quant'].sudo().search([
+                        ('product_id', '=', line.product_id.id),
+                        ('lot_id', '=', line.lot_id.id),
+                        ('location_id', '=', line.location_id.id),
+                        ('quantity', '>', 0),
+                    ])
+                    fisico = sum(quants.mapped('quantity'))
+                    comprometido = (line[qty_field] or 0.0) + sum(
+                        b[qty_field] or 0.0 for b in blockers)
+                    if comprometido <= fisico + 0.0001:
+                        continue
+
             if blockers:
                 _logger.warning(
                     "[LOT_DUPLICATE_BLOCKED] Lote=%s Producto=%s Línea=%s Picking=%s Bloqueadores=%s",
