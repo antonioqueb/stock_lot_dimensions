@@ -537,6 +537,30 @@ class StockMoveLine(models.Model):
                         f"o libera primero la operación existente."
                     )
 
+            # BLOQUEADORES QUE SON DEVOLUCIONES: la devolución es
+            # correctiva y GANA — no debe impedir el re-sync de la entrega
+            # que su propia validación dispara (cadena circular: validar la
+            # devolución reescribe las mls de la venta y el candado veía a
+            # la devolución como bloqueador). La venta recibe aviso para
+            # reasignar el material.
+            if blockers:
+                def _is_return_pick(pk):
+                    return bool(
+                        ('return_id' in pk._fields and pk.return_id)
+                        or (pk.origin or '').lower().startswith(
+                            ('devolución de', 'devolucion de', 'return of'))
+                    )
+                return_blockers = blockers.filtered(
+                    lambda b: b.picking_id and _is_return_pick(b.picking_id))
+                if return_blockers and return_blockers == blockers:
+                    for rb in return_blockers:
+                        _logger.info(
+                            '[LOT_DUPLICATE] Bloqueador %s es DEVOLUCIÓN: '
+                            'se permite %s y se avisa a la venta.',
+                            rb.picking_id.name, line.lot_id.name)
+                    self._som_warn_sales_of_returned_lot(return_blockers[:1])
+                    continue
+
             if blockers:
                 _logger.warning(
                     "[LOT_DUPLICATE_BLOCKED] Lote=%s Producto=%s Línea=%s Picking=%s Bloqueadores=%s",
