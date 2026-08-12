@@ -541,6 +541,7 @@ class StockLotHoldOrder(models.Model):
                     'product_id': line.product_id.id,
                     'quantity': line.cantidad_m2,
                     'price_unit': line.precio_unitario or 0.0,
+                    'mask_name': line.x_mask_name or '',
                 })
                 continue
 
@@ -551,7 +552,12 @@ class StockLotHoldOrder(models.Model):
                     'quantity': 0,
                     'selected_lots': [],
                     'price_unit': line.precio_unitario or 0.0,
+                    'mask_name': line.x_mask_name or '',
                 }
+            # La MÁSCARA viaja a la orden de venta: si varias líneas del
+            # mismo producto traen máscara, gana la primera no vacía.
+            if line.x_mask_name and not product_groups[pid].get('mask_name'):
+                product_groups[pid]['mask_name'] = line.x_mask_name
 
             for lot in line.lot_ids:
                 quant = self.env['stock.quant'].search([
@@ -839,6 +845,18 @@ class StockLotHoldOrderLine(models.Model):
         ondelete='cascade',
     )
     product_id = fields.Many2one('product.product', string='Producto', required=True)
+
+    # MÁSCARA COMERCIAL por venta (ver sale.order.line.x_mask_name): el
+    # nombre con el que el cliente conoce el material en ESTA operación. Los
+    # reportes del hold la imprimen en lugar del nombre real y al convertir
+    # la reserva en orden de venta viaja a la línea de la SO.
+    x_mask_name = fields.Char(
+        string='Máscara',
+        copy=True,
+        help='Nombre comercial del material para ESTA venta. Los documentos '
+             'imprimen la máscara en lugar del nombre real del producto y '
+             'se propaga al convertir la reserva en orden de venta.',
+    )
 
     # Campo principal: múltiples lotes por línea
     lot_ids = fields.Many2many(

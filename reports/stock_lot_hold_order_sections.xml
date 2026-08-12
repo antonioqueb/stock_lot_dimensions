@@ -69,7 +69,7 @@
                         <!-- Fila agrupadora de producto -->
                         <tr style="background-color: #f2f2f2; color: #222; page-break-inside: avoid;">
                             <td t-att-colspan="10 if show_prices else 8" style="background-color: #f2f2f2; padding: 4px 8px !important; font-weight: 800; color: #222; font-size: 8.8px; text-transform: uppercase; border: 1px solid #d8d8d8; overflow-wrap: anywhere; word-break: break-word;">
-                                <span t-field="line.product_id.display_name"/>
+                                <span t-esc="line.x_mask_name or line.product_id.display_name"/>
                                 <span style="font-weight: 400; font-size: 8px; font-style: italic; color: #555; text-transform: none;">
                                     · <span t-esc="len(line.lot_ids)"/> placas · <span t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/> m²
                                 </span>
@@ -128,7 +128,7 @@
                                 <span t-esc="fseq"/>
                                 <t t-set="fseq" t-value="fseq + 1"/>
                             </td>
-                            <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><strong t-field="line.product_id.display_name"/></td>
+                            <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><strong t-esc="line.x_mask_name or line.product_id.display_name"/></td>
                             <td class="text-end align-middle" style="white-space: nowrap;"><strong t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/></td>
                             <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="line.product_id.uom_id.name or ''"/></td>
                             <t t-if="show_prices">
@@ -174,7 +174,7 @@
                                 <span t-esc="sseq"/>
                                 <t t-set="sseq" t-value="sseq + 1"/>
                             </td>
-                            <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><strong t-field="line.product_id.display_name"/></td>
+                            <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><strong t-esc="line.x_mask_name or line.product_id.display_name"/></td>
                             <td class="text-end align-middle" style="white-space: nowrap;"><span t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/></td>
                             <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="line.product_id.uom_id.name or ''"/></td>
                             <t t-if="show_prices">
@@ -219,7 +219,7 @@
                                 <span t-esc="bseq"/>
                                 <t t-set="bseq" t-value="bseq + 1"/>
                             </td>
-                            <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><strong t-field="line.product_id.display_name"/></td>
+                            <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><strong t-esc="line.x_mask_name or line.product_id.display_name"/></td>
                             <td class="text-end align-middle" style="white-space: nowrap; font-weight: 600;"><span t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/></td>
                             <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="line.product_id.uom_id.name or ''"/></td>
                             <t t-if="show_prices">
@@ -282,7 +282,7 @@
                                 <span t-esc="mseq"/>
                                 <t t-set="mseq" t-value="mseq + 1"/>
                             </td>
-                            <td class="align-middle" style="text-transform: uppercase; overflow-wrap: anywhere; word-break: break-word;"><strong t-field="line.product_id.display_name"/></td>
+                            <td class="align-middle" style="text-transform: uppercase; overflow-wrap: anywhere; word-break: break-word;"><strong t-esc="line.x_mask_name or line.product_id.display_name"/></td>
                             <td class="text-center align-middle"><span t-esc="len(line.lot_ids)"/></td>
                             <td class="text-end align-middle" style="white-space: nowrap;"><strong t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/></td>
                             <t t-if="show_prices">
@@ -334,7 +334,7 @@
                                 <span t-esc="mfseq"/>
                                 <t t-set="mfseq" t-value="mfseq + 1"/>
                             </td>
-                            <td class="align-middle" style="text-transform: uppercase; overflow-wrap: anywhere; word-break: break-word;"><strong t-field="line.product_id.display_name"/></td>
+                            <td class="align-middle" style="text-transform: uppercase; overflow-wrap: anywhere; word-break: break-word;"><strong t-esc="line.x_mask_name or line.product_id.display_name"/></td>
                             <td class="text-end align-middle" style="white-space: nowrap;"><strong t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/></td>
                             <t t-if="show_prices">
                                 <td class="text-end align-middle" style="white-space: nowrap;">
@@ -391,7 +391,7 @@
                                 <span t-esc="ssseq"/>
                                 <t t-set="ssseq" t-value="ssseq + 1"/>
                             </td>
-                            <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><strong t-field="line.product_id.display_name"/></td>
+                            <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><strong t-esc="line.x_mask_name or line.product_id.display_name"/></td>
                             <td class="text-end align-middle" style="white-space: nowrap;"><span t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/></td>
                             <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="line.product_id.uom_id.name or ''"/></td>
                             <t t-if="show_prices">
@@ -436,7 +436,7 @@
                                 <span t-esc="bbseq"/>
                                 <t t-set="bbseq" t-value="bbseq + 1"/>
                             </td>
-                            <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><strong t-field="line.product_id.display_name"/></td>
+                            <td class="align-middle" style="overflow-wrap: anywhere; word-break: break-word;"><strong t-esc="line.x_mask_name or line.product_id.display_name"/></td>
                             <td class="text-end align-middle" style="white-space: nowrap; font-weight: 600;"><span t-esc="'%.2f' % (line.cantidad_m2 or 0.0)"/></td>
                             <td class="text-center align-middle" style="white-space: nowrap;"><span t-esc="line.product_id.uom_id.name or ''"/></td>
                             <t t-if="show_prices">

@@ -13,6 +13,8 @@
                        nolabel="1"
                        class="p-0 text-center"/>
                 <field name="product_id"/>
+                <field name="x_mask_name" string="Máscara" optional="show"
+                       placeholder="Nombre comercial para esta venta"/>
                 <field name="lot_count" string="Placas" readonly="1"/>
                 <field name="cantidad_m2" string="m²" sum="Total m²" readonly="1"/>
                 <field name="currency_id" column_invisible="1"/>

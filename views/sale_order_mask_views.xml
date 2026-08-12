@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- MÁSCARA COMERCIAL por línea de venta: columna en la cotización y en
+         la orden (mismo modelo). Se agrega AL FINAL de la lista para no
+         depender de anclajes posicionales del build (ver nota de xpaths
+         vs builds Enterprise). -->
+    <record id="view_order_form_mask" model="ir.ui.view">
+        <field name="name">sale.order.form.mask</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list" position="inside">
+                <field name="x_mask_name" string="Máscara" optional="show"
+                       placeholder="Nombre comercial para esta venta"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

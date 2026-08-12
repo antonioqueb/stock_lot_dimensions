@@ -10,8 +10,92 @@ _logger = logging.getLogger(__name__)
 
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
-    
+
     x_selected_lots = fields.Many2many('stock.quant', string='Lotes Seleccionados')
+
+    # MÁSCARA COMERCIAL — por VENTA, no por producto: el nombre con el que el
+    # cliente conoce el material en ESTA operación (se vende "NEGRO SAN
+    # GABRIEL" aunque el material real sea Santo Tomás). Nace en el quote, el
+    # hold o la orden, se propaga en las conversiones y TODOS los documentos
+    # (cotización, orden, entregas, pick tickets, remisiones, factura)
+    # imprimen la máscara en lugar del nombre propio del material.
+    x_mask_name = fields.Char(
+        string='Máscara',
+        copy=True,
+        help='Nombre comercial del material para ESTA venta. Los documentos '
+             'que genera el sistema imprimen la máscara en lugar del nombre '
+             'real del producto. Se propaga de quote a hold y a la orden.',
+    )
+
+    def _som_default_line_description(self):
+        self.ensure_one()
+        try:
+            return self._get_sale_order_line_multiline_description_sale()
+        except Exception:
+            return self.product_id.get_product_multiline_description_sale() \
+                if self.product_id else (self.name or '')
+
+    def _som_apply_mask_to_description(self, restore=False):
+        """La descripción (name) es lo que imprimen los documentos estándar
+        (cotización, factura, entregas): con máscara, la descripción ES la
+        máscara; al quitarla, regresa la descripción comercial del producto.
+        También se sincroniza description_picking de los movimientos vivos,
+        que es lo que imprimen los documentos estándar de almacén."""
+        for line in self:
+            if line.display_type or not line.product_id:
+                continue
+            if line.x_mask_name:
+                if (line.name or '') != line.x_mask_name:
+                    line.name = line.x_mask_name
+            elif restore:
+                line.name = line._som_default_line_description()
+
+            open_moves = line.move_ids.filtered(
+                lambda m: m.state not in ('done', 'cancel'))
+            if not open_moves:
+                continue
+            if line.x_mask_name:
+                open_moves.write({'description_picking': line.x_mask_name})
+            elif restore:
+                for move in open_moves:
+                    move.description_picking = move.product_id._get_description(
+                        move.picking_type_id)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        masked = lines.filtered(lambda l: l.x_mask_name)
+        if masked:
+            masked._som_apply_mask_to_description()
+        return lines
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'x_mask_name' in vals:
+            # Escribir/limpiar la máscara re-sincroniza la descripción.
+            self._som_apply_mask_to_description(restore=not vals.get('x_mask_name'))
+        elif 'product_id' in vals:
+            # Cambiar el producto recomputa la descripción con el nombre REAL:
+            # la máscara debe volver a taparlo.
+            self.filtered('x_mask_name')._som_apply_mask_to_description()
+        return res
+
+
+class StockMoveMask(models.Model):
+    _inherit = 'stock.move'
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        moves = super().create(vals_list)
+        # Movimientos que nacen DESPUÉS de escribir la máscara (entregas,
+        # backorders): heredan el nombre comercial de la línea de venta para
+        # que los documentos de almacén jamás muestren el nombre real.
+        for move in moves:
+            mask = move.sale_line_id.x_mask_name if move.sale_line_id else ''
+            if mask and move.state not in ('done', 'cancel') \
+                    and move.description_picking != mask:
+                move.description_picking = mask
+        return moves
 
 
 class SaleOrder(models.Model):
@@ -117,7 +201,7 @@ class SaleOrder(models.Model):
             else:
                 tax_ids = [(5, 0, 0)]
             
-            self.env['sale.order.line'].with_company(company_id).create({
+            line_vals = {
                 'order_id': sale_order.id,
                 'product_id': product['product_id'],
                 'product_uom_qty': product['quantity'],
@@ -125,7 +209,13 @@ class SaleOrder(models.Model):
                 'tax_ids': tax_ids,
                 'x_selected_lots': [(6, 0, product['selected_lots'])],
                 'company_id': company_id,
-            })
+            }
+            # Máscara comercial (hold → SO): el nombre personalizado de la
+            # venta viaja con la línea; el hook de create la aplica al name.
+            if product.get('mask_name'):
+                line_vals['x_mask_name'] = product['mask_name']
+
+            self.env['sale.order.line'].with_company(company_id).create(line_vals)
         
         if services:
             for service in services:
@@ -136,14 +226,18 @@ class SaleOrder(models.Model):
                 else:
                     tax_ids = [(5, 0, 0)]
                 
-                self.env['sale.order.line'].with_company(company_id).create({
+                service_vals = {
                     'order_id': sale_order.id,
                     'product_id': service['product_id'],
                     'product_uom_qty': service['quantity'],
                     'price_unit': service['price_unit'],
                     'tax_ids': tax_ids,
                     'company_id': company_id,
-                })
+                }
+                if service.get('mask_name'):
+                    service_vals['x_mask_name'] = service['mask_name']
+
+                self.env['sale.order.line'].with_company(company_id).create(service_vals)
         
         sale_order.with_company(company_id).with_context(
             stone_transient_auto_assign=True,

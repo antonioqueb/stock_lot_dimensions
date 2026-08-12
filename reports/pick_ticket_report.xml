@@ -129,7 +129,7 @@
                                     <!-- Header del Producto -->
                                     <tr style="background-color: #2f2f2f; color: #fff;">
                                         <td colspan="11" style="padding: 4px 8px; font-weight: bold; font-size: 10px; text-transform: uppercase; color: #FFFFFF;">
-                                            <span t-field="move.product_id.display_name"/>
+                                            <span t-esc="(move.sale_line_id.x_mask_name if move.sale_line_id else '') or move.product_id.display_name"/>
                                         </td>
                                     </tr>
 
