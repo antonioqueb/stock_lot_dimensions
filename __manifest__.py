@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Atributos Adicionales para Lotes',
-    'version': '19.0.4.2.0',
+    'version': '19.0.5.0.0',
     'category': 'Inventory/Inventory',
     'summary': 'Captura dimensiones, fotografías y gestión de reservas manuales (hold) en lotes',
     'description': """
@@ -51,6 +51,7 @@
         'reports/pick_ticket_report.xml',
         'reports/report_sale_order_no_price.xml',
         'reports/sale_order_custom_detail_report.xml',
+        'reports/sale_proposal_report.xml',
         'reports/report_lastpage_footer.xml',
 
         'views/res_company_bank_info_views.xml',
@@ -62,6 +63,7 @@
         'views/stock_lot_hold_views.xml',
         'views/stock_lot_hold_order_views.xml',
         'views/sale_order_mask_views.xml',
+        'views/sale_order_proposal_views.xml',
         'views/stock_lot_hold_wizard_views.xml',
         'views/res_partner_views.xml',
         'views/project_project_views.xml',

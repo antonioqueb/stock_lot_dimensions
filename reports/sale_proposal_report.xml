@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- PROPUESTA COMERCIAL SOM — reporte exclusivo de COTIZACIONES.
+         Sin binding_model_id a propósito: no aparece en el menú Imprimir;
+         solo se genera desde el botón del quote (visible en draft/sent). -->
+    <record id="action_report_som_proposal" model="ir.actions.report">
+        <field name="name">Propuesta Comercial SOM</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">stock_lot_dimensions.report_som_proposal</field>
+        <field name="report_file">stock_lot_dimensions.report_som_proposal</field>
+        <field name="print_report_name">'Propuesta Comercial SOM - %s' % (object.name)</field>
+    </record>
+
+    <template id="report_som_proposal">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family: Helvetica, Arial, sans-serif; color: #1f2937; font-size: 10px;">
+
+                        <!-- ══════════ ENCABEZADO: título + logo del cliente ══════════ -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px;">
+                            <tr>
+                                <td style="vertical-align: middle;">
+                                    <div style="font-size: 19px; font-weight: 800; letter-spacing: .04em; color: #0f172a;">
+                                        PROPUESTA COMERCIAL
+                                    </div>
+                                    <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">
+                                        <span t-field="doc.name"/>
+                                        <t t-if="doc.x_project_id"> · Proyecto <b t-field="doc.x_project_id.name"/></t>
+                                    </div>
+                                </td>
+                                <td style="text-align: right; vertical-align: middle; width: 30%;">
+                                    <img t-if="doc.x_client_logo"
+                                         t-att-src="image_data_uri(doc.x_client_logo)"
+                                         style="max-height: 52px; max-width: 190px;"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ══════════ DATOS GENERALES ══════════ -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px; background: #f8fafc; border: 1px solid #e2e8f0;">
+                            <tr>
+                                <td style="padding: 5px 8px; width: 25%;">
+                                    <div style="font-size: 7.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Cliente</div>
+                                    <div style="font-weight: 700;" t-esc="doc.partner_id.commercial_partner_id.name"/>
+                                </td>
+                                <td style="padding: 5px 8px; width: 25%;">
+                                    <div style="font-size: 7.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Atención a</div>
+                                    <div style="font-weight: 700;"
+                                         t-esc="doc.partner_id.name if doc.partner_id != doc.partner_id.commercial_partner_id else (doc.partner_id.child_ids[:1].name or doc.partner_id.name)"/>
+                                </td>
+                                <td style="padding: 5px 8px; width: 25%;">
+                                    <div style="font-size: 7.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Fecha</div>
+                                    <div style="font-weight: 700;" t-field="doc.date_order" t-options='{"widget": "date"}'/>
+                                </td>
+                                <td style="padding: 5px 8px; width: 25%;">
+                                    <div style="font-size: 7.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Vigencia</div>
+                                    <div style="font-weight: 700;">
+                                        <t t-if="doc.validity_date"><span t-field="doc.validity_date"/></t>
+                                        <t t-else="">Sujeta a confirmación</t>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr t-if="doc.payment_term_id or doc.user_id">
+                                <td style="padding: 5px 8px;" colspan="2">
+                                    <div style="font-size: 7.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Esquema de pago</div>
+                                    <div style="font-weight: 700;" t-esc="doc.payment_term_id.name or '30% de anticipo y 70% contra entrega'"/>
+                                </td>
+                                <td style="padding: 5px 8px;" colspan="2">
+                                    <div style="font-size: 7.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Asesor</div>
+                                    <div style="font-weight: 700;" t-esc="doc.user_id.name or ''"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ══════════ LÍNEAS: IMAGEN · DESCRIPCIÓN (MÁSCARA) · MARCA ══════════ -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;">
+                            <thead>
+                                <tr style="background: #0f172a; color: #ffffff;">
+                                    <th style="padding: 5px 6px; text-align: center; width: 60px; font-size: 8px; text-transform: uppercase;">Imagen</th>
+                                    <th style="padding: 5px 6px; text-align: left; font-size: 8px; text-transform: uppercase;">Descripción</th>
+                                    <th style="padding: 5px 6px; text-align: left; width: 12%; font-size: 8px; text-transform: uppercase;">Marca</th>
+                                    <th style="padding: 5px 6px; text-align: center; width: 8%; font-size: 8px; text-transform: uppercase;">Unidad</th>
+                                    <th style="padding: 5px 6px; text-align: right; width: 9%; font-size: 8px; text-transform: uppercase;">Cantidad</th>
+                                    <th style="padding: 5px 6px; text-align: right; width: 12%; font-size: 8px; text-transform: uppercase;">P.U.</th>
+                                    <th style="padding: 5px 6px; text-align: right; width: 14%; font-size: 8px; text-transform: uppercase;">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.order_line" t-as="line">
+                                    <tr t-if="line.display_type == 'line_section'" style="background: #eef2f7;">
+                                        <td colspan="7" style="padding: 4px 8px; font-weight: 800; font-size: 9px; text-transform: uppercase; color: #334155; border: 1px solid #e2e8f0;" t-esc="line.name"/>
+                                    </tr>
+                                    <tr t-elif="not line.display_type and line.product_id" style="page-break-inside: avoid;">
+                                        <td style="padding: 4px; text-align: center; border: 1px solid #e2e8f0;">
+                                            <img t-if="line.product_id.image_256"
+                                                 t-att-src="image_data_uri(line.product_id.image_256)"
+                                                 style="max-width: 52px; max-height: 52px; object-fit: contain; border-radius: 4px;"/>
+                                        </td>
+                                        <td style="padding: 4px 6px; border: 1px solid #e2e8f0; font-weight: 700; color: #0f172a;">
+                                            <t t-esc="line.x_mask_name or line.product_id.display_name"/>
+                                        </td>
+                                        <td style="padding: 4px 6px; border: 1px solid #e2e8f0;">
+                                            <t t-esc="line.product_id.product_tmpl_id.x_marca or ''"/>
+                                        </td>
+                                        <td style="padding: 4px 6px; text-align: center; border: 1px solid #e2e8f0;">
+                                            <t t-esc="line.product_uom_id.name or ''"/>
+                                        </td>
+                                        <td style="padding: 4px 6px; text-align: right; border: 1px solid #e2e8f0;">
+                                            <t t-esc="'%g' % (line.product_uom_qty or 0)"/>
+                                        </td>
+                                        <td style="padding: 4px 6px; text-align: right; border: 1px solid #e2e8f0; white-space: nowrap;">
+                                            <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                        </td>
+                                        <td style="padding: 4px 6px; text-align: right; border: 1px solid #e2e8f0; white-space: nowrap; font-weight: 700;">
+                                            <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <!-- ══════════ TOTALES ══════════ -->
+                        <table style="width: 38%; margin-left: 62%; border-collapse: collapse; margin-bottom: 10px;">
+                            <tr>
+                                <td style="padding: 3px 8px; font-weight: 700; color: #64748b;">Subtotal</td>
+                                <td style="padding: 3px 8px; text-align: right; font-weight: 700; white-space: nowrap;">
+                                    <span t-field="doc.amount_untaxed" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 3px 8px; font-weight: 700; color: #64748b;">IVA</td>
+                                <td style="padding: 3px 8px; text-align: right; font-weight: 700; white-space: nowrap;">
+                                    <span t-field="doc.amount_tax" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                </td>
+                            </tr>
+                            <tr style="background: #0f172a; color: #ffffff;">
+                                <td style="padding: 4px 8px; font-weight: 800;">IMPORTE TOTAL</td>
+                                <td style="padding: 4px 8px; text-align: right; font-weight: 800; white-space: nowrap;">
+                                    <span t-field="doc.amount_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ══════════ CONDICIONES COMERCIALES ══════════ -->
+                        <div style="border: 1px solid #e2e8f0; background: #f8fafc; padding: 8px 10px; margin-bottom: 8px; page-break-inside: avoid;">
+                            <div style="font-size: 9px; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 4px;">
+                                Condiciones comerciales
+                            </div>
+                            <ul style="margin: 0; padding-left: 14px; font-size: 8.5px; color: #374151; line-height: 1.5;">
+                                <li>SOM puede <b>almacenar y resguardar el material en sus bodegas</b> y liberarlo conforme sea requerido en obra, permitiendo <b>entregas parciales</b> durante la ejecución del proyecto.</li>
+                                <li>Los materiales a entregar deben confirmarse con aproximadamente <b>seis semanas de anticipación</b>.</li>
+                                <li>El precio es <b>especial y confidencial</b>, exclusivo para el cliente y el proyecto indicados en esta propuesta.</li>
+                                <li>Las cantidades son definidas por el cliente. <b>Después del pago del anticipo no se aceptan cancelaciones ni disminuciones de cantidades</b>.</li>
+                                <li>Tiempo máximo contemplado para descarga: <b>dos horas</b>.</li>
+                                <li>El cliente dispone de <b>24 horas</b> posteriores a la recepción del material para presentar reclamaciones.</li>
+                                <li>Los precios pueden revisarse ante incrementos relevantes en materias primas, energía o tipos de cambio.</li>
+                            </ul>
+                        </div>
+
+                        <div t-if="doc.note" style="font-size: 8.5px; color: #374151; margin-bottom: 8px;">
+                            <span t-field="doc.note"/>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

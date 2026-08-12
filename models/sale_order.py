@@ -103,6 +103,17 @@ class SaleOrder(models.Model):
 
     x_project_id = fields.Many2one('project.project', string='Proyecto')
     x_architect_id = fields.Many2one('res.partner', string='Embajador')
+
+    # PROPUESTA COMERCIAL SOM: logo del CLIENTE que se imprime junto al de
+    # la compañía en el reporte de propuesta (solo cotizaciones).
+    x_client_logo = fields.Binary(
+        string='Logo del cliente',
+        attachment=True,
+        copy=False,
+        help='Logo del cliente para la Propuesta Comercial SOM: se imprime '
+             'en el encabezado del reporte junto al logo de la compañía.',
+    )
+    x_client_logo_filename = fields.Char(copy=False)
     
     @api.model
     def create_from_shopping_cart(self, partner_id=None, products=None, services=None, notes=None, pricelist_id=None, apply_tax=True, project_id=None, architect_id=None):
