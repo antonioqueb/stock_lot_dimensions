@@ -1813,9 +1813,16 @@ class StockQuant(models.Model):
     
     @api.model
     def create_partner(self, name, vat='', ref=''):
-        """Crear un nuevo cliente"""
+        """Crear un nuevo cliente.
+
+        SUDO deliberado: dar de alta clientes es tarea del VENDEDOR y no debe
+        requerir el grupo de administración de contactos ni permisos de
+        contabilidad. El alta está acotada a campos comerciales fijos
+        (nombre, RFC, referencia)."""
+        if not self.env.user.has_group('sales_team.group_sale_salesman'):
+            return {'error': 'Requiere permiso de ventas.'}
         try:
-            partner = self.env['res.partner'].create({
+            partner = self.env['res.partner'].sudo().create({
                 'name': name,
                 'vat': vat or False,
                 'ref': ref or False,
