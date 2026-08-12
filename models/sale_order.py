@@ -28,34 +28,23 @@ class SaleOrderLine(models.Model):
     )
 
     def _som_proposal_image(self):
-        """Imagen de la línea para el 'Resumen con imágenes'.
+        """Imagen de la línea para el 'Resumen con imágenes': LA FOTO DEL
+        PRODUCTO, exclusivamente. Las fotos de lotes pertenecen al proceso
+        de asignación de material — en una cotización no se asigna, solo se
+        cotiza una cantidad.
 
-        Cadena de fuentes: imagen estándar del producto → foto principal de
-        un lote ASIGNADO a la línea → cualquier foto del catálogo de fotos
-        (stock.lot.image) de lotes del producto. Así la propuesta siempre
-        trae foto cuando exista en cualquiera de los catálogos."""
+        bin_size=False es OBLIGATORIO: si el contexto de render trae
+        bin_size activo, leer el binario regresa el TAMAÑO ('12.5 KB') en
+        lugar de la imagen y el data URI sale roto (imagen en blanco)."""
         self.ensure_one()
-        product = self.product_id
-        if not product:
+        if not self.product_id:
             return False
-
-        img = product.image_256 or product.product_tmpl_id.image_256
-        if img:
-            return img
-
-        Image = self.env['stock.lot.image'].sudo()
-
-        if 'lot_ids' in self._fields and self.lot_ids:
-            rec = Image.search([
-                ('lot_id', 'in', self.lot_ids.ids),
-            ], limit=1, order='sequence, id')
-            if rec.image_small or rec.image:
-                return rec.image_small or rec.image
-
-        rec = Image.search([
-            ('lot_id.product_id', '=', product.id),
-        ], limit=1, order='sequence, id')
-        return (rec.image_small or rec.image) if rec else False
+        product = self.product_id.with_context(bin_size=False)
+        return (
+            product.image_256
+            or product.product_tmpl_id.with_context(bin_size=False).image_256
+            or False
+        )
 
     def _som_default_line_description(self):
         self.ensure_one()
