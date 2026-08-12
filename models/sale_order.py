@@ -27,6 +27,36 @@ class SaleOrderLine(models.Model):
              'real del producto. Se propaga de quote a hold y a la orden.',
     )
 
+    def _som_proposal_image(self):
+        """Imagen de la línea para el 'Resumen con imágenes'.
+
+        Cadena de fuentes: imagen estándar del producto → foto principal de
+        un lote ASIGNADO a la línea → cualquier foto del catálogo de fotos
+        (stock.lot.image) de lotes del producto. Así la propuesta siempre
+        trae foto cuando exista en cualquiera de los catálogos."""
+        self.ensure_one()
+        product = self.product_id
+        if not product:
+            return False
+
+        img = product.image_256 or product.product_tmpl_id.image_256
+        if img:
+            return img
+
+        Image = self.env['stock.lot.image'].sudo()
+
+        if 'lot_ids' in self._fields and self.lot_ids:
+            rec = Image.search([
+                ('lot_id', 'in', self.lot_ids.ids),
+            ], limit=1, order='sequence, id')
+            if rec.image_small or rec.image:
+                return rec.image_small or rec.image
+
+        rec = Image.search([
+            ('lot_id.product_id', '=', product.id),
+        ], limit=1, order='sequence, id')
+        return (rec.image_small or rec.image) if rec else False
+
     def _som_default_line_description(self):
         self.ensure_one()
         try:

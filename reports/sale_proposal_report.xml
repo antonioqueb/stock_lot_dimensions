@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- PROPUESTA COMERCIAL SOM — reporte exclusivo de COTIZACIONES.
-         Sin binding_model_id a propósito: no aparece en el menú Imprimir;
-         solo se genera desde el botón del quote (visible en draft/sent). -->
+    <!-- RESUMEN CON IMÁGENES — opción del menú Imprimir de la orden de
+         venta (sin botón propio). -->
     <record id="action_report_som_proposal" model="ir.actions.report">
-        <field name="name">Propuesta Comercial SOM</field>
+        <field name="name">Resumen con imágenes</field>
         <field name="model">sale.order</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">stock_lot_dimensions.report_som_proposal</field>
         <field name="report_file">stock_lot_dimensions.report_som_proposal</field>
-        <field name="print_report_name">'Propuesta Comercial SOM - %s' % (object.name)</field>
+        <field name="print_report_name">'Resumen con imágenes - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
     </record>
 
     <template id="report_som_proposal">
@@ -79,9 +80,9 @@
                         <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;">
                             <thead>
                                 <tr style="background: #0f172a; color: #ffffff;">
-                                    <th style="padding: 5px 6px; text-align: center; width: 60px; font-size: 8px; text-transform: uppercase;">Imagen</th>
                                     <th style="padding: 5px 6px; text-align: left; font-size: 8px; text-transform: uppercase;">Descripción</th>
                                     <th style="padding: 5px 6px; text-align: left; width: 12%; font-size: 8px; text-transform: uppercase;">Marca</th>
+                                    <th style="padding: 5px 6px; text-align: center; width: 60px; font-size: 8px; text-transform: uppercase;">Imagen</th>
                                     <th style="padding: 5px 6px; text-align: center; width: 8%; font-size: 8px; text-transform: uppercase;">Unidad</th>
                                     <th style="padding: 5px 6px; text-align: right; width: 9%; font-size: 8px; text-transform: uppercase;">Cantidad</th>
                                     <th style="padding: 5px 6px; text-align: right; width: 12%; font-size: 8px; text-transform: uppercase;">P.U.</th>
@@ -94,16 +95,17 @@
                                         <td colspan="7" style="padding: 4px 8px; font-weight: 800; font-size: 9px; text-transform: uppercase; color: #334155; border: 1px solid #e2e8f0;" t-esc="line.name"/>
                                     </tr>
                                     <tr t-elif="not line.display_type and line.product_id" style="page-break-inside: avoid;">
-                                        <td style="padding: 4px; text-align: center; border: 1px solid #e2e8f0;">
-                                            <img t-if="line.product_id.image_256"
-                                                 t-att-src="image_data_uri(line.product_id.image_256)"
-                                                 style="max-width: 52px; max-height: 52px; object-fit: contain; border-radius: 4px;"/>
-                                        </td>
                                         <td style="padding: 4px 6px; border: 1px solid #e2e8f0; font-weight: 700; color: #0f172a;">
                                             <t t-esc="line.x_mask_name or line.product_id.display_name"/>
                                         </td>
                                         <td style="padding: 4px 6px; border: 1px solid #e2e8f0;">
                                             <t t-esc="line.product_id.product_tmpl_id.x_marca or ''"/>
+                                        </td>
+                                        <td style="padding: 4px; text-align: center; border: 1px solid #e2e8f0;">
+                                            <t t-set="som_line_image" t-value="line._som_proposal_image()"/>
+                                            <img t-if="som_line_image"
+                                                 t-att-src="image_data_uri(som_line_image)"
+                                                 style="max-width: 52px; max-height: 52px; object-fit: contain; border-radius: 4px;"/>
                                         </td>
                                         <td style="padding: 4px 6px; text-align: center; border: 1px solid #e2e8f0;">
                                             <t t-esc="line.product_uom_id.name or ''"/>

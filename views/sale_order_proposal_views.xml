@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- PROPUESTA COMERCIAL SOM: logo del cliente (Más información) + botón
-         de impresión SOLO en cotizaciones (draft/sent). -->
+    <!-- RESUMEN CON IMÁGENES: logo del cliente en Más información. La
+         impresión vive en el menú Imprimir (binding del reporte), sin
+         botón propio. -->
     <record id="view_order_form_som_proposal" model="ir.ui.view">
         <field name="name">sale.order.form.som.proposal</field>
         <field name="model">sale.order</field>
@@ -10,19 +11,12 @@
         <field name="arch" type="xml">
 
             <xpath expr="//page[@name='other_information']" position="inside">
-                <group string="Propuesta Comercial SOM" name="som_proposal">
+                <group string="Resumen con imágenes" name="som_proposal">
                     <field name="x_client_logo" widget="image"
                            options="{'size': [0, 90]}"
                            filename="x_client_logo_filename"/>
                     <field name="x_client_logo_filename" invisible="1"/>
                 </group>
-            </xpath>
-
-            <xpath expr="//header" position="inside">
-                <button name="%(stock_lot_dimensions.action_report_som_proposal)d"
-                        string="Propuesta Comercial"
-                        type="action"
-                        invisible="state not in ('draft', 'sent')"/>
             </xpath>
 
         </field>
