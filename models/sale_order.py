@@ -252,6 +252,36 @@ class SaleOrder(models.Model):
     )
     x_client_logo_filename = fields.Char(copy=False)
 
+    def som_get_registered_payments(self):
+        """Pagos conciliados con las facturas posteadas de la orden, para
+        imprimirlos bajo los totales en los reportes (detalle y resumen).
+
+        Devuelve {'payments': recordset ordenado, 'paid': pagado real
+        (facturas posteadas: total - residual, refunds restan — mismo
+        criterio que el candado de entrega), 'balance': pagado - total de
+        la orden (positivo = saldo a favor)}."""
+        self.ensure_one()
+        posted = self.invoice_ids.filtered(
+            lambda m: m.state == 'posted'
+            and m.move_type in ('out_invoice', 'out_refund'))
+        payments = self.env['account.payment'].sudo()
+        paid = 0.0
+        for inv in posted:
+            inv_paid = (inv.amount_total or 0.0) - (inv.amount_residual or 0.0)
+            paid += -inv_paid if inv.move_type == 'out_refund' else inv_paid
+            try:
+                payments |= inv.sudo()._get_reconciled_payments()
+            except Exception:
+                _logger.exception(
+                    '[SOM PAGOS] No se pudieron listar los pagos de %s.',
+                    inv.name)
+        return {
+            'payments': payments.sorted(
+                key=lambda p: (p.date or fields.Date.today(), p.id)),
+            'paid': paid,
+            'balance': paid - (self.amount_total or 0.0),
+        }
+
     def som_proposal_client_logo_src(self):
         """Src listo para <img> con el logo del cliente (data URI PNG
         construido en Python; bin_size=False obligatorio)."""

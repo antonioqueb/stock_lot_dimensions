@@ -764,6 +764,7 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                                <t t-call="stock_lot_dimensions.som_report_payments_block"/>
                                 </t>
                             </div>
                         </div>

@@ -479,6 +479,9 @@
                                 </tr>
                             </tbody>
                         </table>
+                        <t t-call="stock_lot_dimensions.som_report_payments_block">
+                            <t t-set="o" t-value="doc"/>
+                        </t>
                         </t>
                     </div>
                 </div>
@@ -587,4 +590,56 @@
         <field name="binding_model_id" ref="sale.model_sale_order"/>
         <field name="binding_type">report</field>
     </record>
+
+    <!-- ═══ PAGOS REGISTRADOS + SALDO — bloque compartido bajo los totales
+         (lo llaman el resumen y el detalle; espera la orden en 'o') ═══ -->
+    <template id="som_report_payments_block">
+        <t t-set="som_pay" t-value="o.som_get_registered_payments()"/>
+        <t t-if="som_pay['payments']">
+            <table style="width: 46%; margin-left: 54%; margin-top: 10px; border-collapse: collapse; font-size: 9px; page-break-inside: avoid; border: 1px solid #d8d8d8;">
+                <thead>
+                    <tr style="background-color: #2f2f2f; color: #fff;">
+                        <th colspan="4" style="padding: 5px 10px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Pagos Registrados</th>
+                    </tr>
+                    <tr style="background-color: #f2f2f2; color: #555;">
+                        <th style="padding: 4px 10px; text-align: left; font-weight: 700;">Fecha</th>
+                        <th style="padding: 4px 10px; text-align: left; font-weight: 700;">Referencia</th>
+                        <th style="padding: 4px 10px; text-align: left; font-weight: 700;">Diario</th>
+                        <th style="padding: 4px 10px; text-align: right; font-weight: 700;">Monto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr t-foreach="som_pay['payments']" t-as="pay" style="border-bottom: 1px solid #ececec;">
+                        <td style="padding: 4px 10px; white-space: nowrap;">
+                            <span t-field="pay.date" t-options='{"widget": "date", "format": "dd MMM yyyy"}'/>
+                        </td>
+                        <td style="padding: 4px 10px;"><t t-esc="pay.name or ''"/></td>
+                        <td style="padding: 4px 10px;"><t t-esc="pay.journal_id.name or ''"/></td>
+                        <td style="padding: 4px 10px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                            <span t-esc="pay.amount" t-options='{"widget": "monetary", "display_currency": pay.currency_id}'/>
+                        </td>
+                    </tr>
+                    <tr style="background-color: #f2f2f2;">
+                        <td colspan="3" style="padding: 5px 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px;">Total Pagado</td>
+                        <td style="padding: 5px 10px; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                            <span t-esc="som_pay['paid']" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                        </td>
+                    </tr>
+                    <tr t-if="som_pay['balance'] &gt;= 0" style="background-color: #eaf7ee; color: #0a7a2f;">
+                        <td colspan="3" style="padding: 6px 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px;">Saldo a Favor</td>
+                        <td style="padding: 6px 10px; text-align: right; font-weight: 900; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                            <span t-esc="som_pay['balance']" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                        </td>
+                    </tr>
+                    <tr t-else="" style="background-color: #fdf1f1; color: #b00020;">
+                        <td colspan="3" style="padding: 6px 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px;">Pendiente por Pagar</td>
+                        <td style="padding: 6px 10px; text-align: right; font-weight: 900; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                            <span t-esc="-som_pay['balance']" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </t>
+    </template>
+
 </odoo>
