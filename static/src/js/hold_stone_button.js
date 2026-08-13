@@ -217,6 +217,96 @@ export class HoldStoneButton extends Component {
         }
     }
 
+    _destroyLotLightbox() {
+        if (this._lotLightboxRoot) {
+            this._lotLightboxRoot.remove();
+            this._lotLightboxRoot = null;
+        }
+        if (this._lotLightboxKeyHandler) {
+            document.removeEventListener("keydown", this._lotLightboxKeyHandler);
+            this._lotLightboxKeyHandler = null;
+        }
+    }
+
+    /** Fotos de la placa, IGUAL que en la orden de venta: overlay con
+     *  navegación. Reutiliza los estilos stone-lightbox (assets backend). */
+    async _openLotPhotos(lotId, lotName) {
+        this._destroyLotLightbox();
+        this._lotLightboxRoot = document.createElement("div");
+        this._lotLightboxRoot.className = "stone-lightbox-root";
+        document.body.appendChild(this._lotLightboxRoot);
+        this._lotLightboxRoot.innerHTML = `
+            <div class="stone-lightbox-overlay" id="hlb-overlay">
+                <div class="stone-lightbox-container">
+                    <div class="stone-lightbox-header">
+                        <span class="stone-lightbox-title">
+                            <i class="fa fa-camera me-2"></i>
+                            Fotos del lote <strong>${this._escapeHtml(lotName || lotId)}</strong>
+                            <span class="stone-lightbox-counter" id="hlb-counter"></span>
+                        </span>
+                        <button class="stone-lightbox-close" id="hlb-close"><i class="fa fa-times"></i></button>
+                    </div>
+                    <div class="stone-lightbox-body" id="hlb-body">
+                        <div class="stone-lightbox-loading"><i class="fa fa-circle-o-notch fa-spin fa-2x"></i><div class="mt-2">Cargando fotos...</div></div>
+                    </div>
+                    <div class="stone-lightbox-nav" id="hlb-nav" style="display:none;">
+                        <button class="stone-lightbox-nav-btn" id="hlb-prev"><i class="fa fa-chevron-left"></i></button>
+                        <span class="stone-lightbox-counter" id="hlb-pos"></span>
+                        <button class="stone-lightbox-nav-btn" id="hlb-next"><i class="fa fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>`;
+        const root = this._lotLightboxRoot;
+        const overlay = root.querySelector("#hlb-overlay");
+        const bodyEl = root.querySelector("#hlb-body");
+        const navEl = root.querySelector("#hlb-nav");
+        const posEl = root.querySelector("#hlb-pos");
+        const counterEl = root.querySelector("#hlb-counter");
+        const close = () => this._destroyLotLightbox();
+        root.querySelector("#hlb-close").addEventListener("click", close);
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+
+        let photos = [];
+        try {
+            photos = await this.orm.searchRead(
+                "stock.lot.image",
+                [["lot_id", "=", lotId]],
+                ["image", "name", "fecha_captura"],
+                { order: "id" }
+            );
+        } catch (e) {
+            console.warn("[HOLD STONE] Error cargando fotos:", e);
+        }
+        if (!this._lotLightboxRoot) return;
+        if (!photos.length) {
+            bodyEl.innerHTML = `<div class="stone-lightbox-loading"><i class="fa fa-picture-o fa-2x"></i><div class="mt-2">Esta placa no tiene fotos.</div></div>`;
+            return;
+        }
+        let idx = 0;
+        const show = () => {
+            const ph = photos[idx];
+            bodyEl.innerHTML = `<img src="data:image/jpeg;base64,${ph.image}" class="stone-lightbox-img"/>`;
+            counterEl.textContent = ` (${photos.length})`;
+            posEl.textContent = `${idx + 1} / ${photos.length}`;
+        };
+        if (photos.length > 1) {
+            navEl.style.display = "";
+            root.querySelector("#hlb-prev").addEventListener("click", () => {
+                idx = (idx - 1 + photos.length) % photos.length; show();
+            });
+            root.querySelector("#hlb-next").addEventListener("click", () => {
+                idx = (idx + 1) % photos.length; show();
+            });
+        }
+        this._lotLightboxKeyHandler = (e) => {
+            if (e.key === "Escape") close();
+            if (e.key === "ArrowLeft" && photos.length > 1) root.querySelector("#hlb-prev").click();
+            if (e.key === "ArrowRight" && photos.length > 1) root.querySelector("#hlb-next").click();
+        };
+        document.addEventListener("keydown", this._lotLightboxKeyHandler);
+        show();
+    }
+
     async _computeM2ForLots(lotIds, breakdown = null) {
         if (!lotIds || !lotIds.length) return 0.0;
 
@@ -441,7 +531,12 @@ export class HoldStoneButton extends Component {
                             </span>
                         </td>
                         <td>${this._escapeHtml(lot.x_color || "—")}</td>
-                        <td class="col-act">
+                        <td class="col-act" style="white-space: nowrap;">
+                            <button class="hold-photo-btn" data-photo-lot="${lotId}"
+                                    data-photo-name="${this._escapeHtml(lot.name)}"
+                                    title="Ver fotos de la placa">
+                                <i class="fa fa-camera"></i>
+                            </button>
                             <button class="hold-stone-remove-btn" data-lot-id="${lotId}" title="Quitar placa">
                                 <i class="fa fa-times"></i>
                             </button>
@@ -477,6 +572,15 @@ export class HoldStoneButton extends Component {
                     </tfoot>
                 </table>
             `;
+
+            container.querySelectorAll(".hold-photo-btn").forEach((btn) => {
+                btn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    this._openLotPhotos(
+                        parseInt(btn.dataset.photoLot, 10),
+                        btn.dataset.photoName || "");
+                });
+            });
 
             container.querySelectorAll(".hold-stone-remove-btn").forEach((btn) => {
                 btn.addEventListener("click", (event) => {
@@ -953,6 +1057,13 @@ export class HoldStoneButton extends Component {
                             </div>
                         </td>
                         <td class="cell-lot">${this._escapeHtml(lotName)}</td>
+                        <td class="col-chk">
+                            <button class="hold-photo-btn" data-photo-lot="${lotId}"
+                                    data-photo-name="${this._escapeHtml(lotName)}"
+                                    title="Ver fotos de la placa">
+                                <i class="fa fa-camera"></i>
+                            </button>
+                        </td>
                         <td>${this._escapeHtml(quant.x_bloque || "—")}</td>
                         <td>${this._escapeHtml(quant.x_atado || "—")}</td>
                         <td class="col-num">${this._fmtDim(quant.x_alto)}</td>
@@ -992,6 +1103,7 @@ export class HoldStoneButton extends Component {
                         <tr>
                             <th class="col-chk">✓</th>
                             <th>Lote</th>
+                            <th class="col-chk">Foto</th>
                             <th>Bloque</th>
                             <th>Atado</th>
                             <th class="col-num">Alto</th>
@@ -1013,6 +1125,17 @@ export class HoldStoneButton extends Component {
             updateBadge();
 
             body.querySelectorAll("tr[data-lot-id]").forEach((tr) => {
+                tr.querySelectorAll(".hold-photo-btn").forEach((btn) => {
+                    ["click", "mousedown"].forEach((evt) =>
+                        btn.addEventListener(evt, (event) => {
+                            event.stopPropagation();
+                            if (evt === "click") {
+                                this._openLotPhotos(
+                                    parseInt(btn.dataset.photoLot, 10),
+                                    btn.dataset.photoName || "");
+                            }
+                        }));
+                });
                 tr.addEventListener("click", () => {
                     const lotId = parseInt(tr.dataset.lotId, 10);
                     if (!lotId) return;

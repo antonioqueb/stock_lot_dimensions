@@ -1213,3 +1213,22 @@ select.hold-stone-filter-input {
         flex: 1 1 auto;
     }
 }
+/* ── Botón de fotos de placa (paridad con la orden de venta) ── */
+.hold-photo-btn {
+    border: 1px solid #d3dcea;
+    background: #fff;
+    color: #155f94;
+    border-radius: 6px;
+    width: 26px;
+    height: 24px;
+    line-height: 1;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0;
+    margin-right: 4px;
+
+    &:hover {
+        background: #eaf1fb;
+        border-color: #155f94;
+    }
+}
