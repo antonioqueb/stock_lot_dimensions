@@ -66,10 +66,11 @@ class SaleOrderLine(models.Model):
         self.ensure_one()
         if not self.product_id:
             return False
+        # image_512: la imagen se imprime grande — 256 se ve suave en PDF.
         product = self.product_id.with_context(bin_size=False)
         img = (
-            product.image_256
-            or product.product_tmpl_id.with_context(bin_size=False).image_256
+            product.image_512
+            or product.product_tmpl_id.with_context(bin_size=False).image_512
         )
         if not img:
             _logger.info(
