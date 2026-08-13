@@ -28,45 +28,53 @@ class SaleOrderLine(models.Model):
     )
 
     @api.model
-    def _som_pdf_safe_image(self, b64_image):
-        """Convierte la imagen a un formato que wkhtmltopdf SÍ renderiza.
+    def _som_pdf_image_src(self, b64_image, label=''):
+        """Data URI COMPLETO y determinista para el PDF: siempre PNG.
 
-        Las imágenes subidas desde la web suelen guardarse en WebP y el
-        motor del PDF (QT WebKit) no lo soporta: el data URI es válido pero
-        la imagen sale EN BLANCO sin error. PNG/JPEG pasan tal cual; todo
-        lo demás (WebP incluido) se convierte a PNG."""
+        - wkhtmltopdf (QT WebKit) no renderiza WebP: cualquier formato que
+          no sea PNG se re-codifica a PNG con Pillow.
+        - El data URI se construye AQUÍ (mime fijo image/png): el template
+          recibe un string terminado, sin image_data_uri ni procesamiento
+          en QWeb — cero variables entre lo que produce Python y lo que
+          incrusta el PDF.
+        - Si Pillow no puede identificar la imagen, se regresa False (celda
+          vacía) en lugar de un src roto (el 'puntito' de imagen rota)."""
         if not b64_image:
             return False
         try:
             import base64
             import io
             from PIL import Image as PILImage
+            if isinstance(b64_image, str):
+                b64_image = b64_image.encode()
             raw = base64.b64decode(b64_image)
             pil = PILImage.open(io.BytesIO(raw))
-            if (pil.format or '').upper() in ('PNG', 'JPEG', 'JPG', 'GIF'):
-                return b64_image
-            buffer = io.BytesIO()
-            pil.convert('RGBA').save(buffer, format='PNG')
-            return base64.b64encode(buffer.getvalue())
+            fmt = (pil.format or '').upper()
+            if fmt != 'PNG':
+                buffer = io.BytesIO()
+                pil.convert('RGBA').save(buffer, format='PNG')
+                b64_image = base64.b64encode(buffer.getvalue())
+            _logger.info(
+                '[SOM PROPOSAL] Imagen %s: formato origen %s, %s bytes b64.',
+                label or 'línea', fmt or '?', len(b64_image))
+            return 'data:image/png;base64,' + b64_image.decode()
         except Exception:
             _logger.warning(
-                '[SOM PROPOSAL] No se pudo normalizar una imagen para el '
-                'PDF; se usa tal cual.', exc_info=True)
-            return b64_image
+                '[SOM PROPOSAL] Imagen %s ilegible para el PDF; se omite.',
+                label or 'línea', exc_info=True)
+            return False
 
-    def _som_proposal_image(self):
-        """Imagen de la línea para el 'Resumen con imágenes': LA FOTO DEL
-        PRODUCTO, exclusivamente. Las fotos de lotes pertenecen al proceso
-        de asignación de material — en una cotización no se asigna, solo se
-        cotiza una cantidad.
+    def som_proposal_image_src(self):
+        """Src listo para <img> en el 'Resumen con imágenes': LA FOTO DEL
+        PRODUCTO, exclusivamente (las fotos de lotes pertenecen al proceso
+        de asignación; en una cotización solo se cotiza una cantidad).
 
-        bin_size=False es OBLIGATORIO: si el contexto de render trae
-        bin_size activo, leer el binario regresa el TAMAÑO ('12.5 KB') en
-        lugar de la imagen y el data URI sale roto (imagen en blanco)."""
+        Público (sin guion bajo) para llamarse desde QWeb sin restricciones.
+        bin_size=False es obligatorio: con bin_size activo el binario
+        regresa el TAMAÑO ('12.5 KB') en lugar de la imagen."""
         self.ensure_one()
         if not self.product_id:
             return False
-        # image_512: la imagen se imprime grande — 256 se ve suave en PDF.
         product = self.product_id.with_context(bin_size=False)
         img = (
             product.image_512
@@ -77,7 +85,7 @@ class SaleOrderLine(models.Model):
                 '[SOM PROPOSAL] Producto %s (id %s) sin imagen en la ficha.',
                 product.display_name, product.id)
             return False
-        return self._som_pdf_safe_image(img)
+        return self._som_pdf_image_src(img, label=product.display_name)
 
     def _som_default_line_description(self):
         self.ensure_one()
@@ -167,12 +175,13 @@ class SaleOrder(models.Model):
     )
     x_client_logo_filename = fields.Char(copy=False)
 
-    def _som_proposal_client_logo(self):
-        """Logo del cliente listo para el PDF (bin_size=False + conversión
-        a formato soportado por wkhtmltopdf — WebP sale en blanco)."""
+    def som_proposal_client_logo_src(self):
+        """Src listo para <img> con el logo del cliente (data URI PNG
+        construido en Python; bin_size=False obligatorio)."""
         self.ensure_one()
         logo = self.with_context(bin_size=False).x_client_logo
-        return self.env['sale.order.line']._som_pdf_safe_image(logo)
+        return self.env['sale.order.line']._som_pdf_image_src(
+            logo, label='logo cliente')
     
     @api.model
     def create_from_shopping_cart(self, partner_id=None, products=None, services=None, notes=None, pricelist_id=None, apply_tax=True, project_id=None, architect_id=None):

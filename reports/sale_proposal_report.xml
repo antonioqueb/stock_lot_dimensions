@@ -33,9 +33,9 @@
                                     </div>
                                 </td>
                                 <td style="text-align: right; vertical-align: middle; width: 30%;">
-                                    <t t-set="som_client_logo" t-value="doc._som_proposal_client_logo()"/>
-                                    <img t-if="som_client_logo"
-                                         t-att-src="image_data_uri(som_client_logo)"
+                                    <t t-set="som_client_logo_src" t-value="doc.som_proposal_client_logo_src()"/>
+                                    <img t-if="som_client_logo_src"
+                                         t-att-src="som_client_logo_src"
                                          style="max-height: 52px; max-width: 190px;"/>
                                 </td>
                             </tr>
@@ -103,10 +103,10 @@
                                             <t t-esc="line.product_id.product_tmpl_id.x_marca or ''"/>
                                         </td>
                                         <td style="padding: 4px; text-align: center; border: 1px solid #e2e8f0;">
-                                            <t t-set="som_line_image" t-value="line._som_proposal_image()"/>
-                                            <img t-if="som_line_image"
-                                                 t-att-src="image_data_uri(som_line_image)"
-                                                 style="max-width: 100px; max-height: 100px; object-fit: contain; border-radius: 4px;"/>
+                                            <t t-set="som_line_image_src" t-value="line.som_proposal_image_src()"/>
+                                            <img t-if="som_line_image_src"
+                                                 t-att-src="som_line_image_src"
+                                                 style="max-width: 100px; max-height: 100px; border-radius: 4px;"/>
                                         </td>
                                         <td style="padding: 4px 6px; text-align: center; border: 1px solid #e2e8f0;">
                                             <t t-esc="line.product_uom_id.name or ''"/>
