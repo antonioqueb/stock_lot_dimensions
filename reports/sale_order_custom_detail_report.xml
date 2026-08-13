@@ -324,10 +324,22 @@
                                     <tbody>
                                         <t t-foreach="section_lines" t-as="line">
 
-                                            <!-- FILA DE PRODUCTO AGRUPADOR -->
+                                            <t t-set="all_lots_data" t-value="line._get_all_sale_lots_with_qty()"/>
+                                            <t t-set="line_discount_pct" t-value="line.discount or 0.0"/>
+                                            <t t-set="line_lots_total" t-value="sum([float(li['quantity'] or 0) for li in (all_lots_data or [])])"/>
+
+                                            <!-- FILA DE PRODUCTO AGRUPADOR: el total de m²/piezas
+                                                 SELECCIONADOS viaja en la misma línea (solo bienes
+                                                 tangibles; los servicios no pasan por aquí). -->
                                             <tr style="background-color: #f2f2f2; color: #222; page-break-inside: avoid;">
                                                 <td t-att-colspan="((14 if has_line_discount_columns else 12) if show_prices else 8)"
                                                     style="background-color: #f2f2f2; padding: 4px 8px !important; font-weight: 800; color: #222; font-size: 8.8px; text-transform: uppercase; border: 1px solid #d8d8d8 !important; overflow-wrap: anywhere; word-break: break-word;">
+                                                    <span t-if="all_lots_data and line.product_id.type != 'service'"
+                                                          style="float: right; font-weight: 900; text-transform: none; white-space: nowrap; padding-left: 10px;">
+                                                        Total seleccionado:
+                                                        <t t-esc="'%g' % line_lots_total"/>
+                                                        <t t-esc="line.product_uom_id.name or ''"/>
+                                                    </span>
                                                     <span t-esc="line.x_mask_name or line.product_id.display_name"/>
                                                     <t t-if="line.name and line.name != line.product_id.display_name and line.name != line.x_mask_name">
                                                         <br/>
@@ -335,9 +347,6 @@
                                                     </t>
                                                 </td>
                                             </tr>
-
-                                            <t t-set="all_lots_data" t-value="line._get_all_sale_lots_with_qty()"/>
-                                            <t t-set="line_discount_pct" t-value="line.discount or 0.0"/>
 
                                             <t t-if="all_lots_data">
                                                 <t t-foreach="all_lots_data" t-as="lot_info">
@@ -617,6 +626,13 @@
                                                                     </td>
                                                                     <td style="text-align: right; padding: 3px 8px; border: 1px solid #e5e5e5; font-weight: 700;">
                                                                         <t t-esc="'%g' % float(glot['quantity'] or 0)"/>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td colspan="3" style="text-align: right; padding: 3px 8px; border: 1px solid #d8d8d8; background: #f2f2f2; font-weight: 800; text-transform: uppercase; font-size: 7.5px;">Total seleccionado</td>
+                                                                    <td style="text-align: right; padding: 3px 8px; border: 1px solid #d8d8d8; background: #f2f2f2; font-weight: 900;">
+                                                                        <t t-esc="'%g' % sum([float(g['quantity'] or 0) for g in generic_lots])"/>
+                                                                        <t t-esc="line.product_uom_id.name or ''"/>
                                                                     </td>
                                                                 </tr>
                                                             </tbody>
