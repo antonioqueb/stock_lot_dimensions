@@ -33,9 +33,7 @@
                                     </div>
                                 </td>
                                 <td style="text-align: right; vertical-align: middle; width: 30%;">
-                                    <!-- bin_size=False: con bin_size activo el binario
-                                         regresa el tamaño y el data URI sale roto. -->
-                                    <t t-set="som_client_logo" t-value="doc.with_context(bin_size=False).x_client_logo"/>
+                                    <t t-set="som_client_logo" t-value="doc._som_proposal_client_logo()"/>
                                     <img t-if="som_client_logo"
                                          t-att-src="image_data_uri(som_client_logo)"
                                          style="max-height: 52px; max-width: 190px;"/>

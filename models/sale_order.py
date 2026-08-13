@@ -27,6 +27,33 @@ class SaleOrderLine(models.Model):
              'real del producto. Se propaga de quote a hold y a la orden.',
     )
 
+    @api.model
+    def _som_pdf_safe_image(self, b64_image):
+        """Convierte la imagen a un formato que wkhtmltopdf SÍ renderiza.
+
+        Las imágenes subidas desde la web suelen guardarse en WebP y el
+        motor del PDF (QT WebKit) no lo soporta: el data URI es válido pero
+        la imagen sale EN BLANCO sin error. PNG/JPEG pasan tal cual; todo
+        lo demás (WebP incluido) se convierte a PNG."""
+        if not b64_image:
+            return False
+        try:
+            import base64
+            import io
+            from PIL import Image as PILImage
+            raw = base64.b64decode(b64_image)
+            pil = PILImage.open(io.BytesIO(raw))
+            if (pil.format or '').upper() in ('PNG', 'JPEG', 'JPG', 'GIF'):
+                return b64_image
+            buffer = io.BytesIO()
+            pil.convert('RGBA').save(buffer, format='PNG')
+            return base64.b64encode(buffer.getvalue())
+        except Exception:
+            _logger.warning(
+                '[SOM PROPOSAL] No se pudo normalizar una imagen para el '
+                'PDF; se usa tal cual.', exc_info=True)
+            return b64_image
+
     def _som_proposal_image(self):
         """Imagen de la línea para el 'Resumen con imágenes': LA FOTO DEL
         PRODUCTO, exclusivamente. Las fotos de lotes pertenecen al proceso
@@ -40,11 +67,16 @@ class SaleOrderLine(models.Model):
         if not self.product_id:
             return False
         product = self.product_id.with_context(bin_size=False)
-        return (
+        img = (
             product.image_256
             or product.product_tmpl_id.with_context(bin_size=False).image_256
-            or False
         )
+        if not img:
+            _logger.info(
+                '[SOM PROPOSAL] Producto %s (id %s) sin imagen en la ficha.',
+                product.display_name, product.id)
+            return False
+        return self._som_pdf_safe_image(img)
 
     def _som_default_line_description(self):
         self.ensure_one()
@@ -133,6 +165,13 @@ class SaleOrder(models.Model):
              'en el encabezado del reporte junto al logo de la compañía.',
     )
     x_client_logo_filename = fields.Char(copy=False)
+
+    def _som_proposal_client_logo(self):
+        """Logo del cliente listo para el PDF (bin_size=False + conversión
+        a formato soportado por wkhtmltopdf — WebP sale en blanco)."""
+        self.ensure_one()
+        logo = self.with_context(bin_size=False).x_client_logo
+        return self.env['sale.order.line']._som_pdf_safe_image(logo)
     
     @api.model
     def create_from_shopping_cart(self, partner_id=None, products=None, services=None, notes=None, pricelist_id=None, apply_tax=True, project_id=None, architect_id=None):
