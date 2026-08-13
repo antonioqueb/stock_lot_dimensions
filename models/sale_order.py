@@ -59,8 +59,20 @@ class SaleOrderLine(models.Model):
                 '[SOM PROPOSAL] Imagen %s: SVG, pasa directo al PDF.',
                 label or 'línea')
             return 'data:image/svg+xml;base64,' + base64.b64encode(raw).decode()
+        from PIL import Image as PILImage
+        # Odoo (odoo/tools/image.py) hace Image.preinit() y fija
+        # Image._initialized = 2, con lo que Image.init() queda ANULADO:
+        # dentro de un proceso de Odoo, Pillow solo tiene registrados BMP,
+        # GIF, JPEG, PPM, PNG e Ico. Aunque el códec WebP esté instalado,
+        # el plugin jamás se carga y open() responde UnidentifiedImageError
+        # (por eso el mismo archivo abre en un python suelto y no en el
+        # worker). Importar el plugin lo registra él mismo, vía el
+        # register_open que corre a nivel de módulo.
         try:
-            from PIL import Image as PILImage
+            from PIL import WebPImagePlugin  # noqa: F401
+        except ImportError:
+            pass
+        try:
             pil = PILImage.open(io.BytesIO(raw))
             fmt = (pil.format or '').upper()
             # Tope de 512px: el fallback a image_1920 (foto original) no
@@ -90,8 +102,10 @@ class SaleOrderLine(models.Model):
                     declared = struct.unpack('<I', raw[4:8])[0] + 8
                 except Exception:
                     declared = -1
-                fmt_hint = 'WEBP modo %r, RIFF declara %s bytes' % (
-                    raw[12:16], declared)
+                fmt_hint = ('WEBP modo %r, RIFF declara %s bytes, plugin '
+                            'registrado=%s' % (
+                                raw[12:16], declared,
+                                'WEBP' in PILImage.ID))
                 if 0 < declared > len(raw):
                     fmt_hint += ' — TRUNCADO'
             elif raw[4:12] in (b'ftypavif', b'ftypavis'):
