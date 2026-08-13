@@ -50,7 +50,12 @@ class SaleOrderLine(models.Model):
             raw = base64.b64decode(b64_image)
             pil = PILImage.open(io.BytesIO(raw))
             fmt = (pil.format or '').upper()
-            if fmt != 'PNG':
+            # Tope de 512px: el fallback a image_1920 (foto original) no
+            # debe inflar el PDF con megapixeles que se imprimen a 100px.
+            oversize = max(pil.size) > 512
+            if fmt != 'PNG' or oversize:
+                if oversize:
+                    pil.thumbnail((512, 512))
                 buffer = io.BytesIO()
                 pil.convert('RGBA').save(buffer, format='PNG')
                 b64_image = base64.b64encode(buffer.getvalue())
@@ -75,17 +80,32 @@ class SaleOrderLine(models.Model):
         self.ensure_one()
         if not self.product_id:
             return False
+        # image_512 primero (miniatura ligera); si la derivada no está
+        # materializada se cae a image_1920 — la MISMA fuente que usa el
+        # wizard de sugerencias vía /web/image/.../image_1920 — y el helper
+        # la reduce a 512px. Variante y plantilla, en ese orden.
         product = self.product_id.with_context(bin_size=False)
-        img = (
-            product.image_512
-            or product.product_tmpl_id.with_context(bin_size=False).image_512
-        )
+        template = product.product_tmpl_id.with_context(bin_size=False)
+        img = False
+        source = ''
+        for record, fname in (
+            (product, 'image_512'),
+            (template, 'image_512'),
+            (product, 'image_1920'),
+            (template, 'image_1920'),
+        ):
+            img = record[fname]
+            if img:
+                source = '%s.%s' % (record._name, fname)
+                break
         if not img:
             _logger.info(
-                '[SOM PROPOSAL] Producto %s (id %s) sin imagen en la ficha.',
+                '[SOM PROPOSAL] Producto %s (id %s) sin imagen en la ficha '
+                '(image_512 e image_1920 vacíos en variante y plantilla).',
                 product.display_name, product.id)
             return False
-        return self._som_pdf_image_src(img, label=product.display_name)
+        return self._som_pdf_image_src(
+            img, label='%s [%s]' % (product.display_name, source))
 
     def _som_default_line_description(self):
         self.ensure_one()
