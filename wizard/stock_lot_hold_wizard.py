@@ -4,6 +4,8 @@ from odoo import models, fields, api
 from odoo.exceptions import ValidationError, UserError
 from datetime import timedelta
 
+from odoo.addons.stock_lot_dimensions.models.som_date_format import som_format_date
+
 class StockLotHoldWizard(models.TransientModel):
     _name = 'stock.lot.hold.wizard'
     _description = 'Wizard para crear reservas manuales de lotes'
@@ -154,7 +156,7 @@ class StockLotHoldWizard(models.TransientModel):
         if hold_existente:
             raise UserError(
                 f'Este lote ya tiene una reserva activa para {hold_existente.partner_id.name} '
-                f'que expira el {hold_existente.fecha_expiracion.strftime("%d/%m/%Y")}'
+                f'que expira el {som_format_date(hold_existente.fecha_expiracion)}'
             )
         
         # Obtener o crear proyecto
@@ -199,7 +201,7 @@ class StockLotHoldWizard(models.TransientModel):
             'tag': 'display_notification',
             'params': {
                 'title': '¡Reserva Creada!',
-                'message': f'Lote {self.lot_id.name} reservado para {self.partner_id.name} por 5 días hábiles hasta el {hold.fecha_expiracion.strftime("%d/%m/%Y %H:%M")}',
+                'message': f'Lote {self.lot_id.name} reservado para {self.partner_id.name} por 5 días hábiles hasta el {som_format_date(hold.fecha_expiracion, with_time=True)}',
                 'type': 'success',
                 'sticky': False,
                 'next': {'type': 'ir.actions.act_window_close'},

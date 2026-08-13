@@ -6,6 +6,7 @@ from .utils.plate_status_builder import PlateStatusBuilder
 from .utils.bulk_hold_creator import BulkHoldCreator
 from .utils.notification_builder import NotificationBuilder
 from .utils.photo_helpers import PhotoHelper
+from .som_date_format import som_format_date
 from collections import defaultdict
 import logging
 
@@ -940,8 +941,8 @@ class StockQuant(models.Model):
                 hold_data = {
                     'id': hold.id,
                     'partner_name': hold.partner_id.name,
-                    'fecha_inicio': hold.fecha_inicio.strftime('%d/%m/%Y %H:%M') if hold.fecha_inicio else '',
-                    'fecha_expiracion': hold.fecha_expiracion.strftime('%d/%m/%Y %H:%M') if hold.fecha_expiracion else '',
+                    'fecha_inicio': som_format_date(hold.fecha_inicio, empty='', with_time=True),
+                    'fecha_expiracion': som_format_date(hold.fecha_expiracion, empty='', with_time=True),
                     'notas': hold.notas or '',
                     'proyecto_nombre': proyecto_nombre,
                     'arquitecto_nombre': arquitecto_nombre,
@@ -1014,7 +1015,7 @@ class StockQuant(models.Model):
                     'image': photo.image,
                     'sequence': photo.sequence,
                     'notas': photo.notas or '',
-                    'fecha_captura': photo.fecha_captura.strftime('%d/%m/%Y %H:%M') if photo.fecha_captura else '',
+                    'fecha_captura': som_format_date(photo.fecha_captura, empty='', with_time=True),
                 })
             
             result = {
@@ -1224,7 +1225,7 @@ class StockQuant(models.Model):
             'lot_name': lot.name,
             'product_name': quant.product_id.name,
             'product_code': quant.product_id.default_code or '',
-            'fecha_creacion': lot.create_date.strftime('%d/%m/%Y %H:%M') if lot.create_date else '',
+            'fecha_creacion': som_format_date(lot.create_date, empty='', with_time=True),
             'estado_actual': estado_actual,
             'cantidad_actual': quant.quantity,
             'cantidad_reservada': quant.reserved_quantity,
@@ -1255,7 +1256,7 @@ class StockQuant(models.Model):
                 purchase_info.append({
                     'orden_compra': po_line.order_id.name,
                     'proveedor': po_line.order_id.partner_id.name,
-                    'fecha_orden': po_line.order_id.date_order.strftime('%d/%m/%Y') if po_line.order_id.date_order else '',
+                    'fecha_orden': som_format_date(po_line.order_id.date_order, empty=''),
                     'cantidad': po_line.product_qty,
                     'precio_unitario': po_line.price_unit,
                     'total': po_line.price_subtotal,
@@ -1294,7 +1295,7 @@ class StockQuant(models.Model):
                     color = 'info'
             
             movements.append({
-                'fecha': move.date.strftime('%d/%m/%Y %H:%M') if move.date else '',
+                'fecha': som_format_date(move.date, empty='', with_time=True),
                 'tipo': movement_type,
                 'icon': icon,
                 'color': color,
@@ -1331,7 +1332,7 @@ class StockQuant(models.Model):
                     'orden_venta': so_line.order_id.name,
                     'cliente': so_line.order_id.partner_id.name,
                     'vendedor': so_line.order_id.user_id.name if so_line.order_id.user_id else '-',
-                    'fecha_orden': so_line.order_id.date_order.strftime('%d/%m/%Y') if so_line.order_id.date_order else '',
+                    'fecha_orden': som_format_date(so_line.order_id.date_order, empty=''),
                     'cantidad': so_line.product_uom_qty,
                     'precio_unitario': so_line.price_unit,
                     'total': so_line.price_subtotal,
@@ -1354,8 +1355,8 @@ class StockQuant(models.Model):
             reservations.append({
                 'tipo': 'Apartado (Hold)',
                 'partner': hold.partner_id.name,
-                'fecha_inicio': hold.fecha_inicio.strftime('%d/%m/%Y %H:%M') if hold.fecha_inicio else '',
-                'fecha_expiracion': hold.fecha_expiracion.strftime('%d/%m/%Y %H:%M') if hold.fecha_expiracion else '',
+                'fecha_inicio': som_format_date(hold.fecha_inicio, empty='', with_time=True),
+                'fecha_expiracion': som_format_date(hold.fecha_expiracion, empty='', with_time=True),
                 'estado': 'Activo' if hold.estado == 'activo' else 'Liberado',
                 'notas': hold.notas or '',
                 'color': 'warning' if hold.estado == 'activo' else 'secondary'
@@ -1382,7 +1383,7 @@ class StockQuant(models.Model):
             reservations.append({
                 'tipo': 'Reserva de Stock',
                 'partner': partner_name,
-                'fecha_inicio': move_line.date.strftime('%d/%m/%Y %H:%M') if move_line.date else '',
+                'fecha_inicio': som_format_date(move_line.date, empty='', with_time=True),
                 'fecha_expiracion': '-',
                 'estado': 'Activo',
                 'notas': move_line.picking_id.name if move_line.picking_id else move_line.reference or '',
@@ -1406,8 +1407,8 @@ class StockQuant(models.Model):
                 deliveries.append({
                     'referencia': picking.name,
                     'cliente': picking.partner_id.name if picking.partner_id else '-',
-                    'fecha_programada': picking.scheduled_date.strftime('%d/%m/%Y') if picking.scheduled_date else '',
-                    'fecha_efectiva': picking.date_done.strftime('%d/%m/%Y %H:%M') if picking.date_done else '-',
+                    'fecha_programada': som_format_date(picking.scheduled_date, empty=''),
+                    'fecha_efectiva': som_format_date(picking.date_done, empty='-', with_time=True),
                     'cantidad': move.qty_done,
                     'estado': dict(picking._fields['state'].selection).get(picking.state),
                     'origen': picking.origin or '-',
@@ -1515,7 +1516,7 @@ class StockQuant(models.Model):
             return {
                 'success': True,
                 'hold_id': hold.id,
-                'message': f'Lote {quant.lot_id.name} apartado para {hold.partner_id.name} hasta {hold.fecha_expiracion.strftime("%d/%m/%Y")}'
+                'message': f'Lote {quant.lot_id.name} apartado para {hold.partner_id.name} hasta {som_format_date(hold.fecha_expiracion)}'
             }
             
         except Exception as e:
@@ -1590,7 +1591,7 @@ class StockQuant(models.Model):
             return {
                 'success': True,
                 'hold_id': hold.id,
-                'message': f'Lote {quant.lot_id.name} apartado para {partner.name} hasta {hold.fecha_expiracion.strftime("%d/%m/%Y %H:%M")}'
+                'message': f'Lote {quant.lot_id.name} apartado para {partner.name} hasta {som_format_date(hold.fecha_expiracion, with_time=True)}'
             }
             
         except Exception as e:
@@ -1690,7 +1691,7 @@ class StockQuant(models.Model):
                 holds_created.append({
                     'lot_name': quant.lot_id.name,
                     'hold_id': hold.id,
-                    'expira': hold.fecha_expiracion.strftime('%d/%m/%Y %H:%M')
+                    'expira': som_format_date(hold.fecha_expiracion, with_time=True)
                 })
                 
             except Exception as e:

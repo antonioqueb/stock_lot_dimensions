@@ -471,7 +471,7 @@
             </div>
             <div class="col-4 text-end">
                 <div style="font-size: 14px; color: #505050; margin-top: 4px;">
-                    Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                    Impreso: <span t-esc="context_timestamp(datetime.datetime.now())" t-options='{"widget": "datetime", "format": "dd MMM yyyy HH:mm"}'/>
                 </div>
             </div>
         </div>
@@ -481,7 +481,7 @@
             <div class="col-12">
                 <div style="border: 4px solid #ff0000; background-color: #fff5f5; padding: 8px; width: 100%; box-sizing: border-box;">
                     <div style="color: #ff0000; font-weight: 900; font-size: 14px; text-transform: uppercase; overflow-wrap: anywhere; word-break: break-word;">
-                        ⚠️ RESERVA VÁLIDA HASTA: <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
+                        ⚠️ RESERVA VÁLIDA HASTA: <span t-field="o.fecha_expiracion" t-options='{"widget": "date", "format": "dd MMM yyyy"}'/>
                     </div>
                     <div style="color: #333; font-size: 10px; margin-top: 3px; font-style: italic; overflow-wrap: anywhere; word-break: break-word;">
                         A partir de esa fecha, las placas se liberan automáticamente y podrán ser asignadas a otro proyecto sin previo aviso.
@@ -550,7 +550,7 @@
                             <div style="display: table; width: 100%; table-layout: fixed; border-bottom: 1px solid #d8d8d8 !important;">
                                 <div style="display: table-cell; width: 45%; padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px; border-right: 1px solid #d8d8d8 !important;">Fecha</div>
                                 <div style="display: table-cell; padding: 5px 8px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;">
-                                    <span t-field="o.fecha_orden" t-options='{"widget": "date"}'/>
+                                    <span t-field="o.fecha_orden" t-options='{"widget": "date", "format": "dd MMM yyyy"}'/>
                                 </div>
                             </div>
                             <div style="display: table; width: 100%; table-layout: fixed; border-bottom: 1px solid #d8d8d8 !important;">
@@ -568,7 +568,7 @@
                             <div t-if="vence_visible" style="display: table; width: 100%; table-layout: fixed;">
                                 <div style="display: table-cell; width: 45%; padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px; border-right: 1px solid #d8d8d8 !important;">Vigencia</div>
                                 <div style="display: table-cell; padding: 5px 8px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;">
-                                    Hasta el <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/>
+                                    Hasta el <span t-field="o.fecha_expiracion" t-options='{"widget": "date", "format": "dd MMM yyyy"}'/>
                                 </div>
                             </div>
                         </td>
@@ -651,7 +651,7 @@
             <div class="row mb-3">
                 <div class="col-12 text-center">
                     <p style="font-size: 9px; margin-top: 5px; padding: 0 20px;">
-                        Al firmar este documento, el cliente confirma la selección de las placas y acepta que la <span style="font-weight: bold;">RESERVA ES VÁLIDA SOLO HASTA EL <span t-field="o.fecha_expiracion" t-options='{"widget": "date"}'/></span>. Para garantizar la disponibilidad del material, se recomienda formalizar las condiciones comerciales antes de esa fecha.
+                        Al firmar este documento, el cliente confirma la selección de las placas y acepta que la <span style="font-weight: bold;">RESERVA ES VÁLIDA SOLO HASTA EL <span t-field="o.fecha_expiracion" t-options='{"widget": "date", "format": "dd MMM yyyy"}'/></span>. Para garantizar la disponibilidad del material, se recomienda formalizar las condiciones comerciales antes de esa fecha.
                     </p>
                 </div>
             </div>

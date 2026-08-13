@@ -36,7 +36,7 @@
                             </div>
                             <div class="col-4 text-end">
                                 <div style="font-size: 8px; color: #999; margin-top: 4px;">
-                                    Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                                    Impreso: <span t-esc="context_timestamp(datetime.datetime.now())" t-options='{"widget": "datetime", "format": "dd MMM yyyy HH:mm"}'/>
                                 </div>
                             </div>
                         </div>
@@ -81,7 +81,7 @@
                                     <tr>
                                         <td class="p-0"><strong>Fecha Programada:</strong></td>
                                         <td class="p-0 text-end">
-                                            <span t-field="o.scheduled_date" t-options='{"widget": "date"}'/>
+                                            <span t-field="o.scheduled_date" t-options='{"widget": "date", "format": "dd MMM yyyy"}'/>
                                         </td>
                                     </tr>
                                     <tr t-if="o.origin">

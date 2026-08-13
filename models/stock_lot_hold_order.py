@@ -4,6 +4,7 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools.float_utils import float_compare
 from .utils.business_days import BusinessDaysCalculator
+from .som_date_format import som_format_date
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -501,7 +502,7 @@ class StockLotHoldOrder(models.Model):
             order.fecha_expiracion = nueva_expiracion
             order.x_expired_flag = False
             order.message_post(body=(
-                f'Reserva renovada hasta {nueva_expiracion.strftime("%d/%m/%Y %H:%M")}: '
+                f'Reserva renovada hasta {som_format_date(nueva_expiracion, with_time=True)}: '
                 f'{len(active_holds)} hold(s) extendido(s)'
                 + (f', {len(expired_holds)} reactivado(s).' if expired_holds else '.')
             ))

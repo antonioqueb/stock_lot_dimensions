@@ -3,6 +3,7 @@
 Validador centralizado para holds de lotes con soporte multi-compañía
 """
 from odoo.exceptions import UserError, ValidationError
+from ..som_date_format import som_format_date
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -172,7 +173,7 @@ class HoldValidator:
                 f"🔒 NO PUEDE USAR ESTE LOTE\n\n"
                 f"El lote '{lot.name}' está RESERVADO para:\n"
                 f"👤 {hold_partner.name}\n"
-                f"📅 Hasta: {quant.x_hold_expira.strftime('%d/%m/%Y %H:%M')}\n"
+                f"📅 Hasta: {som_format_date(quant.x_hold_expira, with_time=True)}\n"
                 f"⏱️ Días restantes: {quant.x_hold_dias_restantes}\n"
                 f"🏢 Compañía: {company.name}\n\n"
                 f"❌ Esta entrega es para '{customer.name}'\n\n"

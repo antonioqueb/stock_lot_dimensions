@@ -4,6 +4,7 @@ from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
 from .utils.business_days import BusinessDaysCalculator
 from .utils.notification_builder import NotificationBuilder
+from .som_date_format import som_format_date
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -260,7 +261,7 @@ class StockLotHold(models.Model):
         nueva_expiracion = BusinessDaysCalculator.get_expiration_date(days=5)
         self.write({'fecha_expiracion': nueva_expiracion})
         
-        mensaje = f'Reserva extendida hasta {nueva_expiracion.strftime("%d/%m/%Y %H:%M")}'
+        mensaje = f'Reserva extendida hasta {som_format_date(nueva_expiracion, with_time=True)}'
         return NotificationBuilder.build_success('¡Renovado!', mensaje)
     
     def action_cancelar_hold(self):

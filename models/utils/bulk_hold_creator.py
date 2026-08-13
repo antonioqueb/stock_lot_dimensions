@@ -5,6 +5,7 @@ Creador de holds masivos desde carrito
 """
 from odoo import fields
 from .business_days import BusinessDaysCalculator
+from ..som_date_format import som_format_date
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -136,7 +137,7 @@ class BulkHoldCreator:
                 holds_created.append({
                     'lot_name': quant.lot_id.name,
                     'hold_id': hold.id,
-                    'expira': hold.fecha_expiracion.strftime('%d/%m/%Y %H:%M')
+                    'expira': som_format_date(hold.fecha_expiracion, with_time=True)
                 })
             except Exception as e:
                 errors.append({
