@@ -36,7 +36,7 @@
                             </div>
                             <div class="col-4 text-end">
                                 <div style="font-size: 8px; color: #999; margin-top: 4px;">
-                                    Impreso: <span t-esc="context_timestamp(datetime.datetime.now())" t-options='{"widget": "datetime", "format": "dd MMM yyyy HH:mm"}'/>
+                                    Impreso: <span t-esc="datetime.datetime.utcnow()" t-options='{"widget": "datetime", "format": "dd MMM yyyy HH:mm"}'/>
                                 </div>
                             </div>
                         </div>
