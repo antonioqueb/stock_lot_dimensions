@@ -80,7 +80,7 @@ class SaleOrderLine(models.Model):
             # Nombrar el formato real por la firma de los bytes: es la
             # diferencia entre adivinar y saber qué instalar/corregir.
             if raw[:4] == b'RIFF' and raw[8:12] == b'WEBP':
-                fmt_hint = 'WEBP (el Pillow del servidor no trae libwebp)'
+                fmt_hint = 'WEBP'
             elif raw[4:12] in (b'ftypavif', b'ftypavis'):
                 fmt_hint = 'AVIF (Pillow necesita pillow-avif-plugin)'
             elif raw[4:8] == b'ftyp' and raw[8:12] in (
@@ -89,8 +89,9 @@ class SaleOrderLine(models.Model):
             else:
                 fmt_hint = 'desconocido, cabecera %r' % raw[:12]
             _logger.warning(
-                '[SOM PROPOSAL] Imagen %s ilegible para el PDF — formato %s; '
-                'se omite.', label or 'línea', fmt_hint)
+                '[SOM PROPOSAL] Imagen %s ilegible para el PDF — formato %s, '
+                '%s bytes decodificados; se omite.',
+                label or 'línea', fmt_hint, len(raw), exc_info=True)
             return False
 
     def som_proposal_image_src(self):
