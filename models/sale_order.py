@@ -80,7 +80,20 @@ class SaleOrderLine(models.Model):
             # Nombrar el formato real por la firma de los bytes: es la
             # diferencia entre adivinar y saber qué instalar/corregir.
             if raw[:4] == b'RIFF' and raw[8:12] == b'WEBP':
-                fmt_hint = 'WEBP'
+                # Pillow rechaza el archivo (UnidentifiedImageError) si el
+                # chunk en 12:16 no es VP8 / VP8L / VP8X, aunque el códec
+                # esté instalado. Y si el RIFF declara más bytes de los que
+                # llegaron, el binario está TRUNCADO en el filestore: ahí el
+                # arreglo es volver a subir la foto, no tocar Pillow.
+                import struct
+                try:
+                    declared = struct.unpack('<I', raw[4:8])[0] + 8
+                except Exception:
+                    declared = -1
+                fmt_hint = 'WEBP modo %r, RIFF declara %s bytes' % (
+                    raw[12:16], declared)
+                if 0 < declared > len(raw):
+                    fmt_hint += ' — TRUNCADO'
             elif raw[4:12] in (b'ftypavif', b'ftypavis'):
                 fmt_hint = 'AVIF (Pillow necesita pillow-avif-plugin)'
             elif raw[4:8] == b'ftyp' and raw[8:12] in (
