@@ -41,13 +41,26 @@ class SaleOrderLine(models.Model):
           vacía) en lugar de un src roto (el 'puntito' de imagen rota)."""
         if not b64_image:
             return False
+        import base64
+        import io
         try:
-            import base64
-            import io
-            from PIL import Image as PILImage
             if isinstance(b64_image, str):
                 b64_image = b64_image.encode()
             raw = base64.b64decode(b64_image)
+        except Exception:
+            _logger.warning(
+                '[SOM PROPOSAL] Imagen %s: el binario no es base64 válido '
+                '(¿bin_size?); se omite.', label or 'línea')
+            return False
+        # SVG: Pillow no lo abre (UnidentifiedImageError) pero el motor del
+        # PDF sí lo incrusta como data URI — pasa directo, sin conversión.
+        if raw.lstrip()[:1] == b'<' and b'<svg' in raw[:2048].lower():
+            _logger.info(
+                '[SOM PROPOSAL] Imagen %s: SVG, pasa directo al PDF.',
+                label or 'línea')
+            return 'data:image/svg+xml;base64,' + base64.b64encode(raw).decode()
+        try:
+            from PIL import Image as PILImage
             pil = PILImage.open(io.BytesIO(raw))
             fmt = (pil.format or '').upper()
             # Tope de 512px: el fallback a image_1920 (foto original) no
@@ -64,9 +77,20 @@ class SaleOrderLine(models.Model):
                 label or 'línea', fmt or '?', len(b64_image))
             return 'data:image/png;base64,' + b64_image.decode()
         except Exception:
+            # Nombrar el formato real por la firma de los bytes: es la
+            # diferencia entre adivinar y saber qué instalar/corregir.
+            if raw[:4] == b'RIFF' and raw[8:12] == b'WEBP':
+                fmt_hint = 'WEBP (el Pillow del servidor no trae libwebp)'
+            elif raw[4:12] in (b'ftypavif', b'ftypavis'):
+                fmt_hint = 'AVIF (Pillow necesita pillow-avif-plugin)'
+            elif raw[4:8] == b'ftyp' and raw[8:12] in (
+                    b'heic', b'heix', b'hevc', b'mif1'):
+                fmt_hint = 'HEIC (foto de iPhone; Pillow necesita pillow-heif)'
+            else:
+                fmt_hint = 'desconocido, cabecera %r' % raw[:12]
             _logger.warning(
-                '[SOM PROPOSAL] Imagen %s ilegible para el PDF; se omite.',
-                label or 'línea', exc_info=True)
+                '[SOM PROPOSAL] Imagen %s ilegible para el PDF — formato %s; '
+                'se omite.', label or 'línea', fmt_hint)
             return False
 
     def som_proposal_image_src(self):
@@ -86,8 +110,7 @@ class SaleOrderLine(models.Model):
         # la reduce a 512px. Variante y plantilla, en ese orden.
         product = self.product_id.with_context(bin_size=False)
         template = product.product_tmpl_id.with_context(bin_size=False)
-        img = False
-        source = ''
+        found = False
         for record, fname in (
             (product, 'image_512'),
             (template, 'image_512'),
@@ -95,17 +118,23 @@ class SaleOrderLine(models.Model):
             (template, 'image_1920'),
         ):
             img = record[fname]
-            if img:
-                source = '%s.%s' % (record._name, fname)
-                break
-        if not img:
+            if not img:
+                continue
+            found = True
+            src = self._som_pdf_image_src(
+                img,
+                label='%s [%s.%s]' % (product.display_name, record._name, fname),
+            )
+            # Si esta fuente es ilegible, la siguiente puede no serlo
+            # (p. ej. derivada corrupta pero original sana).
+            if src:
+                return src
+        if not found:
             _logger.info(
                 '[SOM PROPOSAL] Producto %s (id %s) sin imagen en la ficha '
                 '(image_512 e image_1920 vacíos en variante y plantilla).',
                 product.display_name, product.id)
-            return False
-        return self._som_pdf_image_src(
-            img, label='%s [%s]' % (product.display_name, source))
+        return False
 
     def _som_default_line_description(self):
         self.ensure_one()
