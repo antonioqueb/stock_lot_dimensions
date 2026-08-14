@@ -11,6 +11,26 @@ _logger = logging.getLogger(__name__)
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
 
+    # Sección (display_type='line_section') a la que pertenece la línea
+    # según la secuencia — para que los REPORTES pinten las secciones del
+    # vendedor como DIVISORES (sin montos) dentro de sus tablas.
+    x_user_section_name = fields.Char(
+        compute='_compute_x_user_section_name', string='Sección (divisor)')
+
+    @api.depends('order_id.order_line.sequence',
+                 'order_id.order_line.display_type',
+                 'order_id.order_line.name')
+    def _compute_x_user_section_name(self):
+        for line in self:
+            name = ''
+            for sib in line.order_id.order_line.sorted(
+                    key=lambda r: (r.sequence, r.id)):
+                if sib.display_type == 'line_section':
+                    name = sib.name or ''
+                if sib.id == line.id:
+                    break
+            line.x_user_section_name = name
+
     x_selected_lots = fields.Many2many('stock.quant', string='Lotes Seleccionados')
 
     # MÁSCARA COMERCIAL — por VENTA, no por producto: el nombre con el que el

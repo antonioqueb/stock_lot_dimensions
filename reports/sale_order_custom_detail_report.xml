@@ -322,8 +322,14 @@
                                     </thead>
 
                                     <tbody>
+                                        <t t-set="last_usec" t-value="''"/>
                                         <t t-foreach="section_lines" t-as="line">
-
+                                            <t t-set="usec" t-value="line.x_user_section_name"/>
+                                            <tr t-if="usec and usec != last_usec" style="background: #eef2f7;">
+                                                <td colspan="99" style="padding: 3px 8px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; letter-spacing: .5px; color: #334155; border: 1px solid #e2e8f0;" t-esc="usec"/>
+                                            </tr>
+                                            <t t-set="last_usec" t-value="usec or last_usec"/>
+                                            
                                             <t t-set="all_lots_data" t-value="line._get_all_sale_lots_with_qty()"/>
                                             <t t-set="line_discount_pct" t-value="line.discount or 0.0"/>
                                             <t t-set="line_lots_total" t-value="sum([float(li['quantity'] or 0) for li in (all_lots_data or [])])"/>
@@ -538,7 +544,14 @@
                                     </thead>
 
                                     <tbody>
+                                        <t t-set="last_usec" t-value="''"/>
                                         <t t-foreach="section_lines" t-as="line">
+                                            <t t-set="usec" t-value="line.x_user_section_name"/>
+                                            <tr t-if="usec and usec != last_usec" style="background: #eef2f7;">
+                                                <td colspan="99" style="padding: 3px 8px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; letter-spacing: .5px; color: #334155; border: 1px solid #e2e8f0;" t-esc="usec"/>
+                                            </tr>
+                                            <t t-set="last_usec" t-value="usec or last_usec"/>
+                                            
                                             <t t-set="line_discount_pct" t-value="line.discount or 0.0"/>
                                             <t t-set="line_gross" t-value="line.price_unit * line.product_uom_qty"/>
                                             <t t-set="line_discount_amount" t-value="(line_gross - line.price_subtotal) if line_gross &gt;= line.price_subtotal else 0.0"/>
