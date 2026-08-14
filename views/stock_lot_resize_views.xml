@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Redimensionamiento de placas: client action, SOLO administradores
+         de inventario (el servidor lo re-valida en cada RPC). -->
+    <record id="action_resize_plates" model="ir.actions.client">
+        <field name="name">Redimensionar placas</field>
+        <field name="tag">stock_lot_dimensions.resize_plates</field>
+    </record>
+
+    <menuitem id="menu_resize_plates"
+              name="Redimensionar placas"
+              parent="stock.menu_stock_warehouse_mgmt"
+              action="action_resize_plates"
+              groups="stock.group_stock_manager"
+              sequence="82"/>
+</odoo>

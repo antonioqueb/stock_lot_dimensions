@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Atributos Adicionales para Lotes',
-    'version': '19.0.5.17.0',
+    'version': '19.0.6.0.0',
     'category': 'Inventory/Inventory',
     'summary': 'Captura dimensiones, fotografías y gestión de reservas manuales (hold) en lotes',
     'description': """
@@ -71,6 +71,7 @@
         'views/stock_lot_image_delete_wizard_views.xml',
         'views/res_company_views.xml',
         'views/stock_picking_received_by_view.xml',
+            'views/stock_lot_resize_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
@@ -79,6 +80,9 @@
             'stock_lot_dimensions/static/src/js/image_preview_widget.js',
             'stock_lot_dimensions/static/src/js/status_icons_widget.js',
             'stock_lot_dimensions/static/src/js/hold_stone_button.js',
+            'stock_lot_dimensions/static/src/js/resize_plates.js',
+            'stock_lot_dimensions/static/src/xml/resize_plates.xml',
+            'stock_lot_dimensions/static/src/scss/resize_plates.scss',
 
             # Hold stone styles
             # IMPORTANTE:

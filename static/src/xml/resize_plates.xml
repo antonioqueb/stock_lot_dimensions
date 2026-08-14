@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="stock_lot_dimensions.ResizePlates" owl="1">
+        <div class="o_slr_page">
+            <div class="o_slr_head">
+                <div class="o_slr_title">
+                    <i class="fa fa-arrows-alt me-2"/>Redimensionamiento de placas
+                    <small>corrige alto × ancho — el stock (m²) se ajusta solo, con rastro</small>
+                </div>
+                <div class="o_slr_product">
+                    <input type="text" class="form-control"
+                           placeholder="Busca el producto (mínimo 2 letras)…"
+                           t-att-value="state.productQuery"
+                           t-on-input="onProductQuery"/>
+                    <div t-if="state.productOptions.length" class="o_slr_options">
+                        <div t-foreach="state.productOptions" t-as="opt" t-key="opt.id"
+                             class="o_slr_option" t-on-click="() => this.pickProduct(opt)">
+                            <t t-esc="opt.name"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div t-if="state.loading" class="p-4 text-center text-muted">
+                <i class="fa fa-circle-o-notch fa-spin me-2"/>Cargando placas…
+            </div>
+
+            <t t-if="!state.loading and state.product">
+                <div t-if="!state.plates.length" class="alert alert-warning m-3">
+                    Este producto no tiene placas con stock interno.
+                </div>
+
+                <t t-if="state.plates.length">
+                    <!-- Barra de lote: aplicar dimensiones a la selección -->
+                    <div class="o_slr_batch">
+                        <span class="o_slr_selcount">
+                            <i class="fa fa-check-square-o me-1"/>
+                            <t t-esc="selCount"/> seleccionada(s)
+                        </span>
+                        <label>Nuevo alto</label>
+                        <input type="number" step="0.001" min="0" class="form-control"
+                               t-att-value="state.batchAlto"
+                               t-on-input="(ev) => state.batchAlto = ev.target.value"/>
+                        <label>Nuevo ancho</label>
+                        <input type="number" step="0.001" min="0" class="form-control"
+                               t-att-value="state.batchAncho"
+                               t-on-input="(ev) => state.batchAncho = ev.target.value"/>
+                        <button class="btn btn-secondary" t-att-disabled="!selCount"
+                                t-on-click="applyBatch">
+                            Aplicar a la selección
+                        </button>
+                        <span class="flex-grow-1"/>
+                        <button class="btn btn-primary" t-att-disabled="state.applying or !changes.length"
+                                t-on-click="apply">
+                            <i t-if="state.applying" class="fa fa-circle-o-notch fa-spin me-1"/>
+                            Redimensionar (<t t-esc="changes.length"/>)
+                        </button>
+                    </div>
+
+                    <div class="o_slr_grid">
+                        <table class="table table-sm table-hover o_stone_table mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width:36px;">
+                                        <input type="checkbox"
+                                               t-att-checked="selCount === state.plates.length"
+                                               t-on-click="toggleAll"/>
+                                    </th>
+                                    <th>Lote</th>
+                                    <th>Ubicación</th>
+                                    <th class="text-end">Dimensiones actuales</th>
+                                    <th class="text-end">M² actual</th>
+                                    <th class="text-end">Nuevo alto</th>
+                                    <th class="text-end">Nuevo ancho</th>
+                                    <th class="text-end">M² nuevo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="groups" t-as="group" t-key="group.name">
+                                    <tr class="o_slr_block">
+                                        <td colspan="8">
+                                            <i class="fa fa-cubes me-1"/>Bloque:
+                                            <b t-esc="group.name"/>
+                                            <span class="text-muted ms-2">
+                                                (<t t-esc="group.plates.length"/> placas)
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr t-foreach="group.plates" t-as="p" t-key="p.lot_id"
+                                        t-att-class="state.selected[p.lot_id] ? 'o_slr_sel' : ''">
+                                        <td class="text-center">
+                                            <input type="checkbox"
+                                                   t-att-checked="state.selected[p.lot_id]"
+                                                   t-on-click="() => this.toggle(p)"/>
+                                        </td>
+                                        <td>
+                                            <b t-esc="p.lot_name"/>
+                                            <i t-if="p.has_photo" class="fa fa-camera ms-1 text-muted"
+                                               title="Tiene fotografía"/>
+                                            <span t-if="p.reserved" class="badge text-bg-warning ms-1"
+                                                  t-att-title="'Reservado: ' + fmt(p.reserved) + ' m²'">R</span>
+                                        </td>
+                                        <td class="text-muted" t-esc="p.location_name"/>
+                                        <td class="text-end">
+                                            <t t-esc="fmt(p.alto)"/> × <t t-esc="fmt(p.ancho)"/>
+                                        </td>
+                                        <td class="text-end" t-esc="fmt(p.m2)"/>
+                                        <td class="text-end">
+                                            <input type="number" step="0.001" min="0"
+                                                   class="form-control o_slr_dim"
+                                                   t-att-placeholder="fmt(p.alto)"
+                                                   t-att-value="newVal(p, 'alto')"
+                                                   t-on-input="(ev) => this.edit(p, 'alto', ev)"/>
+                                        </td>
+                                        <td class="text-end">
+                                            <input type="number" step="0.001" min="0"
+                                                   class="form-control o_slr_dim"
+                                                   t-att-placeholder="fmt(p.ancho)"
+                                                   t-att-value="newVal(p, 'ancho')"
+                                                   t-on-input="(ev) => this.edit(p, 'ancho', ev)"/>
+                                        </td>
+                                        <td class="text-end">
+                                            <b t-if="newM2(p) !== null"
+                                               t-att-class="Math.abs(newM2(p) - p.m2) > 0.0005 ? 'text-primary' : ''"
+                                               t-esc="fmt(newM2(p))"/>
+                                            <span t-else="" class="text-muted">—</span>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </div>
+    </t>
+</templates>

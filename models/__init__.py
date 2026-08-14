@@ -15,3 +15,4 @@ from . import stock_lot_hold_order
 from . import product_template
 from . import res_company_bank_info
 from . import res_company
+from . import stock_lot_resize
