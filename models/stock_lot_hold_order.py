@@ -47,6 +47,34 @@ class StockLotHoldOrder(models.Model):
         readonly=True,
     )
     fecha_expiracion = fields.Datetime(string='Fecha Expiración', required=True, readonly=True)
+    # Estatus de negocio para la lista/filtros: VIGENTE, VENCIDA,
+    # CANCELADA o EN SO (más borrador/finalizada). Almacenado para poder
+    # agrupar; sus dependencias son campos stored (la bandera de
+    # vencimiento la mantiene el cron horario).
+    x_estatus_reserva = fields.Selection([
+        ('borrador', 'Borrador'),
+        ('vigente', 'Vigente'),
+        ('vencida', 'Vencida'),
+        ('en_so', 'En SO'),
+        ('finalizada', 'Finalizada'),
+        ('cancelada', 'Cancelada'),
+    ], string='Estatus', compute='_compute_x_estatus_reserva', store=True)
+
+    @api.depends('state', 'x_expired_flag', 'sale_order_id')
+    def _compute_x_estatus_reserva(self):
+        for order in self:
+            if order.state == 'cancel':
+                order.x_estatus_reserva = 'cancelada'
+            elif order.sale_order_id:
+                order.x_estatus_reserva = 'en_so'
+            elif order.state == 'done':
+                order.x_estatus_reserva = 'finalizada'
+            elif order.state == 'confirmed':
+                order.x_estatus_reserva = (
+                    'vencida' if order.x_expired_flag else 'vigente')
+            else:
+                order.x_estatus_reserva = 'borrador'
+
     x_expiry_seller_notified = fields.Boolean(
         copy=False, help='Ya se avisó al vendedor del vencimiento.')
     x_client_expiry_notice_sent = fields.Boolean(

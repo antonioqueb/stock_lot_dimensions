@@ -46,9 +46,44 @@
                 <field name="dias_restantes" optional="show"
                        decoration-danger="dias_restantes &lt;= 2"
                        decoration-warning="dias_restantes &lt;= 5 and dias_restantes &gt; 2"/>
-                <field name="state" widget="badge"/>
+                <field name="x_estatus_reserva" widget="badge"
+                       decoration-success="x_estatus_reserva == 'vigente'"
+                       decoration-danger="x_estatus_reserva == 'vencida'"
+                       decoration-info="x_estatus_reserva == 'en_so'"
+                       decoration-muted="x_estatus_reserva in ('cancelada', 'finalizada')"/>
+                <field name="state" widget="badge" optional="hide"/>
                 <field name="sale_order_id" optional="hide"/>
             </list>
+        </field>
+    </record>
+
+    <record id="view_stock_lot_hold_order_search" model="ir.ui.view">
+        <field name="name">stock.lot.hold.order.search</field>
+        <field name="model">stock.lot.hold.order</field>
+        <field name="arch" type="xml">
+            <search string="Reservas">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <filter name="filter_vigente" string="Vigentes"
+                        domain="[('x_estatus_reserva', '=', 'vigente')]"/>
+                <filter name="filter_vencida" string="Vencidas"
+                        domain="[('x_estatus_reserva', '=', 'vencida')]"/>
+                <filter name="filter_en_so" string="En SO"
+                        domain="[('x_estatus_reserva', '=', 'en_so')]"/>
+                <filter name="filter_cancelada" string="Canceladas"
+                        domain="[('x_estatus_reserva', '=', 'cancelada')]"/>
+                <separator/>
+                <filter name="filter_mias" string="Mis reservas"
+                        domain="[('user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="group_estatus" string="Agrupar por estatus"
+                        context="{'group_by': 'x_estatus_reserva'}"/>
+                <filter name="group_vendedor" string="Agrupar por vendedor"
+                        context="{'group_by': 'user_id'}"/>
+                <filter name="group_cliente" string="Agrupar por cliente"
+                        context="{'group_by': 'partner_id'}"/>
+            </search>
         </field>
     </record>
 
