@@ -45,7 +45,7 @@ export class ResizePlates extends Component {
         }
         const res = await this.orm.call("product.product", "name_search", [], {
             name: q,
-            args: [["type", "=", "consu"]],
+            domain: [["type", "=", "consu"]],
             limit: 12,
         });
         this.state.productOptions = res.map(([id, name]) => ({ id, name }));
@@ -207,6 +207,10 @@ export class ResizePlates extends Component {
         } finally {
             this.state.applying = false;
         }
+    }
+
+    get totalM2() {
+        return this.state.plates.reduce((a, p) => a + (p.m2 || 0), 0);
     }
 
     fmt(n) {

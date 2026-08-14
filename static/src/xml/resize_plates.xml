@@ -2,12 +2,21 @@
 <templates xml:space="preserve">
     <t t-name="stock_lot_dimensions.ResizePlates" owl="1">
         <div class="o_slr_page">
+            <!-- Cabecera de marca -->
             <div class="o_slr_head">
                 <div class="o_slr_title">
-                    <i class="fa fa-arrows-alt me-2"/>Redimensionamiento de placas
-                    <small>corrige alto × ancho — el stock (m²) se ajusta solo, con rastro</small>
+                    <span class="o_slr_ic">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 3 15 3 21 9 21 3M3 21l6 0-6-6 0 6M21 21v-6l-6 6h6M3 3v6l6-6H3"/>
+                        </svg>
+                    </span>
+                    <span>
+                        Redimensionar placas
+                        <small>corrige alto × ancho — el stock en m² se ajusta solo, con rastro en el lote</small>
+                    </span>
                 </div>
                 <div class="o_slr_product">
+                    <i class="fa fa-search o_slr_search_ic"/>
                     <input type="text" class="form-control"
                            placeholder="Busca el producto (mínimo 2 letras)…"
                            t-att-value="state.productQuery"
@@ -21,16 +30,44 @@
                 </div>
             </div>
 
-            <div t-if="state.loading" class="p-4 text-center text-muted">
-                <i class="fa fa-circle-o-notch fa-spin me-2"/>Cargando placas…
+            <div t-if="state.loading" class="o_slr_empty">
+                <div class="big"><i class="fa fa-circle-o-notch fa-spin"/></div>
+                <b>Cargando placas…</b>
+            </div>
+
+            <div t-if="!state.loading and !state.product" class="o_slr_empty">
+                <div class="big"><i class="fa fa-search"/></div>
+                <b>Busca un producto para empezar</b>
+                <span>Se mostrarán sus placas en stock interno, agrupadas por bloque.</span>
             </div>
 
             <t t-if="!state.loading and state.product">
-                <div t-if="!state.plates.length" class="alert alert-warning m-3">
-                    Este producto no tiene placas con stock interno.
+                <div t-if="!state.plates.length" class="o_slr_empty">
+                    <div class="big"><i class="fa fa-inbox"/></div>
+                    <b>Este producto no tiene placas con stock interno</b>
                 </div>
 
                 <t t-if="state.plates.length">
+                    <!-- Chips de resumen -->
+                    <div class="o_slr_stats">
+                        <div class="o_slr_stat">
+                            <div class="l">Placas</div>
+                            <div class="v" t-esc="state.plates.length"/>
+                        </div>
+                        <div class="o_slr_stat">
+                            <div class="l">M² en stock</div>
+                            <div class="v" t-esc="fmt(totalM2)"/>
+                        </div>
+                        <div class="o_slr_stat">
+                            <div class="l">Seleccionadas</div>
+                            <div class="v blue" t-esc="selCount"/>
+                        </div>
+                        <div class="o_slr_stat">
+                            <div class="l">Cambios capturados</div>
+                            <div class="v amber" t-esc="changes.length"/>
+                        </div>
+                    </div>
+
                     <!-- Barra de lote: aplicar dimensiones a la selección -->
                     <div class="o_slr_batch">
                         <span class="o_slr_selcount">
@@ -47,18 +84,19 @@
                                t-on-input="(ev) => state.batchAncho = ev.target.value"/>
                         <button class="btn btn-secondary" t-att-disabled="!selCount"
                                 t-on-click="applyBatch">
-                            Aplicar a la selección
+                            <i class="fa fa-magic me-1"/>Aplicar a la selección
                         </button>
                         <span class="flex-grow-1"/>
                         <button class="btn btn-primary" t-att-disabled="state.applying or !changes.length"
                                 t-on-click="apply">
                             <i t-if="state.applying" class="fa fa-circle-o-notch fa-spin me-1"/>
+                            <i t-else="" class="fa fa-arrows-alt me-1"/>
                             Redimensionar (<t t-esc="changes.length"/>)
                         </button>
                     </div>
 
                     <div class="o_slr_grid">
-                        <table class="table table-sm table-hover o_stone_table mb-0">
+                        <table class="table table-sm mb-0">
                             <thead>
                                 <tr>
                                     <th class="text-center" style="width:36px;">
@@ -80,9 +118,9 @@
                                     <tr class="o_slr_block">
                                         <td colspan="8">
                                             <i class="fa fa-cubes me-1"/>Bloque:
-                                            <b t-esc="group.name"/>
-                                            <span class="text-muted ms-2">
-                                                (<t t-esc="group.plates.length"/> placas)
+                                            <t t-esc="group.name"/>
+                                            <span class="text-muted ms-2 fw-normal">
+                                                <t t-esc="group.plates.length"/> placas
                                             </span>
                                         </td>
                                     </tr>
@@ -94,35 +132,35 @@
                                                    t-on-click="() => this.toggle(p)"/>
                                         </td>
                                         <td>
-                                            <b t-esc="p.lot_name"/>
+                                            <span class="o_slr_lot" t-esc="p.lot_name"/>
                                             <i t-if="p.has_photo" class="fa fa-camera ms-1 text-muted"
                                                title="Tiene fotografía"/>
                                             <span t-if="p.reserved" class="badge text-bg-warning ms-1"
                                                   t-att-title="'Reservado: ' + fmt(p.reserved) + ' m²'">R</span>
                                         </td>
                                         <td class="text-muted" t-esc="p.location_name"/>
-                                        <td class="text-end">
+                                        <td class="text-end o_slr_dims">
                                             <t t-esc="fmt(p.alto)"/> × <t t-esc="fmt(p.ancho)"/>
                                         </td>
-                                        <td class="text-end" t-esc="fmt(p.m2)"/>
+                                        <td class="text-end o_slr_m2" t-esc="fmt(p.m2)"/>
                                         <td class="text-end">
                                             <input type="number" step="0.001" min="0"
-                                                   class="form-control o_slr_dim"
+                                                   class="form-control form-control-sm o_slr_dim"
                                                    t-att-placeholder="fmt(p.alto)"
                                                    t-att-value="newVal(p, 'alto')"
                                                    t-on-input="(ev) => this.edit(p, 'alto', ev)"/>
                                         </td>
                                         <td class="text-end">
                                             <input type="number" step="0.001" min="0"
-                                                   class="form-control o_slr_dim"
+                                                   class="form-control form-control-sm o_slr_dim"
                                                    t-att-placeholder="fmt(p.ancho)"
                                                    t-att-value="newVal(p, 'ancho')"
                                                    t-on-input="(ev) => this.edit(p, 'ancho', ev)"/>
                                         </td>
                                         <td class="text-end">
-                                            <b t-if="newM2(p) !== null"
-                                               t-att-class="Math.abs(newM2(p) - p.m2) > 0.0005 ? 'text-primary' : ''"
-                                               t-esc="fmt(newM2(p))"/>
+                                            <span t-if="newM2(p) !== null"
+                                                  t-attf-class="o_slr_newm2 {{ Math.abs(newM2(p) - p.m2) > 0.0005 ? 'changed' : '' }}"
+                                                  t-esc="fmt(newM2(p))"/>
                                             <span t-else="" class="text-muted">—</span>
                                         </td>
                                     </tr>

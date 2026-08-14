@@ -9,7 +9,7 @@
 
     <menuitem id="menu_resize_plates"
               name="Redimensionar placas"
-              parent="stock.menu_stock_warehouse_mgmt"
+              parent="stock.menu_stock_adjustments"
               action="action_resize_plates"
               groups="stock.group_stock_manager"
               sequence="82"/>
