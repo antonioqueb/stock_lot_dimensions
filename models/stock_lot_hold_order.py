@@ -526,34 +526,76 @@ class StockLotHoldOrder(models.Model):
         if not self.hold_line_ids:
             raise UserError('No hay líneas de reserva para convertir.')
 
+        # El guard es POR PLACA, no por registro de hold: la línea
+        # acumula holds HISTÓRICOS (mover una placa de bin cancela el
+        # hold viejo y crea uno nuevo activo). Basta un hold activo por
+        # lote. Si alguna placa de verdad perdió su reserva (vencida,
+        # cancelada o apartada por otro), NO se bloquea a ciegas: se
+        # informa QUÉ placas son y el vendedor decide — convertir solo
+        # con lo disponible (contexto hold_convert_drop_unavailable, lo
+        # manda el wizard de confirmación) o actualizar su selección.
+        drop_unavailable = self.env.context.get(
+            'hold_convert_drop_unavailable')
+        skip_line_ids = set()
+        missing_report = []
         for line in self.hold_line_ids:
             if line.product_id.type == 'service':
                 continue
-            # El guard es POR PLACA, no por registro de hold: la línea
-            # acumula holds HISTÓRICOS (p. ej. al mover una placa de
-            # ubicación el hold viejo queda 'cancelado' y nace uno nuevo
-            # 'activo' en el bin destino). Exigir que todos los registros
-            # estén activos era un callejón sin salida: renovar jamás
-            # reactiva cancelados y la conversión quedaba bloqueada
-            # eternamente. Basta que CADA lote tenga un hold activo.
             active_lot_ids = set(
                 line.hold_ids.filtered(
                     lambda h: h.estado == 'activo').mapped('lot_id').ids)
-            missing = [
-                lot.name for lot in line.lot_ids
-                if lot.id not in active_lot_ids
-            ]
-            if missing:
-                raise UserError(
-                    'Estas placas ya no tienen una reserva activa: %s.\n\n'
-                    'Usa Renovar para reactivarlas; si alguna ya fue '
-                    'apartada o vendida por otro, quítala de la orden de '
-                    'reserva antes de convertir.' % ', '.join(missing))
+            missing_lots = line.lot_ids.filtered(
+                lambda l: l.id not in active_lot_ids)
+            if not missing_lots:
+                continue
+            if not drop_unavailable:
+                missing_report.append('%s: %s' % (
+                    line.product_id.display_name,
+                    ', '.join(missing_lots.mapped('name'))))
+                continue
+            # Poda autorizada: fuera las placas sin reserva, la línea
+            # sigue con lo disponible (m² ajustados por dimensiones).
+            keep = line.lot_ids - missing_lots
+            dropped_area = sum(
+                (l.x_alto or 0.0) * (l.x_ancho or 0.0)
+                for l in missing_lots)
+            vals = {'lot_ids': [(6, 0, keep.ids)]}
+            if 'cantidad_m2' in line._fields and dropped_area:
+                vals['cantidad_m2'] = max(
+                    (line.cantidad_m2 or 0.0) - dropped_area, 0.0)
+            line.with_context(skip_hold_validation=True).write(vals)
+            self.message_post(body=(
+                '✂️ Conversión parcial: se excluyeron placas SIN reserva '
+                'activa de %s: %s (%.2f m²).' % (
+                    line.product_id.display_name,
+                    ', '.join(missing_lots.mapped('name')),
+                    dropped_area)))
+            if not keep:
+                skip_line_ids.add(line.id)
+
+        if missing_report:
+            wiz = self.env['stock.lot.hold.convert.confirm'].create({
+                'order_id': self.id,
+                'detail': (
+                    'Estas placas YA NO tienen una reserva activa '
+                    '(vencida, cancelada o apartada/vendida por otro):\n\n'
+                    + '\n'.join('• %s' % m for m in missing_report)),
+            })
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Placas sin reserva activa',
+                'res_model': 'stock.lot.hold.convert.confirm',
+                'res_id': wiz.id,
+                'view_mode': 'form',
+                'target': 'new',
+            }
 
         product_groups = {}
         services_list = []
 
         for line in self.hold_line_ids:
+            if line.id in skip_line_ids:
+                continue
             if line.product_id.type == 'service':
                 services_list.append({
                     'product_id': line.product_id.id,
@@ -1150,3 +1192,31 @@ class StockLotHoldOrderLine(models.Model):
             self.quant_id = False
             if not self.cantidad_m2:
                 self.cantidad_m2 = 1.0
+
+class StockLotHoldConvertConfirm(models.TransientModel):
+    _name = 'stock.lot.hold.convert.confirm'
+    _description = 'Confirmación: convertir hold con placas sin reserva'
+
+    order_id = fields.Many2one(
+        'stock.lot.hold.order', required=True, ondelete='cascade')
+    detail = fields.Text(readonly=True)
+
+    def action_convert_available(self):
+        """Convertir SOLO con la selección disponible: poda las placas sin
+        reserva activa y sigue con la conversión normal."""
+        self.ensure_one()
+        return self.order_id.with_context(
+            hold_convert_drop_unavailable=True,
+        ).action_convert_to_sale_order()
+
+    def action_update_selection(self):
+        """El vendedor prefiere depurar su selección a mano: se abre la
+        orden de reserva y no se convierte nada."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'stock.lot.hold.order',
+            'res_id': self.order_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }

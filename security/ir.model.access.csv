@@ -13,3 +13,4 @@ access_stock_lot_hold_order_line_seller,stock.lot.hold.order.line.seller,model_s
 access_stock_lot_image_delete_wizard,stock.lot.image.delete.wizard,model_stock_lot_image_delete_wizard,stock.group_stock_manager,1,1,1,1
 access_res_company_bank_info_user,res.company.bank.info.user,model_res_company_bank_info,base.group_user,1,0,0,0
 access_res_company_bank_info_system,res.company.bank.info.system,model_res_company_bank_info,base.group_system,1,1,1,1
+access_stock_lot_hold_convert_confirm,stock.lot.hold.convert.confirm,model_stock_lot_hold_convert_confirm,base.group_user,1,1,1,1
