@@ -529,9 +529,26 @@ class StockLotHoldOrder(models.Model):
         for line in self.hold_line_ids:
             if line.product_id.type == 'service':
                 continue
-            inactive = line.hold_ids.filtered(lambda h: h.estado != 'activo')
-            if inactive:
-                raise UserError('Hay reservas que ya no están activas. Renueve antes de convertir.')
+            # El guard es POR PLACA, no por registro de hold: la línea
+            # acumula holds HISTÓRICOS (p. ej. al mover una placa de
+            # ubicación el hold viejo queda 'cancelado' y nace uno nuevo
+            # 'activo' en el bin destino). Exigir que todos los registros
+            # estén activos era un callejón sin salida: renovar jamás
+            # reactiva cancelados y la conversión quedaba bloqueada
+            # eternamente. Basta que CADA lote tenga un hold activo.
+            active_lot_ids = set(
+                line.hold_ids.filtered(
+                    lambda h: h.estado == 'activo').mapped('lot_id').ids)
+            missing = [
+                lot.name for lot in line.lot_ids
+                if lot.id not in active_lot_ids
+            ]
+            if missing:
+                raise UserError(
+                    'Estas placas ya no tienen una reserva activa: %s.\n\n'
+                    'Usa Renovar para reactivarlas; si alguna ya fue '
+                    'apartada o vendida por otro, quítala de la orden de '
+                    'reserva antes de convertir.' % ', '.join(missing))
 
         product_groups = {}
         services_list = []
