@@ -294,12 +294,28 @@ class StockLotHold(models.Model):
         # material se mantiene (sus holds NO se expiran); en el segundo,
         # la orden misma libera todo y deja el detalle en su log.
         HoldOrder = self.env['stock.lot.hold.order'].sudo()
+
+        # T-1 PARA EL CLIENTE: reservas que vencen dentro de las próximas
+        # 24 horas — correo con sesgo de escasez (una sola vez; renovar
+        # re-arma el aviso).
+        from datetime import timedelta
+        t1_orders = HoldOrder.search([
+            ('state', '=', 'confirmed'),
+            ('x_client_expiry_notice_sent', '=', False),
+            ('fecha_expiracion', '>', ahora),
+            ('fecha_expiracion', '<=', ahora + timedelta(hours=24)),
+        ])
+        if t1_orders:
+            t1_orders._som_notify_client_expiry_tomorrow()
+
         expired_orders = HoldOrder.search([
             ('state', '=', 'confirmed'),
             ('fecha_expiracion', '<=', ahora),
         ])
         if expired_orders:
             kept_ids = expired_orders._som_process_expiration_cycle()
+            # VENDEDOR: actividad en Odoo + correo por cada reserva vencida
+            expired_orders._som_notify_seller_expired()
             if kept_ids:
                 holds_expirados = holds_expirados.filtered(
                     lambda h: h.id not in kept_ids)

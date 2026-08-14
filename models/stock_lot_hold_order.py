@@ -47,6 +47,11 @@ class StockLotHoldOrder(models.Model):
         readonly=True,
     )
     fecha_expiracion = fields.Datetime(string='Fecha Expiración', required=True, readonly=True)
+    x_expiry_seller_notified = fields.Boolean(
+        copy=False, help='Ya se avisó al vendedor del vencimiento.')
+    x_client_expiry_notice_sent = fields.Boolean(
+        copy=False, help='Ya se envió al cliente el aviso de que su reserva '
+        'vence en 1 día.')
     state = fields.Selection([
         ('draft', 'Borrador'),
         ('confirmed', 'Confirmada'),
@@ -504,11 +509,161 @@ class StockLotHoldOrder(models.Model):
 
             order.fecha_expiracion = nueva_expiracion
             order.x_expired_flag = False
+            # Renovar re-arma los avisos: el próximo vencimiento vuelve a
+            # notificar al vendedor y el T-1 al cliente.
+            order.x_expiry_seller_notified = False
+            order.x_client_expiry_notice_sent = False
             order.message_post(body=(
                 f'Reserva renovada hasta {som_format_date(nueva_expiracion, with_time=True)}: '
                 f'{len(active_holds)} hold(s) extendido(s)'
                 + (f', {len(expired_holds)} reactivado(s).' if expired_holds else '.')
             ))
+
+    # ------------------------------------------------------------------
+    #  AVISOS DE VENCIMIENTO
+    # ------------------------------------------------------------------
+    def _som_expiry_local_str(self):
+        self.ensure_one()
+        import pytz
+        if not self.fecha_expiracion:
+            return ''
+        local = pytz.utc.localize(self.fecha_expiracion).astimezone(
+            pytz.timezone('America/Monterrey'))
+        return som_format_date(local, with_time=True)
+
+    def _som_hold_lines_html(self):
+        self.ensure_one()
+        rows = []
+        for line in self.hold_line_ids:
+            if line.product_id.type == 'service':
+                continue
+            rows.append(
+                '<li><b>%s</b> — %s placa(s), %.2f m²</li>' % (
+                    line.x_mask_name or line.product_id.display_name,
+                    len(line.lot_ids),
+                    line.cantidad_m2 or 0.0))
+        return '<ul>%s</ul>' % ''.join(rows) if rows else ''
+
+    def _som_send_plain_mail(self, email_to, subject, body_html):
+        if not email_to:
+            return False
+        try:
+            self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'body_html': body_html,
+                'email_to': email_to,
+                'email_from': (
+                    self.company_id.email
+                    or self.env.company.email or False),
+                'auto_delete': True,
+            }).send()
+            return True
+        except Exception:
+            _logger.exception(
+                '[HOLD NOTIFY] No se pudo enviar el correo "%s" a %s.',
+                subject, email_to)
+            return False
+
+    def _som_notify_seller_expired(self):
+        """Reserva VENCIDA: aviso al VENDEDOR por Odoo (actividad) y por
+        correo. Lo dispara el cron al primer vencimiento."""
+        for order in self:
+            if order.x_expiry_seller_notified or not order.user_id:
+                continue
+            seller = order.user_id
+            detalle = order._som_hold_lines_html()
+            try:
+                order.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    summary='Reserva VENCIDA: %s (%s)' % (
+                        order.name, order.partner_id.display_name or ''),
+                    note=(
+                        '<p><b>⏰ La reserva %s venció</b> (%s).</p>'
+                        '<p>Las placas quedaron LIBERADAS al inventario, '
+                        'pero se conservan en la orden: <b>Renovar</b> las '
+                        're-aparta si siguen libres. Al segundo vencimiento '
+                        'el material se eliminará de la reserva.</p>%s'
+                    ) % (order.name, order._som_expiry_local_str(), detalle),
+                    user_id=seller.id,
+                )
+            except Exception:
+                _logger.exception(
+                    '[HOLD NOTIFY] Sin actividad de vencimiento para %s.',
+                    order.name)
+            order._som_send_plain_mail(
+                seller.email,
+                '⏰ Reserva vencida: %s — %s' % (
+                    order.name, order.partner_id.display_name or ''),
+                (
+                    '<p>Hola %s,</p>'
+                    '<p>La reserva <b>%s</b> de <b>%s</b> venció el '
+                    '<b>%s</b> (hora de Monterrey).</p>'
+                    '<p>Las placas quedaron liberadas al inventario pero '
+                    'siguen listadas en la orden: si el cliente continúa '
+                    'interesado, <b>renuévala cuanto antes</b> — otro '
+                    'vendedor puede tomarlas en cualquier momento. Al '
+                    'segundo vencimiento el material se eliminará de la '
+                    'reserva.</p>%s'
+                ) % (
+                    seller.name, order.name,
+                    order.partner_id.display_name or '',
+                    order._som_expiry_local_str(),
+                    order._som_hold_lines_html(),
+                ))
+            order.x_expiry_seller_notified = True
+
+    def _som_notify_client_expiry_tomorrow(self):
+        """T-1: correo al CLIENTE con sesgo de escasez — su reserva vence
+        mañana y el material único se libera para cualquier otro."""
+        for order in self:
+            if order.x_client_expiry_notice_sent:
+                continue
+            email = order.partner_id.email
+            if not email:
+                order.x_client_expiry_notice_sent = True
+                order.message_post(body=(
+                    '⏳ Aviso T-1 al cliente OMITIDO: el contacto no tiene '
+                    'correo registrado.'))
+                continue
+            seller = order.user_id
+            contacto = ''
+            if seller:
+                contacto = (
+                    '<p>Para extender tu reserva o confirmar tu pedido, '
+                    'responde este correo o contacta a <b>%s</b>%s.</p>'
+                ) % (
+                    seller.name,
+                    (' (%s)' % seller.email) if seller.email else '',
+                )
+            ok = order._som_send_plain_mail(
+                email,
+                '⏳ Tu reserva vence MAÑANA — el material se liberará',
+                (
+                    '<p>Estimado(a) <b>%s</b>,</p>'
+                    '<p>Tu reserva <b>%s</b> vence el <b>%s</b> '
+                    '(hora de Monterrey).</p>'
+                    '%s'
+                    '<p><b>Importante:</b> las placas de piedra natural son '
+                    'piezas ÚNICAS e irrepetibles — cada bloque tiene vetas '
+                    'y tonos que no vuelven a darse. Al vencer tu reserva, '
+                    'este material queda <b>disponible de inmediato para '
+                    'cualquier otro cliente</b> y no podemos garantizar que '
+                    'encuentres piezas equivalentes después.</p>'
+                    '%s'
+                    '<p>Saludos,<br/>%s</p>'
+                ) % (
+                    order.partner_id.name or '',
+                    order.name,
+                    order._som_expiry_local_str(),
+                    order._som_hold_lines_html(),
+                    contacto,
+                    order.company_id.name or 'SOM Group',
+                ))
+            if ok:
+                order.x_client_expiry_notice_sent = True
+                order.message_post(body=(
+                    '⏳ Aviso de vencimiento T-1 enviado al cliente (%s).'
+                ) % email)
 
     def action_convert_to_sale_order(self):
         self.ensure_one()
