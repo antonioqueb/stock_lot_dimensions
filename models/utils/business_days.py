@@ -79,7 +79,14 @@ class BusinessDaysCalculator:
         Returns:
             datetime: Fecha de expiración
         """
+        # HORA DE MONTERREY, siempre: el conteo de días hábiles se hace en
+        # America/Monterrey (un viernes 7pm local es viernes, aunque en UTC
+        # ya sea sábado) y el resultado se guarda de vuelta en UTC naive.
+        import pytz
+        tz = pytz.timezone('America/Monterrey')
         if start_date is None:
             start_date = fields.Datetime.now()
-        
-        return BusinessDaysCalculator.add_business_days(start_date, days)
+        local = pytz.utc.localize(start_date).astimezone(tz) \
+            if start_date.tzinfo is None else start_date.astimezone(tz)
+        local_exp = BusinessDaysCalculator.add_business_days(local, days)
+        return local_exp.astimezone(pytz.utc).replace(tzinfo=None)

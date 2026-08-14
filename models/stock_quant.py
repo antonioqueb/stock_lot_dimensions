@@ -176,9 +176,13 @@ class StockQuant(models.Model):
         if operator not in ['=', '!=']:
             raise UserError('Operación no soportada para el filtro de Hold.')
 
-        # Buscar todos los holds activos
+        # Buscar todos los holds activos VIGENTES (la fecha manda: un
+        # hold vencido ya no bloquea aunque el cron no lo haya marcado)
         holds_activos = self.env['stock.lot.hold'].sudo().search([
-            ('estado', '=', 'activo')
+            ('estado', '=', 'activo'),
+            '|',
+            ('fecha_expiracion', '=', False),
+            ('fecha_expiracion', '>', fields.Datetime.now()),
         ])
         
         # Obtener IDs de los quants afectados
@@ -236,9 +240,15 @@ class StockQuant(models.Model):
         if not company_ids:
             company_ids = [self.env.company.id]
 
+        # LA FECHA MANDA: un hold cuya fecha de expiración ya pasó está
+        # MUERTO aunque el cron horario no lo haya marcado todavía — la
+        # placa se libera al instante del vencimiento, sí o sí.
         domain = [
             ('quant_id', 'in', quants_to_process.ids),
             ('estado', '=', 'activo'),
+            '|',
+            ('fecha_expiracion', '=', False),
+            ('fecha_expiracion', '>', fields.Datetime.now()),
             ('company_id', 'in', company_ids) # Ojo con lógica multi-company
         ]
         

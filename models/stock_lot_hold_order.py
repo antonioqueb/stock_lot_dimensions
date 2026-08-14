@@ -228,14 +228,17 @@ class StockLotHoldOrder(models.Model):
                 order.x_expired_count += 1
                 if order.x_expired_count == 1:
                     order.message_post(body=(
-                        '⚠ RESERVA VENCIDA (1ª vez). El material se '
-                        'mantiene apartado. Renueva para quitar la franja; '
-                        'al SEGUNDO vencimiento el material se eliminará '
-                        'automáticamente de la reserva.'))
+                        '⚠ RESERVA VENCIDA (1ª vez). Las placas quedaron '
+                        'LIBERADAS al inventario (la fecha manda), pero se '
+                        'conservan en esta orden: Renovar las re-aparta si '
+                        'siguen libres. Al SEGUNDO vencimiento el material '
+                        'se eliminará automáticamente de la reserva.'))
 
             if order.x_expired_count <= 1:
-                # Primer vencimiento: el material se mantiene.
-                kept_hold_ids.update(active_holds.ids)
+                # Primer vencimiento: las LÍNEAS se conservan en la orden,
+                # pero los holds SÍ expiran — vencido = placa libre, sí o
+                # sí. (Antes se mantenían activos y el material seguía
+                # bloqueado para todos, contra la regla de negocio.)
                 continue
 
             # Segundo vencimiento: registrar el detalle y eliminar TODO el
