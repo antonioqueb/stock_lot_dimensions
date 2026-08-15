@@ -566,11 +566,84 @@ class StockLotHoldOrder(models.Model):
             if line.product_id.type == 'service':
                 continue
             rows.append(
-                '<li><b>%s</b> — %s placa(s), %.2f m²</li>' % (
+                '<li style="margin:3px 0;"><b style="color:#2C221B;">%s</b> '
+                '— %s placa(s), %.2f m²</li>' % (
                     line.x_mask_name or line.product_id.display_name,
                     len(line.lot_ids),
                     line.cantidad_m2 or 0.0))
-        return '<ul>%s</ul>' % ''.join(rows) if rows else ''
+        if not rows:
+            return ''
+        return (
+            '<div style="background:#ECE9E1;padding:16px 28px;'
+            'margin:0 0 14px;">'
+            '<div style="font-size:10px;letter-spacing:.2em;'
+            'text-transform:uppercase;color:#8A8072;margin-bottom:6px;">'
+            '( Material reservado )</div>'
+            '<ul style="margin:0;padding-left:18px;">%s</ul></div>'
+        ) % ''.join(rows)
+
+    def _som_branded_mail_html(self, kicker, title, subtitle, inner_html):
+        """Envuelve el contenido en la plantilla de correo (SOM) del manual
+        de identidad: White Coffee #E2DED5, Raisin Black #2C221B, grotesca
+        con tracking amplio y etiquetas entre paréntesis (eco del wordmark).
+        Mismo esqueleto que confirmación/cotización/OC."""
+        self.ensure_one()
+        company = self.company_id or self.env.company
+        contact_bits = [company.name or 'SOM Group']
+        if company.phone:
+            contact_bits.append(company.phone)
+        if company.email:
+            contact_bits.append(company.email)
+        return (
+            '<div style="margin:0;padding:40px 14px;background-color:#E2DED5;'
+            "font-family:'Anderson Grotesk','Helvetica Neue',Helvetica,Arial,"
+            'sans-serif;">'
+            '<table role="presentation" width="100%%" cellpadding="0" '
+            'cellspacing="0" style="max-width:620px;margin:0 auto;'
+            'background:#ffffff;">'
+            '<tr><td style="height:4px;background:#2C221B;font-size:0;'
+            'line-height:0;">&#160;</td></tr>'
+            '<tr><td style="padding:36px 48px 0;">'
+            '<table role="presentation" width="100%%" cellpadding="0" '
+            'cellspacing="0"><tr>'
+            '<td style="vertical-align:middle;">'
+            '<img src="%(base)s/theme_list_modern/static/img/logosom.png" '
+            'alt="(SOM)" style="height:34px;width:auto;display:block;"/></td>'
+            '<td style="vertical-align:middle;text-align:right;font-size:10px;'
+            'letter-spacing:.28em;text-transform:uppercase;color:#8A8072;'
+            'white-space:nowrap;">( %(kicker)s )</td>'
+            '</tr></table>'
+            '<div style="margin-top:26px;border-top:1px solid #2C221B;"></div>'
+            '</td></tr>'
+            '<tr><td style="padding:30px 48px 0;">'
+            '<div style="font-size:34px;font-weight:300;letter-spacing:.04em;'
+            'color:#2C221B;">%(title)s</div>'
+            '<div style="font-size:11px;letter-spacing:.22em;'
+            'text-transform:uppercase;color:#8A8072;margin-top:8px;">'
+            '%(subtitle)s</div>'
+            '</td></tr>'
+            '<tr><td style="padding:26px 48px 40px;font-size:14px;'
+            'color:#3D352C;line-height:1.85;">%(inner)s</td></tr>'
+            '<tr><td style="padding:26px 48px;background:#2C221B;">'
+            '<div style="font-size:13px;letter-spacing:.3em;color:#E2DED5;">'
+            '(SOM)<span style="font-size:9px;vertical-align:super;">&#174;'
+            '</span></div>'
+            '<div style="font-size:9px;letter-spacing:.3em;'
+            'text-transform:uppercase;color:#A79C8C;margin-top:6px;'
+            'font-style:italic;">Recubrimientos &#218;nicos</div>'
+            '<div style="font-size:9px;letter-spacing:.18em;'
+            'text-transform:uppercase;color:#A79C8C;margin-top:14px;'
+            'line-height:2;">%(contact)s</div>'
+            '</td></tr>'
+            '</table></div>'
+        ) % {
+            'base': self.get_base_url(),
+            'kicker': kicker,
+            'title': title,
+            'subtitle': subtitle,
+            'inner': inner_html,
+            'contact': ' &#183; '.join(contact_bits),
+        }
 
     def _som_send_plain_mail(self, email_to, subject, body_html):
         if not email_to:
@@ -622,22 +695,27 @@ class StockLotHoldOrder(models.Model):
                 seller.email,
                 '⏰ Reserva vencida: %s — %s' % (
                     order.name, order.partner_id.display_name or ''),
-                (
-                    '<p>Hola %s,</p>'
-                    '<p>La reserva <b>%s</b> de <b>%s</b> venció el '
-                    '<b>%s</b> (hora de Monterrey).</p>'
-                    '<p>Las placas quedaron liberadas al inventario pero '
-                    'siguen listadas en la orden: si el cliente continúa '
-                    'interesado, <b>renuévala cuanto antes</b> — otro '
-                    'vendedor puede tomarlas en cualquier momento. Al '
-                    'segundo vencimiento el material se eliminará de la '
-                    'reserva.</p>%s'
-                ) % (
-                    seller.name, order.name,
-                    order.partner_id.display_name or '',
-                    order._som_expiry_local_str(),
-                    order._som_hold_lines_html(),
-                ))
+                order._som_branded_mail_html(
+                    kicker='Reserva vencida',
+                    title=order.name,
+                    subtitle='Venci&#243; el %s &#183; hora de Monterrey' % (
+                        order._som_expiry_local_str()),
+                    inner_html=(
+                        '<p style="margin:0 0 14px;">Hola %s,</p>'
+                        '<p style="margin:0 0 14px;">La reserva <b>%s</b> de '
+                        '<b>%s</b> venció y las placas quedaron '
+                        '<b>liberadas al inventario</b>, aunque siguen '
+                        'listadas en la orden.</p>'
+                        '<p style="margin:0 0 14px;">Si el cliente continúa '
+                        'interesado, <b>renuévala cuanto antes</b> — otro '
+                        'vendedor puede tomarlas en cualquier momento. Al '
+                        'segundo vencimiento el material se eliminará de la '
+                        'reserva.</p>%s'
+                    ) % (
+                        seller.name, order.name,
+                        order.partner_id.display_name or '',
+                        order._som_hold_lines_html(),
+                    )))
             order.x_expiry_seller_notified = True
 
     def _som_notify_client_expiry_tomorrow(self):
@@ -666,27 +744,37 @@ class StockLotHoldOrder(models.Model):
             ok = order._som_send_plain_mail(
                 email,
                 '⏳ Tu reserva vence MAÑANA — el material se liberará',
-                (
-                    '<p>Estimado(a) <b>%s</b>,</p>'
-                    '<p>Tu reserva <b>%s</b> vence el <b>%s</b> '
-                    '(hora de Monterrey).</p>'
-                    '%s'
-                    '<p><b>Importante:</b> las placas de piedra natural son '
-                    'piezas ÚNICAS e irrepetibles — cada bloque tiene vetas '
-                    'y tonos que no vuelven a darse. Al vencer tu reserva, '
-                    'este material queda <b>disponible de inmediato para '
-                    'cualquier otro cliente</b> y no podemos garantizar que '
-                    'encuentres piezas equivalentes después.</p>'
-                    '%s'
-                    '<p>Saludos,<br/>%s</p>'
-                ) % (
-                    order.partner_id.name or '',
-                    order.name,
-                    order._som_expiry_local_str(),
-                    order._som_hold_lines_html(),
-                    contacto,
-                    order.company_id.name or 'SOM Group',
-                ))
+                order._som_branded_mail_html(
+                    kicker='Tu reserva vence ma&#241;ana',
+                    title=order.name,
+                    subtitle='Vence el %s &#183; hora de Monterrey' % (
+                        order._som_expiry_local_str()),
+                    inner_html=(
+                        '<p style="margin:0 0 14px;">Estimado(a) '
+                        '<b>%s</b>,</p>'
+                        '<p style="margin:0 0 14px;">Tu reserva <b>%s</b> '
+                        'está por vencer.</p>'
+                        '%s'
+                        '<p style="margin:0 0 14px;"><b>Importante:</b> las '
+                        'placas de piedra natural son piezas ÚNICAS e '
+                        'irrepetibles — cada bloque tiene vetas y tonos que '
+                        'no vuelven a darse. Al vencer tu reserva, este '
+                        'material queda <b>disponible de inmediato para '
+                        'cualquier otro cliente</b> y no podemos garantizar '
+                        'que encuentres piezas equivalentes después.</p>'
+                        '%s'
+                        '<p style="margin:22px 0 0;font-style:italic;'
+                        'color:#2C221B;">No solo cubrimos superficies — '
+                        'creamos espacios que inspiran.</p>'
+                        '<p style="margin:14px 0 0;font-size:13px;">Saludos,'
+                        '<br/><span style="font-weight:600;">%s</span></p>'
+                    ) % (
+                        order.partner_id.name or '',
+                        order.name,
+                        order._som_hold_lines_html(),
+                        contacto,
+                        order.company_id.name or 'SOM Group',
+                    )))
             if ok:
                 order.x_client_expiry_notice_sent = True
                 order.message_post(body=(
