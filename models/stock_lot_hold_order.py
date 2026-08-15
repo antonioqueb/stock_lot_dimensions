@@ -396,6 +396,15 @@ class StockLotHoldOrder(models.Model):
 
             order.state = 'confirmed'
 
+            # Aviso al cliente con la fecha exacta de vencimiento; un fallo
+            # de correo jamás debe revertir la confirmación.
+            try:
+                order._som_notify_client_hold_confirmed()
+            except Exception:
+                _logger.exception(
+                    '[HOLD NOTIFY] Sin correo de confirmación para %s.',
+                    order.name)
+
     def _create_hold_for_line_lot(self, line, lot):
         """Crea (y liga a la línea) el hold de una placa, con las mismas
         validaciones de la confirmación: quant con stock y placa sin hold
@@ -788,6 +797,83 @@ class StockLotHoldOrder(models.Model):
                 order.message_post(body=(
                     '⏳ Aviso de vencimiento T-1 enviado al cliente (%s).'
                 ) % email)
+
+    def action_send_hold_confirmation_email(self):
+        """Botón: (re)envía al cliente el correo de reserva confirmada con
+        la fecha exacta de vencimiento."""
+        for order in self:
+            if order.state != 'confirmed':
+                raise UserError(
+                    'Solo se puede enviar el correo de una reserva '
+                    'confirmada.')
+            if not order.partner_id.email:
+                raise UserError(
+                    'El cliente %s no tiene correo registrado.'
+                    % order.partner_id.display_name)
+            order._som_notify_client_hold_confirmed(manual=True)
+        return True
+
+    def _som_notify_client_hold_confirmed(self, manual=False):
+        """Reserva CONFIRMADA: correo al cliente con la fecha y hora
+        exactas de vencimiento (hora de Monterrey). Se dispara al
+        confirmar y con el botón Enviar correo."""
+        for order in self:
+            email = order.partner_id.email
+            vence = order._som_expiry_local_str()
+            if not email:
+                order.message_post(body=(
+                    '📩 Correo de reserva confirmada OMITIDO: el contacto '
+                    'no tiene correo registrado.'))
+                continue
+            seller = order.user_id
+            contacto = ''
+            if seller:
+                contacto = (
+                    '<p style="margin:0 0 14px;">Para extender tu reserva '
+                    'o confirmar tu pedido antes de esa fecha, responde '
+                    'este correo o contacta a <b>%s</b>%s.</p>'
+                ) % (
+                    seller.name,
+                    (' (%s)' % seller.email) if seller.email else '',
+                )
+            ok = order._som_send_plain_mail(
+                email,
+                'Tu reserva %s está confirmada — vence el %s' % (
+                    order.name, vence),
+                order._som_branded_mail_html(
+                    kicker='Reserva confirmada',
+                    title='Tu material est&#225; reservado.',
+                    subtitle='%s &#183; vence el %s &#183; '
+                             'hora de Monterrey' % (order.name, vence),
+                    inner_html=(
+                        '<p style="margin:0 0 14px;">Estimado(a) '
+                        '<b>%s</b>,</p>'
+                        '<p style="margin:0 0 14px;">Hemos apartado el '
+                        'siguiente material a tu nombre. Tu reserva '
+                        'permanecerá vigente hasta el <b>%s</b> (hora de '
+                        'Monterrey); llegada esa fecha, el material se '
+                        'libera automáticamente y queda disponible para '
+                        'cualquier otro cliente.</p>'
+                        '%s'
+                        '%s'
+                        '<p style="margin:22px 0 0;font-style:italic;'
+                        'color:#2C221B;">No solo cubrimos superficies — '
+                        'creamos espacios que inspiran.</p>'
+                        '<p style="margin:14px 0 0;font-size:13px;">'
+                        'Saludos,<br/><span style="font-weight:600;">%s'
+                        '</span></p>'
+                    ) % (
+                        order.partner_id.name or '',
+                        vence,
+                        order._som_hold_lines_html(),
+                        contacto,
+                        order.company_id.name or 'SOM Group',
+                    )))
+            if ok:
+                order.message_post(body=(
+                    '📩 Correo de reserva confirmada enviado a %s '
+                    '(vence el %s)%s.'
+                ) % (email, vence, ' — envío manual' if manual else ''))
 
     def action_convert_to_sale_order(self):
         self.ensure_one()

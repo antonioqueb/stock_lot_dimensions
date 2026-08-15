@@ -98,6 +98,7 @@
                             invisible="state != 'confirmed' or sale_order_id"
                             confirm="¿Convertir esta reserva en orden de venta? Se liberarán los apartados automáticamente."/>
                     <button name="action_renew" string="Renovar 5 Días" type="object" class="btn-warning" invisible="state != 'confirmed' or sale_order_id"/>
+                    <button name="action_send_hold_confirmation_email" string="Enviar Correo" type="object" icon="fa-envelope-o" invisible="state != 'confirmed'"/>
                     <button name="action_done" string="Finalizar" type="object" invisible="state != 'confirmed' or sale_order_id"/>
                     <button name="action_cancel" string="Cancelar" type="object" invisible="state in ('done', 'cancel')"/>
                     <field name="state" widget="statusbar"/>
