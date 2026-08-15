@@ -2,16 +2,21 @@
 <odoo>
     <!-- Correo de reserva confirmada (en español, como todos los correos
          de la casa): template REAL de mail para que el botón Enviar Correo
-         abra el compositor con preview y destinatario editable. El mismo
-         template lo usa el envío automático al confirmar, y adjunta el
-         reporte de detalle de la reserva. -->
+         abra el compositor con preview y destinatario editable.
+
+         ÚNICO disparador: el botón Enviar Correo. Confirmar la reserva NO
+         manda correo (15 ago 2026).
+
+         El cuerpo lleva solo el RESUMEN comercial (concepto, precio
+         colocado, importe, subtotal, IVA y total); el desglose placa por
+         placa va en el PDF adjunto. -->
     <record id="mail_template_hold_confirmed" model="mail.template">
         <field name="name">Reserva: confirmación al cliente</field>
         <field name="model_id" ref="stock_lot_dimensions.model_stock_lot_hold_order"/>
         <field name="subject">Tu reserva {{ object.name }} está confirmada — vence el {{ object._som_expiry_local_str() }}</field>
         <field name="email_from">{{ (object.company_id.email or user.email_formatted) }}</field>
         <field name="partner_to">{{ object.partner_id.id }}</field>
-        <field name="description">Confirmación de reserva con fecha exacta de vencimiento, detalle de material y PDF de detalle</field>
+        <field name="description">Confirmación de reserva: resumen con precios (subtotal, IVA y total), fecha exacta de vencimiento y PDF de detalle adjunto</field>
         <field name="report_template_ids" eval="[(6, 0, [ref('stock_lot_dimensions.action_report_stock_lot_hold_order_detail')])]"/>
         <field name="auto_delete" eval="True"/>
         <field name="body_html" type="html">
@@ -55,9 +60,9 @@
                     libera autom&#225;ticamente y queda disponible para
                     cualquier otro cliente.
                 </p>
-                <t t-out="object._som_hold_lines_markup()"/>
+                <t t-out="object._som_hold_summary_markup()"/>
                 <p style="margin: 0 0 14px;">
-                    El detalle completo de tu reserva va adjunto en este
+                    El detalle completo placa por placa va adjunto en este
                     correo.
                 </p>
                 <p t-if="object.user_id" style="margin: 0 0 14px;">

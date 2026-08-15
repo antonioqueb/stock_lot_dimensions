@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # models/stock_lot_hold_order.py
-from markupsafe import Markup
+from markupsafe import Markup, escape
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools import format_amount
 from odoo.tools.float_utils import float_compare
 from .utils.business_days import BusinessDaysCalculator
 from .som_date_format import som_format_date
@@ -398,14 +399,13 @@ class StockLotHoldOrder(models.Model):
 
             order.state = 'confirmed'
 
-            # Aviso al cliente con la fecha exacta de vencimiento; un fallo
-            # de correo jamás debe revertir la confirmación.
-            try:
-                order._som_notify_client_hold_confirmed()
-            except Exception:
-                _logger.exception(
-                    '[HOLD NOTIFY] Sin correo de confirmación para %s.',
-                    order.name)
+            # CONFIRMAR NO MANDA CORREO (pedido del 15 ago 2026). El correo
+            # de la reserva sale ÚNICAMENTE por el botón "Enviar Correo",
+            # que abre el compositor con preview y destinatario editable.
+            order.message_post(body=Markup(
+                'Reserva confirmada (vence el %s). El correo al cliente no '
+                'se envía solo: usa el botón <b>Enviar Correo</b>.'
+            ) % order._som_expiry_local_str())
 
     def _create_hold_for_line_lot(self, line, lot):
         """Crea (y liga a la línea) el hold de una placa, con las mismas
@@ -858,6 +858,128 @@ class StockLotHoldOrder(models.Model):
         self.ensure_one()
         return Markup(self._som_hold_lines_html())
 
+    # ------------------------------------------------------------------
+    #  RESUMEN CON PRECIOS (correo de reserva)
+    # ------------------------------------------------------------------
+    SOM_HOLD_TAX_RATE = 0.16
+
+    def _som_hold_summary_html(self, lang='es'):
+        """RESUMEN de la reserva para el correo: una fila por línea con el
+        precio colocado y el importe, más subtotal, IVA y total.
+
+        A propósito NO desglosa placa por placa (eso vive en el PDF de
+        detalle que viaja adjunto): el correo es el resumen comercial.
+        """
+        self.ensure_one()
+        L = {
+            'es': {'header': 'Resumen de tu reserva', 'concept': 'Concepto',
+                   'qty': 'Cantidad', 'unit': 'Precio unitario',
+                   'amount': 'Importe', 'subtotal': 'Subtotal',
+                   'tax': 'IVA 16%', 'total': 'Total',
+                   'slabs': 'placa(s)', 'service': 'Servicio'},
+            'en': {'header': 'Reservation summary', 'concept': 'Item',
+                   'qty': 'Quantity', 'unit': 'Unit price',
+                   'amount': 'Amount', 'subtotal': 'Subtotal',
+                   'tax': 'VAT 16%', 'total': 'Total',
+                   'slabs': 'slab(s)', 'service': 'Service'},
+        }.get(lang) or {}
+        L = L or {'header': 'Resumen de tu reserva', 'concept': 'Concepto',
+                  'qty': 'Cantidad', 'unit': 'Precio unitario',
+                  'amount': 'Importe', 'subtotal': 'Subtotal',
+                  'tax': 'IVA 16%', 'total': 'Total',
+                  'slabs': 'placa(s)', 'service': 'Servicio'}
+
+        currency = self.currency_id or self.company_id.currency_id
+        money = lambda amount: format_amount(  # noqa: E731
+            self.env, amount or 0.0, currency)
+
+        rows = []
+        for line in self.hold_line_ids:
+            is_service = line.product_id.type == 'service'
+            qty = line.cantidad_m2 or 0.0
+            if is_service:
+                qty_txt = L['service']
+            else:
+                qty_txt = '%.2f m²' % qty
+                if line.lot_ids:
+                    qty_txt += ' · %d %s' % (len(line.lot_ids), L['slabs'])
+            rows.append(
+                '<tr>'
+                '<td style="padding:7px 0;font-size:13px;color:#2C221B;'
+                'border-bottom:1px solid #D8D2C6;">%s'
+                '<div style="font-size:11px;color:#8A8072;margin-top:2px;">'
+                '%s</div></td>'
+                '<td style="padding:7px 0 7px 10px;text-align:right;'
+                'font-size:12px;color:#8A8072;white-space:nowrap;'
+                'border-bottom:1px solid #D8D2C6;">%s</td>'
+                '<td style="padding:7px 0 7px 10px;text-align:right;'
+                'font-size:13px;color:#2C221B;white-space:nowrap;'
+                'border-bottom:1px solid #D8D2C6;">%s</td>'
+                '</tr>' % (
+                    escape(line.x_mask_name
+                           or line.product_id.display_name or ''),
+                    qty_txt,
+                    money(line.precio_unitario),
+                    money(line.precio_total)))
+
+        if not rows:
+            return ''
+
+        subtotal = self.total_con_precio or 0.0
+        tax = subtotal * self.SOM_HOLD_TAX_RATE
+        total = subtotal + tax
+
+        def totals_row(label, value, strong=False):
+            weight = '700' if strong else '400'
+            return (
+                '<tr>'
+                '<td style="padding:4px 0;font-size:12px;color:#3D352C;'
+                'font-weight:%s;">%s</td>'
+                '<td style="padding:4px 0 4px 10px;text-align:right;'
+                'font-size:12px;color:#2C221B;font-weight:%s;'
+                'white-space:nowrap;">%s</td>'
+                '</tr>' % (weight, label, weight, value))
+
+        return (
+            '<div style="background:#ECE9E1;padding:14px 18px;margin:0 0 14px;">'
+            '<div style="font-size:10px;letter-spacing:.2em;'
+            'text-transform:uppercase;color:#8A8072;margin-bottom:10px;">'
+            '%s</div>'
+            '<table role="presentation" width="100%%" cellpadding="0" '
+            'cellspacing="0">'
+            '<tr>'
+            '<td style="padding:0 0 6px;font-size:9px;letter-spacing:.16em;'
+            'text-transform:uppercase;color:#8A8072;">%s</td>'
+            '<td style="padding:0 0 6px 10px;text-align:right;font-size:9px;'
+            'letter-spacing:.16em;text-transform:uppercase;color:#8A8072;'
+            'white-space:nowrap;">%s</td>'
+            '<td style="padding:0 0 6px 10px;text-align:right;font-size:9px;'
+            'letter-spacing:.16em;text-transform:uppercase;color:#8A8072;'
+            'white-space:nowrap;">%s</td>'
+            '</tr>'
+            '%s'
+            '</table>'
+            '<table role="presentation" width="100%%" cellpadding="0" '
+            'cellspacing="0" style="margin-top:10px;">'
+            '%s%s'
+            '<tr><td colspan="2" style="padding:6px 0 0;'
+            'border-top:1px solid #2C221B;"></td></tr>'
+            '%s'
+            '</table>'
+            '</div>'
+        ) % (
+            L['header'], L['concept'], L['unit'], L['amount'],
+            ''.join(rows),
+            totals_row(L['subtotal'], money(subtotal)),
+            totals_row(L['tax'], money(tax)),
+            totals_row(L['total'], money(total), strong=True),
+        )
+
+    def _som_hold_summary_markup(self):
+        """Resumen con precios como Markup para t-out en el mail template."""
+        self.ensure_one()
+        return Markup(self._som_hold_summary_html())
+
     def action_send_hold_confirmation_email(self):
         """Botón: abre el compositor de correo con el template de reserva
         confirmada precargado — preview editable y destinatario a elegir,
@@ -885,28 +1007,11 @@ class StockLotHoldOrder(models.Model):
             'context': ctx,
         }
 
-    def _som_notify_client_hold_confirmed(self):
-        """Reserva CONFIRMADA: envío automático al cliente con el mismo
-        template del compositor (fecha exacta de vencimiento, hora de
-        Monterrey)."""
-        template = self.env.ref(
-            'stock_lot_dimensions.mail_template_hold_confirmed',
-            raise_if_not_found=False)
-        if not template:
-            _logger.warning(
-                '[HOLD NOTIFY] Sin template de reserva confirmada.')
-            return
-        for order in self:
-            if not order.partner_id.email:
-                order.message_post(body=(
-                    '📩 Correo de reserva confirmada OMITIDO: el contacto '
-                    'no tiene correo registrado.'))
-                continue
-            template.sudo().send_mail(order.id, force_send=True)
-            order.message_post(body=(
-                '📩 Correo de reserva confirmada enviado a %s '
-                '(vence el %s).'
-            ) % (order.partner_id.email, order._som_expiry_local_str()))
+    # NOTA: aquí vivía _som_notify_client_hold_confirmed(), el envío
+    # automático al confirmar. Se eliminó el 15 ago 2026: confirmar NUNCA
+    # manda correo; el único disparador es action_send_hold_confirmation_email
+    # (botón Enviar Correo → compositor). Los avisos T-1/vencido siguen
+    # siendo automáticos: esos sí son recordatorios, no la confirmación.
 
     def action_convert_to_sale_order(self):
         self.ensure_one()
