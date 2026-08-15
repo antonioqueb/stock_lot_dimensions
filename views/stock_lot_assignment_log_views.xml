@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Bitácora de asignación de placas: la vista de auditoría para
+         contestar "¿por qué este pedido se quedó sin material y quién se lo
+         quitó?". Se filtra por documento (V/091), por placa o por usuario. -->
+    <record id="view_stock_lot_assignment_log_list" model="ir.ui.view">
+        <field name="name">stock.lot.assignment.log.list</field>
+        <field name="model">stock.lot.assignment.log</field>
+        <field name="arch" type="xml">
+            <list string="Bitácora de Asignación" create="0" edit="0" delete="0"
+                  default_order="date desc">
+                <field name="date"/>
+                <field name="action" widget="badge"
+                       decoration-success="action == 'assign'"
+                       decoration-danger="action == 'unassign'"/>
+                <field name="lot_id"/>
+                <field name="product_id" optional="show"/>
+                <field name="document_name" string="Documento"/>
+                <field name="partner_id" optional="show"/>
+                <field name="user_id" string="Quién"/>
+                <field name="salesperson_id" string="Vendedor" optional="hide"/>
+                <field name="reason" string="Motivo"/>
+                <field name="note" string="Detalle" optional="hide"/>
+                <field name="document_model" column_invisible="1"/>
+                <field name="document_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_stock_lot_assignment_log_search" model="ir.ui.view">
+        <field name="name">stock.lot.assignment.log.search</field>
+        <field name="model">stock.lot.assignment.log</field>
+        <field name="arch" type="xml">
+            <search string="Bitácora de Asignación">
+                <field name="document_name" string="Documento"/>
+                <field name="lot_id" string="Placa"/>
+                <field name="product_id" string="Producto"/>
+                <field name="user_id" string="Usuario"/>
+                <field name="partner_id" string="Cliente"/>
+                <filter name="only_unassign" string="Solo desasignaciones"
+                        domain="[('action', '=', 'unassign')]"/>
+                <filter name="only_assign" string="Solo asignaciones"
+                        domain="[('action', '=', 'assign')]"/>
+                <separator/>
+                <!-- Odoo 19: el filtro de fechas va con date="campo"; un
+                     context_today() en el domain revienta la vista. -->
+                <filter name="filter_date" string="Fecha" date="date"/>
+                <separator/>
+                <filter name="group_document" string="Agrupar por documento"
+                        context="{'group_by': 'document_name'}"/>
+                <filter name="group_lot" string="Agrupar por placa"
+                        context="{'group_by': 'lot_id'}"/>
+                <filter name="group_user" string="Agrupar por usuario"
+                        context="{'group_by': 'user_id'}"/>
+                <filter name="group_action" string="Agrupar por acción"
+                        context="{'group_by': 'action'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_stock_lot_assignment_log" model="ir.actions.act_window">
+        <field name="name">Bitácora de Asignación de Placas</field>
+        <field name="res_model">stock.lot.assignment.log</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_stock_lot_assignment_log_list"/>
+        <field name="search_view_id" ref="view_stock_lot_assignment_log_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin movimientos registrados</p>
+            <p>
+                Aquí queda cada placa que entra o sale de un pedido: quién la
+                movió, de qué documento y por qué. La bitácora arranca el 15
+                de agosto de 2026; lo anterior no quedó registrado.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_stock_lot_assignment_log"
+              name="Bitácora de Asignación"
+              parent="stock.menu_stock_root"
+              action="action_stock_lot_assignment_log"
+              sequence="95"
+              groups="stock.group_stock_manager"/>
+</odoo>

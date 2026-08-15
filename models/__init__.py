@@ -3,6 +3,7 @@ from . import som_date_format
 from . import utils
 from . import stock_lot
 from . import stock_lot_image
+from . import stock_lot_assignment_log
 from . import stock_move_line
 from . import stock_picking
 from . import stock_lot_hold 
