@@ -578,7 +578,7 @@ class StockLotHoldOrder(models.Model):
             'margin:0 0 14px;">'
             '<div style="font-size:10px;letter-spacing:.2em;'
             'text-transform:uppercase;color:#8A8072;margin-bottom:6px;">'
-            '( Material reservado )</div>'
+            'Material reservado</div>'
             '<ul style="margin:0;padding-left:18px;">%s</ul></div>'
         ) % ''.join(rows)
 
@@ -611,7 +611,7 @@ class StockLotHoldOrder(models.Model):
             'alt="(SOM)" style="height:30px;width:auto;display:block;"/></td>'
             '<td style="vertical-align:middle;text-align:right;font-size:10px;'
             'letter-spacing:.28em;text-transform:uppercase;color:#8A8072;'
-            'white-space:nowrap;">( %(kicker)s )</td>'
+            'white-space:nowrap;">%(kicker)s</td>'
             '</tr></table>'
             '<div style="margin-top:18px;border-top:1px solid #2C221B;"></div>'
             '</td></tr>'
@@ -697,13 +697,14 @@ class StockLotHoldOrder(models.Model):
                     order.name)
             order._som_send_plain_mail(
                 seller.email,
-                '⏰ Reserva vencida: %s — %s' % (
+                'Reserva vencida %s · %s' % (
                     order.name, order.partner_id.display_name or ''),
                 order._som_branded_mail_html(
-                    kicker='Reserva vencida',
-                    title=order.name,
-                    subtitle='Venci&#243; el %s &#183; hora de Monterrey' % (
-                        order._som_expiry_local_str()),
+                    kicker='Aviso interno',
+                    title='La reserva ha vencido.',
+                    subtitle='%s &#183; venci&#243; el %s &#183; '
+                             'hora de Monterrey' % (
+                        order.name, order._som_expiry_local_str()),
                     inner_html=(
                         '<p style="margin:0 0 14px;">Hola %s,</p>'
                         '<p style="margin:0 0 14px;">La reserva <b>%s</b> de '
@@ -747,25 +748,28 @@ class StockLotHoldOrder(models.Model):
                 )
             ok = order._som_send_plain_mail(
                 email,
-                '⏳ Tu reserva vence MAÑANA — el material se liberará',
+                'Tu reserva %s vence mañana — el material se liberará' % (
+                    order.name),
                 order._som_branded_mail_html(
-                    kicker='Tu reserva vence ma&#241;ana',
-                    title=order.name,
-                    subtitle='Vence el %s &#183; hora de Monterrey' % (
-                        order._som_expiry_local_str()),
+                    kicker='Aviso de vencimiento',
+                    title='Tu reserva vence ma&#241;ana.',
+                    subtitle='%s &#183; vence el %s &#183; '
+                             'hora de Monterrey' % (
+                        order.name, order._som_expiry_local_str()),
                     inner_html=(
                         '<p style="margin:0 0 14px;">Estimado(a) '
                         '<b>%s</b>,</p>'
                         '<p style="margin:0 0 14px;">Tu reserva <b>%s</b> '
                         'está por vencer.</p>'
                         '%s'
-                        '<p style="margin:0 0 14px;"><b>Importante:</b> las '
-                        'placas de piedra natural son piezas ÚNICAS e '
-                        'irrepetibles — cada bloque tiene vetas y tonos que '
-                        'no vuelven a darse. Al vencer tu reserva, este '
-                        'material queda <b>disponible de inmediato para '
-                        'cualquier otro cliente</b> y no podemos garantizar '
-                        'que encuentres piezas equivalentes después.</p>'
+                        '<p style="margin:0 0 14px;"><b>Importante:</b> '
+                        'buena parte de nuestro material se compone de '
+                        'piezas únicas — en la piedra natural, cada bloque '
+                        'tiene vetas y tonos que no vuelven a repetirse. Al '
+                        'vencer tu reserva, este material queda '
+                        '<b>disponible de inmediato para cualquier otro '
+                        'cliente</b> y no podemos garantizar que encuentres '
+                        'piezas equivalentes después.</p>'
                         '%s'
                         '<p style="margin:22px 0 0;font-style:italic;'
                         'color:#2C221B;">No solo cubrimos superficies — '
