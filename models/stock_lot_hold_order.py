@@ -854,9 +854,9 @@ class StockLotHoldOrder(models.Model):
 
     def _som_hold_lines_markup(self):
         """Panel de material como Markup para t-out en el mail template
-        de confirmación (en inglés). Sin Markup, QWeb escaparía el HTML."""
+        de confirmación. Sin Markup, QWeb escaparía el HTML."""
         self.ensure_one()
-        return Markup(self._som_hold_lines_html(lang='en'))
+        return Markup(self._som_hold_lines_html())
 
     def action_send_hold_confirmation_email(self):
         """Botón: abre el compositor de correo con el template de reserva
