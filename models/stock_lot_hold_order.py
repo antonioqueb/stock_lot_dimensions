@@ -588,8 +588,8 @@ class StockLotHoldOrder(models.Model):
                     '<tr>'
                     '<td style="padding:2px 0;font-size:12px;'
                     'color:#3D352C;">%s%s</td>'
-                    '<td style="padding:2px 0;text-align:right;'
-                    'font-size:12px;color:#8A8072;white-space:nowrap;">'
+                    '<td style="padding:2px 0 2px 10px;text-align:right;'
+                    'font-size:12px;color:#8A8072;">'
                     '%s</td></tr>' % (
                         lot.name or '',
                         (' · Bloque %s' % lot.x_bloque)
@@ -614,7 +614,7 @@ class StockLotHoldOrder(models.Model):
         if not blocks:
             return ''
         return (
-            '<div style="background:#ECE9E1;padding:16px 28px 12px;'
+            '<div style="background:#ECE9E1;padding:14px 18px 10px;'
             'margin:0 0 14px;">'
             '<div style="font-size:10px;letter-spacing:.2em;'
             'text-transform:uppercase;color:#8A8072;margin-bottom:10px;">'
@@ -639,49 +639,46 @@ class StockLotHoldOrder(models.Model):
         if company.email:
             contact_bits.append(company.email)
         return (
-            '<div style="margin:0;padding:22px 14px;background-color:#E2DED5;'
+            '<div style="margin:0;padding:16px 8px;background-color:#E2DED5;'
             "font-family:'Anderson Grotesk','Helvetica Neue',Helvetica,Arial,"
             'sans-serif;">'
             '<table role="presentation" width="100%%" cellpadding="0" '
-            'cellspacing="0" style="max-width:720px;margin:0 auto;'
+            'cellspacing="0" style="max-width:600px;margin:0 auto;'
             'background:#ffffff;">'
             '<tr><td style="height:4px;background:#2C221B;font-size:0;'
             'line-height:0;">&#160;</td></tr>'
-            '<tr><td style="padding:24px 44px 0;">'
+            '<tr><td style="padding:22px 28px 0;">'
             '<table role="presentation" width="100%%" cellpadding="0" '
             'cellspacing="0"><tr>'
             '<td style="vertical-align:middle;">'
             '<img src="%(base)s/theme_list_modern/static/img/logosom.png" '
-            'alt="(SOM)" style="height:30px;width:auto;display:block;"/></td>'
-            '<td style="vertical-align:middle;text-align:right;font-size:10px;'
-            'letter-spacing:.28em;text-transform:uppercase;color:#8A8072;'
+            'alt="(SOM)" style="height:28px;width:auto;display:block;"/></td>'
+            '<td style="vertical-align:middle;text-align:right;font-size:9px;'
+            'letter-spacing:.24em;text-transform:uppercase;color:#8A8072;'
             'white-space:nowrap;">%(kicker)s</td>'
             '</tr></table>'
-            '<div style="margin-top:18px;border-top:1px solid #2C221B;"></div>'
+            '<div style="margin-top:16px;border-top:1px solid #2C221B;"></div>'
             '</td></tr>'
-            '<tr><td style="padding:18px 44px 0;">'
-            '<div style="font-size:28px;font-weight:300;letter-spacing:.04em;'
-            'color:#2C221B;">%(title)s</div>'
-            '<div style="font-size:10px;letter-spacing:.22em;'
-            'text-transform:uppercase;color:#8A8072;margin-top:6px;">'
-            '%(subtitle)s</div>'
+            '<tr><td style="padding:18px 28px 0;">'
+            '<div style="font-size:24px;font-weight:300;letter-spacing:.01em;'
+            'color:#2C221B;line-height:1.25;">%(title)s</div>'
+            '<div style="font-size:10px;letter-spacing:.16em;'
+            'text-transform:uppercase;color:#8A8072;margin-top:8px;'
+            'line-height:1.7;">%(subtitle)s</div>'
             '</td></tr>'
-            '<tr><td style="padding:16px 44px 26px;font-size:13.5px;'
-            'color:#3D352C;line-height:1.65;">%(inner)s</td></tr>'
-            '<tr><td style="padding:16px 44px;background:#2C221B;">'
-            '<table role="presentation" width="100%%" cellpadding="0" '
-            'cellspacing="0"><tr>'
-            '<td style="vertical-align:middle;white-space:nowrap;">'
-            '<span style="font-size:12px;letter-spacing:.3em;color:#E2DED5;">'
-            '(SOM)</span><span style="font-size:8px;vertical-align:super;'
-            'color:#E2DED5;">&#174;</span>'
-            '<span style="font-size:8px;letter-spacing:.26em;'
-            'text-transform:uppercase;color:#A79C8C;font-style:italic;">'
-            '&#160;&#160;Recubrimientos &#218;nicos</span></td>'
-            '<td style="vertical-align:middle;text-align:right;font-size:8px;'
-            'letter-spacing:.16em;text-transform:uppercase;color:#A79C8C;'
-            'line-height:1.9;">%(contact)s</td>'
-            '</tr></table>'
+            '<tr><td style="padding:16px 28px 24px;font-size:14px;'
+            'color:#3D352C;line-height:1.7;">%(inner)s</td></tr>'
+            '<tr><td style="padding:20px 28px;background:#2C221B;'
+            'text-align:center;">'
+            '<div style="font-size:13px;letter-spacing:.3em;color:#E2DED5;">'
+            '(SOM)<span style="font-size:8px;vertical-align:super;">&#174;'
+            '</span></div>'
+            '<div style="font-size:8px;letter-spacing:.26em;'
+            'text-transform:uppercase;color:#A79C8C;font-style:italic;'
+            'margin-top:5px;">Recubrimientos &#218;nicos</div>'
+            '<div style="font-size:9px;letter-spacing:.14em;'
+            'text-transform:uppercase;color:#A79C8C;margin-top:12px;'
+            'line-height:1.9;">%(contact)s</div>'
             '</td></tr>'
             '</table></div>'
         ) % {
@@ -690,7 +687,7 @@ class StockLotHoldOrder(models.Model):
             'title': title,
             'subtitle': subtitle,
             'inner': inner_html,
-            'contact': ' &#183; '.join(contact_bits),
+            'contact': '<br/>'.join(contact_bits),
         }
 
     def _som_send_plain_mail(self, email_to, subject, body_html):
