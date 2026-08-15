@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Correo de reserva confirmada: template REAL de mail para que el
-         botón Enviar Correo abra el compositor con preview y destinatario
-         editable (igual que en la orden de venta). El mismo template lo
-         usa el envío automático al confirmar. -->
+    <!-- Correo de reserva confirmada (EN INGLÉS, como el resto de correos
+         de la casa): template REAL de mail para que el botón Enviar Correo
+         abra el compositor con preview y destinatario editable. El mismo
+         template lo usa el envío automático al confirmar, y adjunta el
+         reporte de detalle de la reserva. -->
     <record id="mail_template_hold_confirmed" model="mail.template">
         <field name="name">Reserva: confirmación al cliente</field>
         <field name="model_id" ref="stock_lot_dimensions.model_stock_lot_hold_order"/>
-        <field name="subject">Tu reserva {{ object.name }} está confirmada — vence el {{ object._som_expiry_local_str() }}</field>
+        <field name="subject">Your reservation {{ object.name }} is confirmed — expires {{ object._som_expiry_local_str_en() }}</field>
         <field name="email_from">{{ (object.company_id.email or user.email_formatted) }}</field>
         <field name="partner_to">{{ object.partner_id.id }}</field>
-        <field name="description">Confirmación de reserva con fecha exacta de vencimiento y detalle de material</field>
+        <field name="description">Confirmación de reserva con fecha exacta de vencimiento, detalle de material y PDF de detalle</field>
+        <field name="report_template_ids" eval="[(6, 0, [ref('stock_lot_dimensions.action_report_stock_lot_hold_order_detail')])]"/>
         <field name="auto_delete" eval="True"/>
         <field name="body_html" type="html">
 <div style="margin: 0; padding: 16px 8px; background-color: #E2DED5; font-family: 'Anderson Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;">
@@ -25,7 +27,7 @@
                                  alt="SOM" style="height: 28px; width: auto; display: block;"/>
                         </td>
                         <td style="vertical-align: middle; text-align: right; font-size: 9px; letter-spacing: .24em; text-transform: uppercase; color: #8A8072; white-space: nowrap;">
-                            Reserva confirmada
+                            Reservation Confirmed
                         </td>
                     </tr>
                 </table>
@@ -35,28 +37,32 @@
         <tr>
             <td style="padding: 18px 28px 0;">
                 <div style="font-size: 24px; font-weight: 300; letter-spacing: .01em; color: #2C221B; line-height: 1.25;">
-                    Tu material est&#225; reservado.
+                    Your material is reserved.
                 </div>
                 <div style="font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #8A8072; margin-top: 8px; line-height: 1.7;">
-                    <t t-out="object.name or ''"/> &#183; vence el <t t-out="object._som_expiry_local_str() or ''"/> &#183; hora de Monterrey
+                    <t t-out="object.name or ''"/> &#183; expires <t t-out="object._som_expiry_local_str_en() or ''"/> &#183; Monterrey time
                 </div>
             </td>
         </tr>
         <tr>
             <td style="padding: 16px 28px 0; font-size: 14px; color: #3D352C; line-height: 1.7;">
-                <p style="margin: 0 0 14px;">Estimado(a) <b t-out="object.partner_id.name or ''"/>,</p>
+                <p style="margin: 0 0 14px;">Dear <b t-out="object.partner_id.name or ''"/>,</p>
                 <p style="margin: 0 0 14px;">
-                    Hemos apartado el siguiente material a tu nombre. Tu
-                    reserva permanecer&#225; vigente hasta el
-                    <b t-out="object._som_expiry_local_str() or ''"/>
-                    (hora de Monterrey); llegada esa fecha, el material se
-                    libera autom&#225;ticamente y queda disponible para
-                    cualquier otro cliente.
+                    We have set aside the following material in your name.
+                    Your reservation will remain in effect until
+                    <b t-out="object._som_expiry_local_str_en() or ''"/>
+                    (Monterrey time); once it expires, the material is
+                    automatically released and becomes available to any
+                    other client.
                 </p>
                 <t t-out="object._som_hold_lines_markup()"/>
+                <p style="margin: 0 0 14px;">
+                    The complete reservation detail is enclosed with this
+                    email.
+                </p>
                 <p t-if="object.user_id" style="margin: 0 0 14px;">
-                    Para extender tu reserva o confirmar tu pedido antes de
-                    esa fecha, responde este correo o contacta a
+                    To extend your reservation or confirm your order before
+                    that date, simply reply to this email or contact
                     <b t-out="object.user_id.name or ''"/><t t-if="object.user_id.email"> (<t t-out="object.user_id.email"/>)</t>.
                 </p>
             </td>
@@ -64,10 +70,10 @@
         <tr>
             <td style="padding: 4px 28px 24px;">
                 <div style="font-size: 13px; font-style: italic; color: #2C221B; line-height: 1.65;">
-                    No solo cubrimos superficies &#8212; creamos espacios que inspiran.
+                    We do not merely cover surfaces &#8212; we create spaces that inspire.
                 </div>
                 <div style="margin-top: 14px; font-size: 13px; color: #3D352C; line-height: 1.7;">
-                    Saludos,<br/>
+                    Sincerely,<br/>
                     <span style="font-weight: 600; color: #2C221B;" t-out="object.user_id.name or object.company_id.name or ''"/><br/>
                     <span style="font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: #8A8072;" t-out="object.company_id.name or ''"/>
                 </div>

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Atributos Adicionales para Lotes',
-    'version': '19.0.6.15.0',
+    'version': '19.0.6.16.0',
     'category': 'Inventory/Inventory',
     'summary': 'Captura dimensiones, fotografías y gestión de reservas manuales (hold) en lotes',
     'description': """
@@ -38,7 +38,6 @@
         'data/res_company_bank_info_defaults.xml',
         'data/stock_lot_hold_order_sequence.xml',
         'data/migrate_hold_lines.xml',
-        'data/mail_template_hold_confirmation.xml',
 
         'reports/som_report_design.xml',
         'reports/company_bank_details_templates.xml',
@@ -54,6 +53,10 @@
         'reports/sale_order_custom_detail_report.xml',
         'reports/sale_proposal_report.xml',
         'reports/report_lastpage_footer.xml',
+
+        # Después de los reports: el template adjunta el reporte de detalle
+        # (ref a action_report_stock_lot_hold_order_detail).
+        'data/mail_template_hold_confirmation.xml',
 
         'views/res_company_bank_info_views.xml',
         'views/stock_lot_views.xml',

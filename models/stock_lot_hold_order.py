@@ -570,10 +570,28 @@ class StockLotHoldOrder(models.Model):
             pytz.timezone('America/Monterrey'))
         return som_format_date(local, with_time=True)
 
-    def _som_hold_lines_html(self):
+    def _som_expiry_local_str_en(self):
+        """Vencimiento en hora de Monterrey con formato inglés (para el
+        correo de confirmación al cliente, que va en inglés)."""
+        self.ensure_one()
+        import pytz
+        if not self.fecha_expiracion:
+            return ''
+        local = pytz.utc.localize(self.fecha_expiracion).astimezone(
+            pytz.timezone('America/Monterrey'))
+        return local.strftime('%b %d, %Y · %I:%M %p')
+
+    def _som_hold_lines_html(self, lang='es'):
         """Panel de material reservado para los correos: cada producto con
         sus placas (lote, bloque, alto × ancho y m²) y totales al pie."""
         self.ensure_one()
+        L = {
+            'es': {'header': 'Material reservado', 'slabs': 'placa(s)',
+                   'block': 'Bloque'},
+            'en': {'header': 'Reserved material', 'slabs': 'slab(s)',
+                   'block': 'Block'},
+        }.get(lang) or {'header': 'Material reservado',
+                        'slabs': 'placa(s)', 'block': 'Bloque'}
         blocks = []
         total_placas = 0
         total_m2 = 0.0
@@ -594,7 +612,7 @@ class StockLotHoldOrder(models.Model):
                     'font-size:12px;color:#8A8072;">'
                     '%s</td></tr>' % (
                         lot.name or '',
-                        (' · Bloque %s' % lot.x_bloque)
+                        (' · %s %s' % (L['block'], lot.x_bloque))
                         if lot.x_bloque else '',
                         dims))
             total_placas += len(line.lot_ids)
@@ -604,13 +622,14 @@ class StockLotHoldOrder(models.Model):
                 '<div style="font-size:13px;border-bottom:1px solid '
                 '#D8D2C6;padding-bottom:3px;">'
                 '<b style="color:#2C221B;">%s</b>'
-                '<span style="color:#8A8072;"> — %s placa(s) · '
+                '<span style="color:#8A8072;"> — %s %s · '
                 '%.2f m²</span></div>'
                 '<table role="presentation" width="100%%" cellpadding="0" '
                 'cellspacing="0" style="margin-top:4px;">%s</table>'
                 '</div>' % (
                     line.x_mask_name or line.product_id.display_name,
                     len(line.lot_ids),
+                    L['slabs'],
                     line.cantidad_m2 or 0.0,
                     ''.join(lot_rows)))
         if not blocks:
@@ -620,13 +639,14 @@ class StockLotHoldOrder(models.Model):
             'margin:0 0 14px;">'
             '<div style="font-size:10px;letter-spacing:.2em;'
             'text-transform:uppercase;color:#8A8072;margin-bottom:10px;">'
-            'Material reservado</div>'
+            '%s</div>'
             '%s'
             '<div style="font-size:12px;font-weight:700;color:#2C221B;'
             'border-top:1px solid #2C221B;padding-top:6px;'
-            'text-align:right;">Total: %s placa(s) · %.2f m²</div>'
+            'text-align:right;">Total: %s %s · %.2f m²</div>'
             '</div>'
-        ) % (''.join(blocks), total_placas, total_m2)
+        ) % (L['header'], ''.join(blocks), total_placas, L['slabs'],
+             total_m2)
 
     def _som_branded_mail_html(self, kicker, title, subtitle, inner_html):
         """Envuelve el contenido en la plantilla de correo (SOM) del manual
@@ -834,9 +854,9 @@ class StockLotHoldOrder(models.Model):
 
     def _som_hold_lines_markup(self):
         """Panel de material como Markup para t-out en el mail template
-        (sin Markup, QWeb escaparía el HTML)."""
+        de confirmación (en inglés). Sin Markup, QWeb escaparía el HTML."""
         self.ensure_one()
-        return Markup(self._som_hold_lines_html())
+        return Markup(self._som_hold_lines_html(lang='en'))
 
     def action_send_hold_confirmation_email(self):
         """Botón: abre el compositor de correo con el template de reserva
