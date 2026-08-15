@@ -569,27 +569,62 @@ class StockLotHoldOrder(models.Model):
         return som_format_date(local, with_time=True)
 
     def _som_hold_lines_html(self):
+        """Panel de material reservado para los correos: cada producto con
+        sus placas (lote, bloque, alto × ancho y m²) y totales al pie."""
         self.ensure_one()
-        rows = []
+        blocks = []
+        total_placas = 0
+        total_m2 = 0.0
         for line in self.hold_line_ids:
             if line.product_id.type == 'service':
                 continue
-            rows.append(
-                '<li style="margin:3px 0;"><b style="color:#2C221B;">%s</b> '
-                '— %s placa(s), %.2f m²</li>' % (
+            lot_rows = []
+            for lot in line.lot_ids:
+                dims = ''
+                if lot.x_alto and lot.x_ancho:
+                    dims = '%.2f × %.2f m · %.2f m²' % (
+                        lot.x_alto, lot.x_ancho, lot.x_alto * lot.x_ancho)
+                lot_rows.append(
+                    '<tr>'
+                    '<td style="padding:2px 0;font-size:12px;'
+                    'color:#3D352C;">%s%s</td>'
+                    '<td style="padding:2px 0;text-align:right;'
+                    'font-size:12px;color:#8A8072;white-space:nowrap;">'
+                    '%s</td></tr>' % (
+                        lot.name or '',
+                        (' · Bloque %s' % lot.x_bloque)
+                        if lot.x_bloque else '',
+                        dims))
+            total_placas += len(line.lot_ids)
+            total_m2 += line.cantidad_m2 or 0.0
+            blocks.append(
+                '<div style="margin:0 0 12px;">'
+                '<div style="font-size:13px;border-bottom:1px solid '
+                '#D8D2C6;padding-bottom:3px;">'
+                '<b style="color:#2C221B;">%s</b>'
+                '<span style="color:#8A8072;"> — %s placa(s) · '
+                '%.2f m²</span></div>'
+                '<table role="presentation" width="100%%" cellpadding="0" '
+                'cellspacing="0" style="margin-top:4px;">%s</table>'
+                '</div>' % (
                     line.x_mask_name or line.product_id.display_name,
                     len(line.lot_ids),
-                    line.cantidad_m2 or 0.0))
-        if not rows:
+                    line.cantidad_m2 or 0.0,
+                    ''.join(lot_rows)))
+        if not blocks:
             return ''
         return (
-            '<div style="background:#ECE9E1;padding:16px 28px;'
+            '<div style="background:#ECE9E1;padding:16px 28px 12px;'
             'margin:0 0 14px;">'
             '<div style="font-size:10px;letter-spacing:.2em;'
-            'text-transform:uppercase;color:#8A8072;margin-bottom:6px;">'
+            'text-transform:uppercase;color:#8A8072;margin-bottom:10px;">'
             'Material reservado</div>'
-            '<ul style="margin:0;padding-left:18px;">%s</ul></div>'
-        ) % ''.join(rows)
+            '%s'
+            '<div style="font-size:12px;font-weight:700;color:#2C221B;'
+            'border-top:1px solid #2C221B;padding-top:6px;'
+            'text-align:right;">Total: %s placa(s) · %.2f m²</div>'
+            '</div>'
+        ) % (''.join(blocks), total_placas, total_m2)
 
     def _som_branded_mail_html(self, kicker, title, subtitle, inner_html):
         """Envuelve el contenido en la plantilla de correo (SOM) del manual
