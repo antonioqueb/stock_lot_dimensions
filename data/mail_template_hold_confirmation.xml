@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Correo de reserva confirmada: template REAL de mail para que el
+         botón Enviar Correo abra el compositor con preview y destinatario
+         editable (igual que en la orden de venta). El mismo template lo
+         usa el envío automático al confirmar. -->
+    <record id="mail_template_hold_confirmed" model="mail.template">
+        <field name="name">Reserva: confirmación al cliente</field>
+        <field name="model_id" ref="stock_lot_dimensions.model_stock_lot_hold_order"/>
+        <field name="subject">Tu reserva {{ object.name }} está confirmada — vence el {{ object._som_expiry_local_str() }}</field>
+        <field name="email_from">{{ (object.company_id.email or user.email_formatted) }}</field>
+        <field name="partner_to">{{ object.partner_id.id }}</field>
+        <field name="description">Confirmación de reserva con fecha exacta de vencimiento y detalle de material</field>
+        <field name="auto_delete" eval="True"/>
+        <field name="body_html" type="html">
+<div style="margin: 0; padding: 16px 8px; background-color: #E2DED5; font-family: 'Anderson Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+        <tr><td style="height: 4px; background: #2C221B; font-size: 0; line-height: 0;">&#160;</td></tr>
+        <tr>
+            <td style="padding: 22px 28px 0;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="vertical-align: middle;">
+                            <img t-att-src="object.get_base_url() + '/theme_list_modern/static/img/logosom.png'"
+                                 alt="SOM" style="height: 28px; width: auto; display: block;"/>
+                        </td>
+                        <td style="vertical-align: middle; text-align: right; font-size: 9px; letter-spacing: .24em; text-transform: uppercase; color: #8A8072; white-space: nowrap;">
+                            Reserva confirmada
+                        </td>
+                    </tr>
+                </table>
+                <div style="margin-top: 16px; border-top: 1px solid #2C221B;"></div>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 18px 28px 0;">
+                <div style="font-size: 24px; font-weight: 300; letter-spacing: .01em; color: #2C221B; line-height: 1.25;">
+                    Tu material est&#225; reservado.
+                </div>
+                <div style="font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #8A8072; margin-top: 8px; line-height: 1.7;">
+                    <t t-out="object.name or ''"/> &#183; vence el <t t-out="object._som_expiry_local_str() or ''"/> &#183; hora de Monterrey
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 16px 28px 0; font-size: 14px; color: #3D352C; line-height: 1.7;">
+                <p style="margin: 0 0 14px;">Estimado(a) <b t-out="object.partner_id.name or ''"/>,</p>
+                <p style="margin: 0 0 14px;">
+                    Hemos apartado el siguiente material a tu nombre. Tu
+                    reserva permanecer&#225; vigente hasta el
+                    <b t-out="object._som_expiry_local_str() or ''"/>
+                    (hora de Monterrey); llegada esa fecha, el material se
+                    libera autom&#225;ticamente y queda disponible para
+                    cualquier otro cliente.
+                </p>
+                <t t-out="object._som_hold_lines_markup()"/>
+                <p t-if="object.user_id" style="margin: 0 0 14px;">
+                    Para extender tu reserva o confirmar tu pedido antes de
+                    esa fecha, responde este correo o contacta a
+                    <b t-out="object.user_id.name or ''"/><t t-if="object.user_id.email"> (<t t-out="object.user_id.email"/>)</t>.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 4px 28px 24px;">
+                <div style="font-size: 13px; font-style: italic; color: #2C221B; line-height: 1.65;">
+                    No solo cubrimos superficies &#8212; creamos espacios que inspiran.
+                </div>
+                <div style="margin-top: 14px; font-size: 13px; color: #3D352C; line-height: 1.7;">
+                    Saludos,<br/>
+                    <span style="font-weight: 600; color: #2C221B;" t-out="object.user_id.name or object.company_id.name or ''"/><br/>
+                    <span style="font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: #8A8072;" t-out="object.company_id.name or ''"/>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 20px 28px; background: #2C221B; text-align: center;">
+                <div style="font-size: 13px; letter-spacing: .3em; color: #E2DED5;">(SOM)<span style="font-size: 8px; vertical-align: super;">&#174;</span></div>
+                <div style="font-size: 8px; letter-spacing: .26em; text-transform: uppercase; color: #A79C8C; font-style: italic; margin-top: 5px;">Recubrimientos &#218;nicos</div>
+                <div style="font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: #A79C8C; margin-top: 12px; line-height: 1.9;">
+                    <span t-out="object.company_id.name or 'SOM Group'"/>
+                    <t t-if="object.company_id.phone"><br/><span t-out="object.company_id.phone"/></t>
+                    <t t-if="object.company_id.email"><br/><span t-out="object.company_id.email"/></t>
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+        </field>
+    </record>
+</odoo>
