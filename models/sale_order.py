@@ -2,6 +2,7 @@
 # models/sale_order.py
 from odoo import models, fields, api
 from odoo.exceptions import UserError
+from odoo.tools import float_is_zero
 from .utils.picking_cleaner import PickingLotCleaner
 import logging
 
@@ -302,7 +303,20 @@ class SaleOrder(models.Model):
         Devuelve {'payments': recordset ordenado, 'paid': pagado real
         (facturas posteadas: total - residual, refunds restan — mismo
         criterio que el candado de entrega), 'balance': pagado - total de
-        la orden (positivo = saldo a favor)}."""
+        la orden (positivo = saldo a favor)}.
+
+        Además 'status', que es lo que el reporte imprime:
+            'paid'   → no debe nada  → dice PAGADO, sin cifra
+            'credit' → pagó de más   → Saldo a Favor
+            'due'    → falta dinero  → Pendiente por Pagar
+
+        El estado se decide AQUÍ y no en el QWeb: comparar contra cero en
+        la plantilla dejaba el saldo exacto (balance == 0) cayendo en la
+        rama de 'Saldo a Favor', que imprimía "Saldo a Favor: $0.00" en
+        una orden totalmente pagada — se leía como si el cliente aún
+        debiera. Y un centavo de redondeo mandaba a 'Pendiente por Pagar'
+        una orden saldada. La comparación va con el redondeo de la divisa,
+        no contra 0.0 pelón."""
         self.ensure_one()
         posted = self.invoice_ids.filtered(
             lambda m: m.state == 'posted'
@@ -318,11 +332,22 @@ class SaleOrder(models.Model):
                 _logger.exception(
                     '[SOM PAGOS] No se pudieron listar los pagos de %s.',
                     inv.name)
+        balance = paid - (self.amount_total or 0.0)
+        rounding = self.currency_id.rounding or 0.01
+        if float_is_zero(balance, precision_rounding=rounding):
+            status, credit, due = 'paid', 0.0, 0.0
+        elif balance > 0:
+            status, credit, due = 'credit', balance, 0.0
+        else:
+            status, credit, due = 'due', 0.0, -balance
         return {
             'payments': payments.sorted(
                 key=lambda p: (p.date or fields.Date.today(), p.id)),
             'paid': paid,
-            'balance': paid - (self.amount_total or 0.0),
+            'balance': balance,
+            'status': status,
+            'credit': credit,
+            'due': due,
         }
 
     def som_proposal_client_logo_src(self):

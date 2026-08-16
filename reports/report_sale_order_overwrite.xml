@@ -620,13 +620,19 @@
                     Total Pagado:
                     <span style="font-variant-numeric: tabular-nums;" t-esc="som_pay['paid']" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                 </div>
-                <div t-if="som_pay['balance'] &gt;= 0" style="margin-top: 2px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px; color: #0a7a2f;">
+                <!-- El veredicto. Saldado NO se imprime como una cifra en
+                     cero: "Saldo a Favor: $0.00" se leía como si el cliente
+                     todavía debiera. Dice PAGADO y ya. -->
+                <div t-if="som_pay['status'] == 'paid'" style="margin-top: 5px; display: inline-block; padding: 3px 12px; border: 1.5px solid #0a7a2f; border-radius: 3px; background: #eaf6ee; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: #0a7a2f;">
+                    Pagado
+                </div>
+                <div t-elif="som_pay['status'] == 'credit'" style="margin-top: 2px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px; color: #0a7a2f;">
                     Saldo a Favor:
-                    <span style="font-variant-numeric: tabular-nums;" t-esc="som_pay['balance']" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                    <span style="font-variant-numeric: tabular-nums;" t-esc="som_pay['credit']" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                 </div>
                 <div t-else="" style="margin-top: 2px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px; color: #b00020;">
                     Pendiente por Pagar:
-                    <span style="font-variant-numeric: tabular-nums;" t-esc="-som_pay['balance']" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                    <span style="font-variant-numeric: tabular-nums;" t-esc="som_pay['due']" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                 </div>
             </div>
         </t>
