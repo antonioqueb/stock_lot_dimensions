@@ -28,6 +28,23 @@ class StockLotHoldOrder(models.Model):
         readonly=True,
     )
     partner_id = fields.Many2one('res.partner', string='Cliente', required=True, tracking=True)
+
+    # Contacto a la vista, igual que en la orden de venta: el correo del
+    # apartado es el que recibe la confirmación y los avisos de
+    # vencimiento, así que tiene que verse (y poder corregirse) aquí
+    # mismo. `related` editable: lo capturado se guarda en la ficha del
+    # cliente. Odoo 19: res.partner ya no tiene `mobile`.
+    x_partner_email = fields.Char(
+        related='partner_id.email',
+        string='Correo del cliente',
+        readonly=False,
+    )
+    x_partner_phone = fields.Char(
+        related='partner_id.phone',
+        string='Teléfono del cliente',
+        readonly=False,
+    )
+
     delivery_address = fields.Text(string='Dirección de Entrega', tracking=True)
     user_id = fields.Many2one(
         'res.users',

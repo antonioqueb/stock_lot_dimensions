@@ -120,6 +120,16 @@
                     <group>
                         <group string="Datos del Cliente">
                             <field name="partner_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
+                            <!-- Correo y teléfono del cliente (related
+                                 editable): el correo es el que recibe la
+                                 confirmación y los avisos de vencimiento.
+                                 Se dejan editables aun con el apartado
+                                 cerrado — corregir un dato de contacto en
+                                 la ficha nunca sobra. -->
+                            <field name="x_partner_email" string="Correo" widget="email"
+                                   placeholder="correo@cliente.com"/>
+                            <field name="x_partner_phone" string="Teléfono" widget="phone"
+                                   placeholder="+52 81 0000 0000"/>
                             <field name="delivery_address" readonly="state in ['done', 'cancel'] or sale_order_id"/>
                             <field name="project_id" readonly="state in ['done', 'cancel'] or sale_order_id"
                                    domain="['|', ('partner_id', '=', False), ('partner_id', 'child_of', partner_id)]"

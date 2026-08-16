@@ -272,6 +272,29 @@ class SaleOrder(models.Model):
     )
     x_client_logo_filename = fields.Char(copy=False)
 
+    # CONTACTO DEL CLIENTE a la vista en la orden: el vendedor no debería
+    # abrir la ficha del cliente para saber a qué correo mandarle la
+    # cotización o a qué número marcarle.
+    #
+    # Son `related` sobre partner_id, o sea EDITABLES: capturar aquí un
+    # correo que falta lo guarda en la ficha del cliente, que es donde
+    # tiene que vivir. Muestran los datos del contacto de la orden tal
+    # cual: si ese contacto es un hijo sin teléfono propio, sale vacío —
+    # no se hereda el de la empresa para no aparentar un dato que no es.
+    #
+    # OJO Odoo 19: res.partner ya NO tiene `mobile` (se unificó en
+    # `phone`); declararlo aborta el -u completo.
+    x_partner_email = fields.Char(
+        related='partner_id.email',
+        string='Correo del cliente',
+        readonly=False,
+    )
+    x_partner_phone = fields.Char(
+        related='partner_id.phone',
+        string='Teléfono del cliente',
+        readonly=False,
+    )
+
     def som_get_registered_payments(self):
         """Pagos conciliados con las facturas posteadas de la orden, para
         imprimirlos bajo los totales en los reportes (detalle y resumen).
