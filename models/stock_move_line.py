@@ -447,6 +447,14 @@ class StockMoveLine(models.Model):
                 )
         )
 
+        # Entrega HECHA cuyo material ya REGRESÓ por devolución validada:
+        # es historia, no compromiso. Sin esto, la salida done del pedido
+        # original bloqueaba para siempre reusar el lote en otro pedido
+        # aunque el inventario ya lo mostrara libre (caso V/310 → V/366).
+        blockers = blockers.filtered(
+            lambda ml: not self._som_delivery_spent_by_return(ml)
+        )
+
         # Excluir líneas del mismo pedido de venta: no es un conflicto real.
         current_so = self._get_sale_order_from_move_line(line)
         if current_so:
@@ -455,6 +463,44 @@ class StockMoveLine(models.Model):
             )
 
         return blockers
+
+    def _som_delivery_spent_by_return(self, ml):
+        """True si `ml` es una línea HECHA de salida cuyo lote ya volvió por
+        una devolución VALIDADA de ese mismo picking (cantidad cubierta).
+
+        Solo neutraliza salidas done: las operaciones abiertas siguen
+        contando como compromiso normal."""
+        if ml.state != 'done' or not ml.picking_id or not ml.lot_id:
+            return False
+        if ml.picking_id.picking_type_code == 'incoming':
+            return False
+
+        Picking = self.env['stock.picking'].sudo()
+        pk = ml.picking_id
+        domain = [('state', '=', 'done'), ('id', '!=', pk.id)]
+        if 'return_id' in Picking._fields:
+            domain = ['|', ('return_id', '=', pk.id),
+                      ('origin', 'in', ['Devolución de %s' % pk.name,
+                                        'Return of %s' % pk.name])] + domain
+        else:
+            domain = [('origin', 'in', ['Devolución de %s' % pk.name,
+                                        'Return of %s' % pk.name])] + domain
+        returns = Picking.search(domain)
+        if not returns:
+            return False
+
+        qty_field = self._get_qty_field_name()
+        delivered = sum(
+            (out_ml[qty_field] or 0.0)
+            for out_ml in pk.move_line_ids
+            if out_ml.lot_id.id == ml.lot_id.id and out_ml.state == 'done'
+        )
+        returned = sum(
+            (ret_ml[qty_field] or 0.0)
+            for ret_ml in returns.mapped('move_line_ids')
+            if ret_ml.lot_id.id == ml.lot_id.id and ret_ml.state == 'done'
+        )
+        return returned + 0.0001 >= delivered
 
     def _format_blocker_document(self, blocker):
         picking = blocker.picking_id
