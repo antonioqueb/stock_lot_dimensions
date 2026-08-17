@@ -160,6 +160,7 @@
                                 <li>Tiempo máximo contemplado para descarga: <b>dos horas</b>.</li>
                                 <li>El cliente dispone de <b>24 horas</b> posteriores a la recepción del material para presentar reclamaciones.</li>
                                 <li>Los precios pueden revisarse ante incrementos relevantes en materias primas, energía o tipos de cambio.</li>
+                                <li t-if="doc.x_is_usd"><b>Pago en pesos al tipo de cambio del día del pago.</b></li>
                             </ul>
                         </div>
 
