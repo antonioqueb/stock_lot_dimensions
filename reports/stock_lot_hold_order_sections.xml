@@ -559,10 +559,16 @@
                                     <span t-esc="state_label"/>
                                 </div>
                             </div>
-                            <div t-attf-style="display: table; width: 100%; table-layout: fixed; #{'border-bottom: 1px solid #d8d8d8 !important;' if vence_visible else ''}">
+                            <div t-attf-style="display: table; width: 100%; table-layout: fixed; #{'border-bottom: 1px solid #d8d8d8 !important;' if (vence_visible or o.x_is_usd) else ''}">
                                 <div style="display: table-cell; width: 45%; padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px; border-right: 1px solid #d8d8d8 !important;">Moneda</div>
                                 <div style="display: table-cell; padding: 5px 8px; text-align: right; font-weight: 600;">
                                     <span t-field="o.currency_id.name"/>
+                                </div>
+                            </div>
+                            <div t-if="o.x_is_usd" t-attf-style="display: table; width: 100%; table-layout: fixed; #{'border-bottom: 1px solid #d8d8d8 !important;' if vence_visible else ''}">
+                                <div style="display: table-cell; width: 45%; padding: 5px 8px; color: #555; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.3px; border-right: 1px solid #d8d8d8 !important;">Pago</div>
+                                <div style="display: table-cell; padding: 5px 8px; text-align: right; font-weight: 600; overflow-wrap: anywhere; word-break: break-word;">
+                                    En pesos al tipo de cambio del día del pago
                                 </div>
                             </div>
                             <div t-if="vence_visible" style="display: table; width: 100%; table-layout: fixed;">

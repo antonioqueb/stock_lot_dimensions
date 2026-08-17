@@ -109,6 +109,10 @@
                                 <td class="p-0"><strong>Moneda:</strong></td>
                                 <td class="p-0 text-end"><span t-field="doc.currency_id.name"/></td>
                             </tr>
+                            <tr t-if="doc.x_is_usd">
+                                <td class="p-0"><strong>Pago:</strong></td>
+                                <td class="p-0 text-end">En pesos al tipo de cambio del día del pago</td>
+                            </tr>
                             <tr>
                                 <td class="p-0 pt-1"><strong>Plazos:</strong></td>
                                 <td class="p-0 pt-1 text-end"><span t-field="doc.payment_term_id.name"/></td>
