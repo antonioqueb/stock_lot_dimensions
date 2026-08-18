@@ -455,11 +455,17 @@ class StockMoveLine(models.Model):
             lambda ml: not self._som_delivery_spent_by_return(ml)
         )
 
-        # Excluir líneas del mismo pedido de venta: no es un conflicto real.
+        # Excluir líneas del mismo pedido de venta SOLO si viven en OTRO
+        # picking (la cadena PICK→OUT del mismo pedido no es conflicto).
+        # DENTRO del mismo picking sí lo es: dos líneas de venta del mismo
+        # pedido compartiendo la placa generan dos moves que la reservan
+        # doble (caso V/229: reservado al doble del físico).
         current_so = self._get_sale_order_from_move_line(line)
         if current_so:
             blockers = blockers.filtered(
                 lambda ml: self._get_sale_order_from_move_line(ml) != current_so
+                or (line.picking_id and ml.picking_id == line.picking_id
+                    and ml.move_id != line.move_id)
             )
 
         return blockers
