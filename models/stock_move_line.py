@@ -576,6 +576,15 @@ class StockMoveLine(models.Model):
                     # operaciones ABIERTAS comprometen contra el físico.
                     open_blockers = blockers.filtered(
                         lambda b: b.state != 'done')
+                    if not open_blockers:
+                        # Solo la respaldan operaciones HECHAS (su consumo ya
+                        # vive en el quant): no hay competencia ACTIVA por el
+                        # lote y no hay nada que sumar. Además este chequeo
+                        # corre en la ubicación EXACTA de la línea — en la
+                        # cadena de 2 pasos eso es SOM/Salida, donde el
+                        # material solo está de paso y el físico da 0:
+                        # bloqueaba con 'Físico 0.00 · comprometido 0.00'.
+                        continue
                     ya_comprometido = sum(
                         b[qty_field] or 0.0 for b in open_blockers)
                     intento = line[qty_field] or 0.0
