@@ -568,8 +568,16 @@ class StockMoveLine(models.Model):
                         ('quantity', '>', 0),
                     ])
                     fisico = sum(quants.mapped('quantity'))
+                    # Las salidas HECHAS ya descontaron su consumo del
+                    # quant: sumarlas contra el físico ACTUAL las contaba
+                    # DOBLE y bloqueaba el remanente legítimo (caso
+                    # 15767-9: físico restante 2.00 y "comprometido" 7.77
+                    # de una OUT ya validada → restante 0). Solo las
+                    # operaciones ABIERTAS comprometen contra el físico.
+                    open_blockers = blockers.filtered(
+                        lambda b: b.state != 'done')
                     ya_comprometido = sum(
-                        b[qty_field] or 0.0 for b in blockers)
+                        b[qty_field] or 0.0 for b in open_blockers)
                     intento = line[qty_field] or 0.0
                     if ya_comprometido + intento <= fisico + 0.0001:
                         continue
@@ -577,7 +585,8 @@ class StockMoveLine(models.Model):
                     # de duplicado dejaba adivinando cuánto quedaba).
                     restante = max(fisico - ya_comprometido, 0.0)
                     docs = ', '.join(sorted({
-                        self._format_blocker_document(b) for b in blockers}))
+                        self._format_blocker_document(b)
+                        for b in open_blockers})) or '—'
                     raise UserError(
                         f"No se puede asignar {intento:.2f} del lote "
                         f"{line.lot_id.name}: excede su remanente libre.\n\n"
