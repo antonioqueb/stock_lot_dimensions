@@ -276,7 +276,7 @@
 
                 <t t-foreach="normal_lines" t-as="calc_line">
                     <t t-set="line_gross" t-value="calc_line.price_unit * calc_line.product_uom_qty"/>
-                    <t t-set="line_discount_amount" t-value="(line_gross - calc_line.price_subtotal) if line_gross &gt;= calc_line.price_subtotal else 0.0"/>
+                    <t t-set="line_discount_amount" t-value="calc_line.currency_id.round(line_gross - calc_line.price_subtotal) if (calc_line.discount or 0.0) &gt; 0 and line_gross &gt;= calc_line.price_subtotal else 0.0"/>
                     <t t-set="gross_total_amount" t-value="gross_total_amount + line_gross"/>
                     <t t-set="line_discount_total_amount" t-value="line_discount_total_amount + line_discount_amount"/>
                 </t>
@@ -338,7 +338,7 @@
                                             
                                     <t t-set="line_discount_pct" t-value="line.discount or 0.0"/>
                                     <t t-set="line_gross" t-value="line.price_unit * line.product_uom_qty"/>
-                                    <t t-set="line_discount_amount" t-value="(line_gross - line.price_subtotal) if line_gross &gt;= line.price_subtotal else 0.0"/>
+                                    <t t-set="line_discount_amount" t-value="line.currency_id.round(line_gross - line.price_subtotal) if (line.discount or 0.0) &gt; 0 and line_gross &gt;= line.price_subtotal else 0.0"/>
 
                                     <tr style="page-break-inside: avoid;">
                                         <td class="text-center align-middle" style="overflow-wrap: anywhere; word-break: break-word;">
