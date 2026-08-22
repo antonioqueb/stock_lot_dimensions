@@ -460,12 +460,29 @@ class StockMoveLine(models.Model):
         # DENTRO del mismo picking sí lo es: dos líneas de venta del mismo
         # pedido compartiendo la placa generan dos moves que la reservan
         # doble (caso V/229: reservado al doble del físico).
+        #
+        # PERO: dos moves del mismo picking que trazan a la MISMA línea de
+        # venta son una RECONSTRUCCIÓN (el re-sync de la entrega tras
+        # desasignar/ajustar recrea el move y su línea vieja seguía viva un
+        # instante), no una doble reserva. Contarla como bloqueador hacía
+        # imposible desasignar: quitar una placa re-sincronizaba la entrega
+        # y el candado tronaba con los lotes RESTANTES de la propia línea.
+        def _ml_sale_line(ml):
+            move = ml.move_id
+            return move.sale_line_id if (
+                move and 'sale_line_id' in move._fields) else False
+
         current_so = self._get_sale_order_from_move_line(line)
         if current_so:
+            current_sale_line = _ml_sale_line(line)
             blockers = blockers.filtered(
                 lambda ml: self._get_sale_order_from_move_line(ml) != current_so
                 or (line.picking_id and ml.picking_id == line.picking_id
-                    and ml.move_id != line.move_id)
+                    and ml.move_id != line.move_id
+                    and (
+                        not current_sale_line
+                        or _ml_sale_line(ml) != current_sale_line
+                    ))
             )
 
         return blockers
