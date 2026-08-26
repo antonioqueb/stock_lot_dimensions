@@ -361,8 +361,6 @@
                                                     <t t-set="row_discount_amount" t-value="(row_gross - (line.price_subtotal * row_tax_ratio)) if has_line_discount_columns else 0.0"/>
                                                     <t t-set="row_discount_amount" t-value="row_discount_amount if row_discount_amount &gt;= 0 else 0.0"/>
                                                     <t t-set="row_subtotal" t-value="line.price_subtotal * row_tax_ratio"/>
-                                                    <t t-set="row_tax" t-value="line.price_tax * row_tax_ratio"/>
-                                                    <t t-set="row_total" t-value="line.price_total * row_tax_ratio"/>
 
                                                     <tr style="page-break-inside: avoid;">
                                                         <td class="text-center align-middle" style="overflow-wrap: anywhere; word-break: break-word;">
