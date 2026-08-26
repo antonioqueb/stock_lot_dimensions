@@ -303,18 +303,18 @@
                                     <thead>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
                                             <th class="text-center" style="color: #fff; width: 3%; font-weight: bold;">#</th>
-                                            <th style="color: #fff; width: 12%; font-weight: bold;">Lote</th>
-                                            <th style="color: #fff; width: 9%; font-weight: bold;">Bloque</th>
-                                            <th style="color: #fff; width: 8%; font-weight: bold;">Ubicación</th>
+                                            <th style="color: #fff; width: 16%; font-weight: bold;">Lote</th>
+                                            <th style="color: #fff; width: 11%; font-weight: bold;">Bloque</th>
+                                            <th style="color: #fff; width: 10%; font-weight: bold;">Ubicación</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Espesor</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Largo</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Alto</th>
-                                            <th class="text-end" style="color: #fff; width: 7%; font-weight: bold;">m²</th>
+                                            <th class="text-end" style="color: #fff; width: 9%; font-weight: bold;">m²</th>
                                             <t t-if="show_prices">
-                                                <th class="text-end" style="color: #fff; width: 8%; font-weight: bold;">P. Unitario</th>
+                                                <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">P. Unitario</th>
                                                 <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 6%; font-weight: bold;">% Desc.</th>
                                                 <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 8%; font-weight: bold;">Descuento</th>
-                                                <th class="text-end" style="color: #fff; width: 8%; font-weight: bold;">Subtotal</th>
+                                                <th class="text-end" style="color: #fff; width: 12%; font-weight: bold;">Subtotal</th>
                                             </t>
                                         </tr>
                                     </thead>
@@ -512,13 +512,13 @@
                                     <thead>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
                                             <th class="text-center" style="color: #fff; width: 4%; font-weight: bold;">#</th>
-                                            <th style="color: #fff; width: 32%; font-weight: bold;">Descripción</th>
-                                            <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">Cantidad</th>
+                                            <th style="color: #fff; width: 42%; font-weight: bold;">Descripción</th>
+                                            <th class="text-end" style="color: #fff; width: 12%; font-weight: bold;">Cantidad</th>
                                             <t t-if="show_prices">
-                                                <th class="text-end" style="color: #fff; width: 12%; font-weight: bold;">P. Unitario</th>
+                                                <th class="text-end" style="color: #fff; width: 14%; font-weight: bold;">P. Unitario</th>
                                                 <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 7%; font-weight: bold;">% Desc.</th>
                                                 <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 9%; font-weight: bold;">Descuento</th>
-                                                <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">Subtotal</th>
+                                                <th class="text-end" style="color: #fff; width: 14%; font-weight: bold;">Subtotal</th>
                                             </t>
                                         </tr>
                                     </thead>
