@@ -299,7 +299,7 @@
                                 </div>
 
                                 <table class="table table-sm table-striped"
-                                       style="width: 100%; font-size: 8.2px; border-collapse: collapse; table-layout: fixed; page-break-inside: auto;">
+                                       style="width: 100%; font-size: 8.2px; border-collapse: collapse; page-break-inside: auto;">
                                     <thead>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
                                             <th class="text-center" style="color: #fff; width: 3%; font-weight: bold;">#</th>
@@ -508,7 +508,7 @@
                                 </div>
 
                                 <table class="table table-sm table-striped"
-                                       style="width: 100%; font-size: 9px; border-collapse: collapse; table-layout: fixed; page-break-inside: auto;">
+                                       style="width: 100%; font-size: 9px; border-collapse: collapse; page-break-inside: auto;">
                                     <thead>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
                                             <th class="text-center" style="color: #fff; width: 4%; font-weight: bold;">#</th>
