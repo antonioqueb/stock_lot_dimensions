@@ -89,6 +89,9 @@
                                 <field name="notas"/>
                                 <field name="fecha_captura"/>
                                 <templates>
+                                    <t t-name="menu">
+                                        <a role="menuitem" type="delete" class="dropdown-item text-danger">Eliminar</a>
+                                    </t>
                                     <t t-name="card">
                                         <div class="oe_kanban_global_click o_kanban_record_has_image_fill">
                                             <div class="o_kanban_image">
