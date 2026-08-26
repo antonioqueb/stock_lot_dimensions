@@ -98,6 +98,19 @@
                        t-value="'Borrador' if o.state == 'draft' else 'Cotización Enviada' if o.state == 'sent' else 'Orden Confirmada' if o.state == 'sale' else 'Cerrada' if o.state == 'done' else 'Cancelada' if o.state == 'cancel' else o.state"/>
 
                     <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; line-height: 1.25;">
+                        <!-- FILAS PAREJAS: todas las filas de las tablas de
+                             lineas miden lo mismo (padding vertical y
+                             line-height forzados) sin importar si la celda
+                             trae strong, span anidado o queda vacia. -->
+                        <style>
+                            .som-uniform-rows td, .som-uniform-rows th {
+                                padding-top: 3px !important;
+                                padding-bottom: 3px !important;
+                                line-height: 1.25 !important;
+                                height: 17px;
+                                vertical-align: middle !important;
+                            }
+                        </style>
 
                         <t t-call="stock_lot_dimensions.som_report_style"/>
 
@@ -298,7 +311,7 @@
                                     <span style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #222;" t-esc="section_title"/>
                                 </div>
 
-                                <table class="table table-sm table-striped"
+                                <table class="table table-sm table-striped som-uniform-rows"
                                        style="width: 100%; font-size: 8.2px; border-collapse: collapse; page-break-inside: auto;">
                                     <thead>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
@@ -507,7 +520,7 @@
                                     <span style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #222;" t-esc="section_title"/>
                                 </div>
 
-                                <table class="table table-sm table-striped"
+                                <table class="table table-sm table-striped som-uniform-rows"
                                        style="width: 100%; font-size: 9px; border-collapse: collapse; page-break-inside: auto;">
                                     <thead>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
