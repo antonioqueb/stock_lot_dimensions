@@ -315,8 +315,6 @@
                                                 <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 6%; font-weight: bold;">% Desc.</th>
                                                 <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 8%; font-weight: bold;">Descuento</th>
                                                 <th class="text-end" style="color: #fff; width: 8%; font-weight: bold;">Subtotal</th>
-                                                <th class="text-end" style="color: #fff; width: 7%; font-weight: bold;">IVA</th>
-                                                <th class="text-end" style="color: #fff; width: 9%; font-weight: bold;">Total</th>
                                             </t>
                                         </tr>
                                     </thead>
@@ -424,13 +422,6 @@
                                                                 <span t-esc="o.currency_id.format(row_subtotal)"/>
                                                             </td>
 
-                                                            <td class="text-end align-middle" style="white-space: nowrap;">
-                                                                <span t-esc="o.currency_id.format(row_tax)"/>
-                                                            </td>
-
-                                                            <td class="text-end align-middle" style="font-weight: bold; white-space: nowrap;">
-                                                                <span t-esc="o.currency_id.format(row_total)"/>
-                                                            </td>
                                                         </t>
                                                     </tr>
                                                 </t>
@@ -476,13 +467,6 @@
                                                             <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                                         </td>
 
-                                                        <td class="text-end align-middle" style="white-space: nowrap;">
-                                                            <span t-field="line.price_tax" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                                        </td>
-
-                                                        <td class="text-end align-middle" style="font-weight: bold; white-space: nowrap;">
-                                                            <span t-field="line.price_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                                        </td>
                                                     </t>
                                                 </tr>
                                             </t>
@@ -537,8 +521,6 @@
                                                 <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 7%; font-weight: bold;">% Desc.</th>
                                                 <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 9%; font-weight: bold;">Descuento</th>
                                                 <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">Subtotal</th>
-                                                <th class="text-end" style="color: #fff; width: 8%; font-weight: bold;">IVA</th>
-                                                <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">Total</th>
                                             </t>
                                         </tr>
                                     </thead>
@@ -592,13 +574,6 @@
                                                         <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                                     </td>
 
-                                                    <td class="text-end align-middle" style="white-space: nowrap;">
-                                                        <span t-field="line.price_tax" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                                    </td>
-
-                                                    <td class="text-end align-middle" style="font-weight: bold; white-space: nowrap;">
-                                                        <span t-field="line.price_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                                    </td>
                                                 </t>
                                             </tr>
 
