@@ -319,9 +319,9 @@
                                     <th class="text-end" style="color: #fff; width: 12%; font-weight: bold;">Cantidad</th>
                                     <t t-if="show_prices">
                                         <th class="text-end" style="color: #fff; width: 14%; font-weight: bold;">P. Unitario</th>
-                                        <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 7%; font-weight: bold;">% Desc.</th>
-                                        <th t-if="has_line_discount_columns" class="text-end" style="color: #fff; width: 9%; font-weight: bold;">Descuento</th>
-                                        <th class="text-end" style="color: #fff; width: 14%; font-weight: bold;">Subtotal</th>
+                                        <!-- El descuento se muestra UNA sola vez, en el Resumen de
+                                             Totales; la partida va a precio de lista. -->
+                                        <th class="text-end" style="color: #fff; width: 14%; font-weight: bold;">Importe</th>
                                     </t>
                                 </tr>
                             </thead>
@@ -358,20 +358,11 @@
                                                 <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                             </td>
 
-                                            <td t-if="has_line_discount_columns" class="text-end align-middle" style="white-space: nowrap;">
-                                                <span t-if="line_discount_pct &gt; 0" t-esc="'%.2f%%' % line_discount_pct"/>
-                                                <span t-else="" style="color: #999;">-</span>
-                                            </td>
-
-                                            <td t-if="has_line_discount_columns" class="text-end align-middle" style="white-space: nowrap;">
-                                                <span t-if="line_discount_amount &gt; 0" style="color: #b00020; font-weight: 700;">
-                                                    -<span t-esc="line_discount_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
-                                                </span>
-                                                <span t-else="" style="color: #999;">-</span>
-                                            </td>
-
                                             <td class="text-end align-middle" style="white-space: nowrap;">
-                                                <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                                <!-- Importe a precio de lista: el descuento se resta una
+                                                     sola vez en el resumen (Importe − Descuento = Subtotal). -->
+                                                <span t-if="line_discount_amount &gt; 0" t-esc="line.currency_id.round(line_gross)" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                                <span t-else="" t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                             </td>
 
                                         </t>
@@ -439,6 +430,12 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                <tr t-if="total_discount_amount &gt; 0" style="border-bottom: 1px solid #e5e5e5;">
+                                    <td style="padding: 5px 10px; text-transform: uppercase; letter-spacing: 0.3px; color: #333;">Importe de partidas</td>
+                                    <td style="padding: 5px 10px; width: 50%; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; color: #333;">
+                                        <span t-esc="doc.currency_id.round(gross_total_amount)" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                    </td>
+                                </tr>
                                 <tr t-if="line_discount_total_amount &gt; 0" style="border-bottom: 1px solid #e5e5e5;">
                                     <td style="padding: 5px 10px; text-transform: uppercase; color: #b00020; font-weight: bold; letter-spacing: 0.3px;">Descuento en Líneas</td>
                                     <td style="padding: 5px 10px; width: 50%; text-align: right; color: #b00020; font-weight: bold; font-variant-numeric: tabular-nums; white-space: nowrap;">
