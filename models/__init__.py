@@ -17,3 +17,4 @@ from . import product_template
 from . import res_company_bank_info
 from . import res_company
 from . import stock_lot_resize
+from . import mail_thread_html_guard
