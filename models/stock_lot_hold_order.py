@@ -1502,6 +1502,21 @@ class StockLotHoldOrderLine(models.Model):
         for line in self:
             line.lot_count = len(line.lot_ids)
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Línea NUEVA con placas en una reserva YA CONFIRMADA: aparta de
+        inmediato (mismo invariante que write). Sin esto la línea se guardaba
+        con placas anotadas pero sin hold formal, otra vendedora podía
+        tomarlas y al convertir se excluían (caso RES/00328 → V/663, 28 ago
+        2026). En órdenes en borrador no hace nada: los holds nacen al
+        confirmar, como siempre."""
+        lines = super().create(vals_list)
+        to_sync = lines.filtered(
+            lambda l: l.order_id and l.order_id.state == 'confirmed' and l.lot_ids)
+        if to_sync:
+            to_sync._sync_holds_with_lots()
+        return lines
+
     def write(self, vals):
         res = super().write(vals)
         if 'lot_ids' in vals:
