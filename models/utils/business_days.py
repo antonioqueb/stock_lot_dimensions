@@ -8,7 +8,22 @@ from odoo import fields
 
 
 class BusinessDaysCalculator:
-    """Calculadora de días hábiles excluyendo sábados y domingos"""
+    """Calculadora de días hábiles excluyendo sábados y domingos.
+
+    TODO el conteo se hace en hora de Monterrey (America/Monterrey): un
+    datetime naive se interpreta como UTC (convención de Odoo) y se
+    convierte a local antes de mirar el día de la semana."""
+
+    TZ = 'America/Monterrey'
+
+    @staticmethod
+    def to_local(dt):
+        """UTC naive (o aware) -> aware en hora de Monterrey."""
+        import pytz
+        tz = pytz.timezone(BusinessDaysCalculator.TZ)
+        if dt.tzinfo is None:
+            return pytz.utc.localize(dt).astimezone(tz)
+        return dt.astimezone(tz)
     
     @staticmethod
     def is_business_day(date):
@@ -57,9 +72,14 @@ class BusinessDaysCalculator:
         Returns:
             int: Cantidad de días hábiles
         """
+        # HORA DE MONTERREY: los datetimes de Odoo son UTC naive; a partir
+        # de las 18:00 locales el día UTC ya es "mañana" y el conteo salía
+        # un día corto por las noches.
+        start_date = BusinessDaysCalculator.to_local(start_date)
+        end_date = BusinessDaysCalculator.to_local(end_date)
         dias = 0
         fecha_actual = start_date
-        
+
         while fecha_actual.date() < end_date.date():
             if BusinessDaysCalculator.is_business_day(fecha_actual):
                 dias += 1
@@ -83,10 +103,8 @@ class BusinessDaysCalculator:
         # America/Monterrey (un viernes 7pm local es viernes, aunque en UTC
         # ya sea sábado) y el resultado se guarda de vuelta en UTC naive.
         import pytz
-        tz = pytz.timezone('America/Monterrey')
         if start_date is None:
             start_date = fields.Datetime.now()
-        local = pytz.utc.localize(start_date).astimezone(tz) \
-            if start_date.tzinfo is None else start_date.astimezone(tz)
+        local = BusinessDaysCalculator.to_local(start_date)
         local_exp = BusinessDaysCalculator.add_business_days(local, days)
         return local_exp.astimezone(pytz.utc).replace(tzinfo=None)

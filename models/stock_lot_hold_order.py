@@ -340,7 +340,9 @@ class StockLotHoldOrder(models.Model):
                     if vals.get('fecha_orden')
                     else fields.Datetime.now()
                 )
-                vals['fecha_expiracion'] = BusinessDaysCalculator.add_business_days(fecha_base, 5)
+                # Hora de Monterrey (add_business_days a pelo contaba en UTC:
+                # viernes/fin de semana por la noche perdía un día hábil).
+                vals['fecha_expiracion'] = BusinessDaysCalculator.get_expiration_date(fecha_base, 5)
 
         return super().create(vals_list)
 

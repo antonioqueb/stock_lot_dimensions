@@ -215,10 +215,9 @@ class StockLotHold(models.Model):
             # Calcular fecha de expiración si no se proporciona
             if 'fecha_expiracion' not in vals and vals.get('fecha_inicio'):
                 fecha_inicio = fields.Datetime.to_datetime(vals['fecha_inicio'])
-                vals['fecha_expiracion'] = BusinessDaysCalculator.add_business_days(
-                    fecha_inicio, 
-                    5
-                )
+                # Hora de Monterrey, igual que la orden de reserva.
+                vals['fecha_expiracion'] = BusinessDaysCalculator.get_expiration_date(
+                    fecha_inicio, 5)
             
             # Validar hold duplicado para la misma compañía
             # Nota: Aunque tenemos el @api.constrains, mantenemos esta validación en create
