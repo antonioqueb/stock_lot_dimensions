@@ -21,6 +21,7 @@
                 <field name="salesperson_id" string="Vendedor" optional="hide"/>
                 <field name="reason" string="Motivo"/>
                 <field name="note" string="Detalle" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
                 <field name="document_model" column_invisible="1"/>
                 <field name="document_id" column_invisible="1"/>
             </list>
@@ -54,6 +55,9 @@
                         context="{'group_by': 'user_id'}"/>
                 <filter name="group_action" string="Agrupar por acción"
                         context="{'group_by': 'action'}"/>
+                <filter name="group_company" string="Compañía"
+                        context="{'group_by': 'company_id'}"
+                        groups="base.group_multi_company"/>
             </search>
         </field>
     </record>

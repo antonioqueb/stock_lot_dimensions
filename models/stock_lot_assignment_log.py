@@ -39,6 +39,18 @@ class StockLotAssignmentLog(models.Model):
         index=True,
         ondelete='cascade',
     )
+    # Multiempresa: la del DOCUMENTO que asigna (la escribe _som_log_lots);
+    # si no viene, la de la placa y, en último caso, la activa. Almacenado
+    # para la regla de registro; los renglones históricos se rellenan en
+    # el -u con este cómputo.
+    company_id = fields.Many2one(
+        'res.company',
+        string='Compañía',
+        compute='_compute_company_id',
+        store=True,
+        readonly=False,
+        index=True,
+    )
     action = fields.Selection(
         [('assign', 'Asignada'), ('unassign', 'Desasignada')],
         string='Acción',
@@ -78,6 +90,13 @@ class StockLotAssignmentLog(models.Model):
     # una edición hecha desde el documento.
     DEFAULT_REASON = 'Cambio de selección en el documento'
 
+    @api.depends('lot_id.company_id')
+    def _compute_company_id(self):
+        for rec in self:
+            if rec.company_id:
+                continue
+            rec.company_id = rec.lot_id.company_id or self.env.company
+
     @api.model
     def _som_current_reason(self):
         return self.env.context.get('som_lot_log_reason') or self.DEFAULT_REASON
@@ -113,6 +132,11 @@ class StockLotAssignmentLog(models.Model):
                     'document_id': document.id,
                     'document_name': document.display_name or '',
                 })
+                doc_company = (
+                    document.company_id
+                    if 'company_id' in document._fields else False)
+                if doc_company:
+                    base['company_id'] = doc_company.id
             if line is not None and line:
                 base['document_line_id'] = line.id
             if product:
@@ -123,6 +147,9 @@ class StockLotAssignmentLog(models.Model):
                 vals['lot_id'] = lot.id
                 if not vals.get('product_id') and lot.product_id:
                     vals['product_id'] = lot.product_id.id
+                if not vals.get('company_id'):
+                    vals['company_id'] = (
+                        lot.company_id.id or self.env.company.id)
                 vals_list.append(vals)
 
             return self.sudo().create(vals_list)

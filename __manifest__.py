@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Atributos Adicionales para Lotes',
-    'version': '19.0.8.23.0',
+    'version': '19.0.8.24.0',
     'category': 'Inventory/Inventory',
     'summary': 'Captura dimensiones, fotografías y gestión de reservas manuales (hold) en lotes',
     'description': """
@@ -33,6 +33,7 @@
         'security/stock_lot_hold_security.xml',
         'security/res_company_bank_info_security.xml',
         'security/ir.model.access.csv',
+        'security/multi_company_rules.xml',
 
         'data/stock_lot_hold_cron.xml',
         'data/res_company_bank_info_defaults.xml',

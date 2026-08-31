@@ -44,6 +44,8 @@ class StockLotResize(models.Model):
             ('location_id.usage', '=', 'internal'),
             ('quantity', '>', 0),
             ('lot_id', '!=', False),
+            # sudo salta las reglas: solo compañías seleccionadas
+            ('company_id', 'in', self.env.companies.ids),
         ])
         by_lot = {}
         for q in quants:

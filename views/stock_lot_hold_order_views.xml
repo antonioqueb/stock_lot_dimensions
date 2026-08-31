@@ -20,6 +20,7 @@
                 <field name="currency_id" column_invisible="1"/>
                 <field name="precio_unitario" string="Precio/m²" optional="show"/>
                 <field name="precio_total" string="Total" sum="Total General" optional="show" readonly="1"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
                 <field name="lot_ids" column_invisible="1"/>
                 <field name="lot_id" column_invisible="1"/>
                 <field name="quant_id" column_invisible="1"/>
@@ -53,6 +54,7 @@
                        decoration-muted="x_estatus_reserva in ('cancelada', 'finalizada')"/>
                 <field name="state" widget="badge" optional="hide"/>
                 <field name="sale_order_id" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
             </list>
         </field>
     </record>
@@ -83,6 +85,9 @@
                         context="{'group_by': 'user_id'}"/>
                 <filter name="group_cliente" string="Agrupar por cliente"
                         context="{'group_by': 'partner_id'}"/>
+                <filter name="group_company" string="Compañía"
+                        context="{'group_by': 'company_id'}"
+                        groups="base.group_multi_company"/>
             </search>
         </field>
     </record>
@@ -136,6 +141,7 @@
                         </group>
                         <group string="Información">
                             <field name="user_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
                             <field name="fecha_orden" readonly="1"/>
                             <field name="fecha_expiracion" readonly="1"/>
                             <field name="dias_restantes" readonly="1"

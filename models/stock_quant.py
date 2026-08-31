@@ -183,6 +183,8 @@ class StockQuant(models.Model):
             '|',
             ('fecha_expiracion', '=', False),
             ('fecha_expiracion', '>', fields.Datetime.now()),
+            # sudo salta las reglas: solo compañías seleccionadas
+            ('company_id', 'in', self.env.companies.ids),
         ])
         
         # Obtener IDs de los quants afectados
@@ -504,7 +506,14 @@ class StockQuant(models.Model):
         Performance: O(1) queries vs O(N) queries.
         """
         cliente_permitido_id = self.env.context.get('allowed_partner_id')
-        company_id = self.env.context.get('company_id') or self.env.company.id
+        # Multiempresa: los holds que bloquean son los de la compañía del
+        # STOCK que se está reservando (la de los quants), no la activa del
+        # usuario; el contexto company_id sigue mandando si viene.
+        ctx_company_id = self.env.context.get('company_id')
+        if ctx_company_id:
+            company_ids = [ctx_company_id]
+        else:
+            company_ids = quants.mapped('company_id').ids or [self.env.company.id]
         
         # Estrategia: Encontrar los "Blockers" (IDs que NO podemos usar) y restarlos.
         
@@ -512,7 +521,7 @@ class StockQuant(models.Model):
         domain_blockers = [
             ('quant_id', 'in', quants.ids),
             ('estado', '=', 'activo'),
-            ('company_id', '=', company_id) # Solo holds de esta compañía bloquean stock
+            ('company_id', 'in', company_ids) # Solo holds de esta(s) compañía(s) bloquean stock
         ]
         
         # 2. Refinar lógica según cliente

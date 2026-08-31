@@ -208,9 +208,15 @@ class StockLotHold(models.Model):
         3. Validar que no exista otro hold activo para el mismo quant en la misma compañía
         """
         for vals in vals_list:
-            # Asegurar que tenga company_id
+            # Asegurar que tenga company_id: la del QUANT que se aparta (el
+            # hold vive donde vive el material), no la compañía activa del
+            # usuario. env.company solo como respaldo sin quant/compañía.
             if 'company_id' not in vals:
-                vals['company_id'] = self.env.company.id
+                quant_company_id = False
+                if vals.get('quant_id'):
+                    quant_company_id = self.env['stock.quant'].sudo().browse(
+                        int(vals['quant_id'])).company_id.id
+                vals['company_id'] = quant_company_id or self.env.company.id
             
             # Calcular fecha de expiración si no se proporciona
             if 'fecha_expiracion' not in vals and vals.get('fecha_inicio'):
@@ -322,7 +328,7 @@ class StockLotHold(models.Model):
         if holds_expirados:
             holds_expirados.write({'estado': 'expirado'})
             _logger.info(
-                "Expiradas %d reservas de lotes en compañía %s", 
+                "Expiradas %d reservas de lotes (compañías: %s)",
                 len(holds_expirados),
-                self.env.company.name
+                ', '.join(holds_expirados.mapped('company_id.name')) or '-',
             )

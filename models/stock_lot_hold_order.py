@@ -327,11 +327,37 @@ class StockLotHoldOrder(models.Model):
                     order.fecha_expiracion,
                 )
 
+    @api.model
+    def _som_next_sequence(self, code, company=None):
+        """next_by_code con la compañía del documento; si la compañía no tiene
+        secuencia propia y la plantilla es de otra compañía, se clona para ella."""
+        company = company or self.env.company
+        Seq = self.env['ir.sequence'].sudo()
+        name = Seq.with_company(company).next_by_code(code)
+        if name:
+            return name
+        template = Seq.search([('code', '=', code)], order='company_id', limit=1)
+        if not template:
+            return False
+        template.copy({
+            'company_id': company.id,
+            'number_next': 1,
+            'name': '%s (%s)' % (template.name, company.name),
+        })
+        return Seq.with_company(company).next_by_code(code)
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            # Multiempresa: la compañía se resuelve ANTES del folio y de la
+            # moneda (la orden puede nacer para otra compañía que la activa).
+            company = self.env['res.company'].browse(
+                vals['company_id']) if vals.get('company_id') else self.env.company
+            if 'currency_id' not in vals and company.currency_id:
+                vals['currency_id'] = company.currency_id.id
             if vals.get('name', '/') == '/':
-                vals['name'] = self.env['ir.sequence'].next_by_code('stock.lot.hold.order') or '/'
+                vals['name'] = self._som_next_sequence(
+                    'stock.lot.hold.order', company) or '/'
 
             # Auto-calcular fecha_expiracion incluso cuando fecha_orden no viene en vals
             if 'fecha_expiracion' not in vals:
@@ -1185,14 +1211,19 @@ class StockLotHoldOrder(models.Model):
         notes = self.notas or ''
 
         pricelist = self.env['product.pricelist'].search([
-            ('name', '=', self.currency_id.name)
+            ('name', '=', self.currency_id.name),
+            ('company_id', 'in', [self.company_id.id, False]),
         ], limit=1)
 
         if not pricelist:
             raise UserError(f'No se encontró lista de precios para {self.currency_id.name}')
 
         try:
-            result = self.env['sale.order'].with_context(
+            # with_company: la SO (y sus defaults de diario/almacén/lista)
+            # nace en la compañía de la RESERVA, no en la activa del usuario.
+            result = self.env['sale.order'].with_company(
+                self.company_id,
+            ).with_context(
                 from_hold_order=True,
                 hold_order_id=self.id,
             ).create_from_shopping_cart(
@@ -1429,6 +1460,9 @@ class StockLotHoldOrderLine(models.Model):
         required=True,
         ondelete='cascade',
     )
+    company_id = fields.Many2one(
+        'res.company', string='Compañía', related='order_id.company_id',
+        store=True, readonly=True, index=True)
     product_id = fields.Many2one('product.product', string='Producto', required=True)
 
     # MÁSCARA COMERCIAL por venta (ver sale.order.line.x_mask_name): el
@@ -1587,10 +1621,14 @@ class StockLotHoldOrderLine(models.Model):
         Se toma el MÁXIMO de ambas para no restar doble cuando la reserva
         estándar sí existe. El apartado jamás propone ni acepta material
         que otro documento ya comprometió."""
+        # sudo salta las reglas: se acota a la compañía de la ORDEN (con
+        # varias compañías el mismo lote no debe sumar stock ajeno).
+        company = self.order_id.company_id or self.env.company
         quants = self.env['stock.quant'].sudo().search([
             ('lot_id', '=', lot.id),
             ('quantity', '>', 0),
             ('location_id.usage', '=', 'internal'),
+            ('company_id', '=', company.id),
         ])
         fisico = sum(quants.mapped('quantity'))
         reservado = sum(quants.mapped('reserved_quantity'))

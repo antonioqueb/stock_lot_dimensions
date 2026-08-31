@@ -259,7 +259,12 @@ class StockMoveLine(models.Model):
             return picking.sale_id.sudo()
 
         if picking and picking.origin:
-            sale_order = SaleOrder.search([('name', '=', picking.origin)], limit=1)
+            # sudo salta las reglas y el folio se repite entre compañías:
+            # la SO buscada por origin es la de la compañía del picking.
+            so_domain = [('name', '=', picking.origin)]
+            if picking.company_id:
+                so_domain.append(('company_id', '=', picking.company_id.id))
+            sale_order = SaleOrder.search(so_domain, limit=1)
             if sale_order:
                 return sale_order
 
@@ -501,6 +506,9 @@ class StockMoveLine(models.Model):
         Picking = self.env['stock.picking'].sudo()
         pk = ml.picking_id
         domain = [('state', '=', 'done'), ('id', '!=', pk.id)]
+        if pk.company_id:
+            # sudo: las devoluciones son de la compañía del picking
+            domain.append(('company_id', '=', pk.company_id.id))
         if 'return_id' in Picking._fields:
             domain = ['|', ('return_id', '=', pk.id),
                       ('origin', 'in', ['Devolución de %s' % pk.name,

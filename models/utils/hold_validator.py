@@ -37,6 +37,14 @@ class HoldValidator:
         
         return partner
     
+    def _company_from_location(self, location_id):
+        """Compañía de la UBICACIÓN (multiempresa: el stock manda), con
+        respaldo en la compañía activa del usuario."""
+        location = self.env['stock.location'].browse(location_id) if location_id else None
+        if location and location.company_id:
+            return location.company_id.id
+        return self.env.company.id
+
     def get_available_lots(self, product_id, location_id, customer_id, company_id=None):
         """
         Obtiene IDs de lotes disponibles para un cliente en una compañía específica
@@ -45,13 +53,14 @@ class HoldValidator:
             product_id: int - ID del producto
             location_id: int - ID de la ubicación
             customer_id: int - ID del cliente
-            company_id: int - ID de la compañía (opcional, usa la actual por defecto)
+            company_id: int - ID de la compañía (opcional; sin ella se toma
+                la de la ubicación y, en último caso, la activa)
             
         Returns:
             list: IDs de lotes disponibles
         """
         if company_id is None:
-            company_id = self.env.company.id
+            company_id = self._company_from_location(location_id)
         
         # Buscar quants de la compañía especificada
         quants = self.env['stock.quant'].search([
@@ -121,13 +130,14 @@ class HoldValidator:
             lot_id: int - ID del lote
             location_id: int - ID de la ubicación
             customer_id: int - ID del cliente
-            company_id: int - ID de la compañía (opcional, usa la actual por defecto)
+            company_id: int - ID de la compañía (opcional; sin ella se toma
+                la de la ubicación y, en último caso, la activa)
             
         Raises:
             ValidationError: Si el lote está reservado para otro cliente en la misma compañía
         """
         if company_id is None:
-            company_id = self.env.company.id
+            company_id = self._company_from_location(location_id)
         
         # Buscar quant con hold en la compañía especificada
         quant = self.env['stock.quant'].search([
