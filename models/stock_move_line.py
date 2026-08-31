@@ -17,6 +17,17 @@ _logger = logging.getLogger(__name__)
 class StockMoveLine(models.Model):
     _inherit = 'stock.move.line'
 
+    def _prepare_new_lot_vals(self):
+        """Multiempresa: el core solo pone compañía al lote si el PRODUCTO
+        tiene compañía; con productos compartidos el lote nacía sin compañía
+        (visible para todas). Una placa es física y pertenece a la compañía
+        que la recibe: se fija la del movimiento (igual que los lotes que
+        crea el packing list)."""
+        vals = super()._prepare_new_lot_vals()
+        if not vals.get('company_id') and self.company_id:
+            vals['company_id'] = self.company_id.id
+        return vals
+
     # Estados donde una línea de movimiento sigue comprometiendo el lote.
     # Se excluye únicamente cancel.
     _LOT_COMMITMENT_STATES = [
