@@ -450,8 +450,13 @@ class SaleOrder(models.Model):
         for product in products:
             product_rec = self.env['product.product'].browse(product['product_id'])
             
-            if apply_tax and product_rec.taxes_id:
-                tax_ids = [(6, 0, product_rec.taxes_id.ids)]
+            # Multiempresa: solo los impuestos de la compañía de la ORDEN.
+            # taxes_id del producto (compartido) trae los de TODAS las
+            # compañías; escribir uno ajeno truena con AccessError.
+            company_taxes = product_rec.sudo().taxes_id.filtered(
+                lambda t: t.company_id.id == company_id)
+            if apply_tax and company_taxes:
+                tax_ids = [(6, 0, company_taxes.ids)]
             else:
                 tax_ids = [(5, 0, 0)]
             
@@ -475,8 +480,10 @@ class SaleOrder(models.Model):
             for service in services:
                 service_product = self.env['product.product'].browse(service['product_id'])
                 
-                if apply_tax and service_product.taxes_id:
-                    tax_ids = [(6, 0, service_product.taxes_id.ids)]
+                service_taxes = service_product.sudo().taxes_id.filtered(
+                    lambda t: t.company_id.id == company_id)
+                if apply_tax and service_taxes:
+                    tax_ids = [(6, 0, service_taxes.ids)]
                 else:
                     tax_ids = [(5, 0, 0)]
                 
