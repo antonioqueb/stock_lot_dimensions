@@ -262,6 +262,46 @@ class SaleOrder(models.Model):
     x_project_id = fields.Many2one('project.project', string='Proyecto')
     x_architect_id = fields.Many2one('res.partner', string='Embajador')
 
+    # MÁSCARA DE CLIENTE por venta (1 sep 2026): nombre con el que sale el
+    # cliente en TODOS los documentos de la venta (cotización, detalle,
+    # entregas, remisiones, pick tickets, recibos). La ficha del cliente
+    # NO se toca — es solo la cara impresa de esta orden. Misma idea que la
+    # máscara de producto (x_mask_name en la línea).
+    x_partner_mask_name = fields.Char(
+        string='Máscara de cliente',
+        copy=True,
+        tracking=True,
+        help='Si se captura, los documentos de esta venta salen a este '
+             'nombre en lugar del nombre real del cliente. La ficha del '
+             'cliente no cambia.',
+    )
+    x_partner_display = fields.Char(
+        string='Cliente (impreso)',
+        compute='_compute_x_partner_display',
+        help='Nombre del cliente tal como se imprime: la máscara si existe, '
+             'si no el nombre real. Úsalo en los reportes.',
+    )
+
+    @api.depends('partner_id.name', 'partner_id.display_name', 'x_partner_mask_name')
+    def _compute_x_partner_display(self):
+        for order in self:
+            mask = (order.x_partner_mask_name or '').strip()
+            order.x_partner_display = mask or order.partner_id.name or order.partner_id.display_name or ''
+
+    def som_partner_print_name(self, partner=None):
+        """Nombre a imprimir para `partner` en documentos de ESTA venta: la
+        máscara si el partner es el cliente de la orden (o uno de sus
+        contactos/direcciones), si no su nombre real."""
+        self.ensure_one()
+        partner = partner or self.partner_id
+        mask = (self.x_partner_mask_name or '').strip()
+        if mask and partner and (
+            partner == self.partner_id
+            or partner.commercial_partner_id == self.partner_id.commercial_partner_id
+        ):
+            return mask
+        return partner.name or partner.display_name or ''
+
     # PROPUESTA COMERCIAL SOM: logo del CLIENTE que se imprime junto al de
     # la compañía en el reporte de propuesta (solo cotizaciones).
     x_client_logo = fields.Binary(
@@ -587,3 +627,21 @@ class SaleOrder(models.Model):
         for order in self:
             if order.picking_ids:
                 cleaner.clear_pickings_lots(order.picking_ids, protected_lot_ids=protected_lot_ids)
+
+
+class StockPickingPartnerMask(models.Model):
+    _inherit = 'stock.picking'
+
+    x_partner_mask_name = fields.Char(
+        related='sale_id.x_partner_mask_name', string='Máscara de cliente', readonly=True)
+    x_partner_display = fields.Char(
+        string='Cliente (impreso)', compute='_compute_x_partner_display',
+        help='Máscara de cliente de la venta origen o nombre real del destinatario.')
+
+    @api.depends('partner_id.name', 'sale_id.x_partner_mask_name')
+    def _compute_x_partner_display(self):
+        for picking in self:
+            if picking.sale_id:
+                picking.x_partner_display = picking.sale_id.som_partner_print_name(picking.partner_id)
+            else:
+                picking.x_partner_display = picking.partner_id.name or picking.partner_id.display_name or ''

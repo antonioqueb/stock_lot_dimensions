@@ -17,4 +17,17 @@
         </field>
     </record>
 
+    <!-- MÁSCARA DE CLIENTE: debajo del cliente en el encabezado. -->
+    <record id="view_order_form_partner_mask" model="ir.ui.view">
+        <field name="name">sale.order.form.partner.mask</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id'][not(ancestor::field)]" position="after">
+                <field name="x_partner_mask_name"
+                       placeholder="Nombre con el que saldrá el cliente en los documentos"/>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>
