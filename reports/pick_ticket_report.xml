@@ -48,9 +48,11 @@
                                     <strong style="font-size: 10px; text-transform: uppercase;">Cliente</strong>
                                 </div>
                                 <t t-set="commercial_partner" t-value="o.sale_id.partner_id if o.sale_id else o.partner_id"/>
+                                <!-- Máscara de cliente de la venta: manda sobre el nombre real. -->
+                                <t t-set="som_mask" t-value="o.sale_id.x_partner_mask_name if o.sale_id else False"/>
                                 
                                 <div style="line-height: 1.2; padding-left: 2px;">
-                                    <span style="font-weight: bold; font-size: 12px;" t-esc="commercial_partner.name"/>
+                                    <span style="font-weight: bold; font-size: 12px;" t-esc="som_mask or commercial_partner.name"/>
                                 </div>
                             </div>
 
@@ -60,11 +62,11 @@
                                 </div>
                                 <div style="font-size: 10px; color: #333; line-height: 1.2; padding-left: 2px;">
                                     <t t-if="o.move_ids and o.move_ids[0].partner_id and o.move_ids[0].partner_id.id != commercial_partner.id">
-                                        <strong t-field="o.move_ids[0].partner_id.name"/><br/>
+                                        <strong t-esc="som_mask or o.move_ids[0].partner_id.name"/><br/>
                                         <span t-field="o.move_ids[0].partner_id.contact_address"/>
                                     </t>
                                     <t t-elif="o.partner_id and o.partner_id.id != commercial_partner.id">
-                                        <strong t-field="o.partner_id.name"/><br/>
+                                        <strong t-esc="som_mask or o.partner_id.name"/><br/>
                                         <span t-field="o.partner_id.contact_address"/>
                                     </t>
                                     <t t-else="">

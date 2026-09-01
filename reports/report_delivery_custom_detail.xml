@@ -22,7 +22,7 @@
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">stock_lot_dimensions.report_delivery_custom_document</field>
         <field name="report_file">stock_lot_dimensions.report_delivery_custom_document</field>
-        <field name="print_report_name">'Remisión - %s - %s' % (object.name, object.partner_id.name or '')</field>
+        <field name="print_report_name">'Remisión - %s - %s' % (object.name, object.x_partner_mask_name or object.partner_id.name or '')</field>
         <field name="binding_model_id" ref="stock.model_stock_picking"/>
         <field name="binding_type">report</field>
     </record>
@@ -69,10 +69,12 @@
                                     <strong style="font-size: 10px; text-transform: uppercase;">Cliente / Facturación</strong>
                                 </div>
                                 <t t-set="commercial_partner" t-value="o.sale_id.partner_id if o.sale_id else o.partner_id"/>
+                                <!-- Máscara de cliente de la venta: manda sobre el nombre real. -->
+                                <t t-set="som_mask" t-value="o.sale_id.x_partner_mask_name if o.sale_id else False"/>
                                 
                                 <div style="line-height: 1.2; padding-left: 2px;">
-                                    <span style="font-weight: bold; font-size: 12px;" t-esc="commercial_partner.name"/><br/>
-                                    <span t-if="commercial_partner.vat">RFC: <span t-esc="commercial_partner.vat"/></span>
+                                    <span style="font-weight: bold; font-size: 12px;" t-esc="som_mask or commercial_partner.name"/><br/>
+                                    <span t-if="commercial_partner.vat and not som_mask">RFC: <span t-esc="commercial_partner.vat"/></span>
                                 </div>
                                 <div class="mt-1" style="border-top: 1px dotted #9f9f9fff; padding-top: 1px;">
                                     <div style="font-size: 9px; color: #333; line-height: 1.1; margin-top: 2px;">
@@ -88,11 +90,11 @@
                                 </div>
                                 <div style="font-size: 10px; color: #333; line-height: 1.2; padding-left: 2px;">
                                     <t t-if="o.move_ids and o.move_ids[0].partner_id and o.move_ids[0].partner_id.id != commercial_partner.id">
-                                        <strong t-field="o.move_ids[0].partner_id.name"/><br/>
+                                        <strong t-esc="som_mask or o.move_ids[0].partner_id.name"/><br/>
                                         <span t-field="o.move_ids[0].partner_id.contact_address"/>
                                     </t>
                                     <t t-elif="o.partner_id and o.partner_id.id != commercial_partner.id">
-                                        <strong t-field="o.partner_id.name"/><br/>
+                                        <strong t-esc="som_mask or o.partner_id.name"/><br/>
                                         <span t-field="o.partner_id.contact_address"/>
                                     </t>
                                     <t t-else="">
@@ -249,7 +251,7 @@
                                     </t>
                                     <div style="border-top: 1px solid #000; padding-top: 5px;">
                                         <strong style="font-size: 9px; text-transform: uppercase;">RECIBIDO POR</strong><br/>
-                                        <span style="font-size: 9px;" t-esc="o.x_received_by_name or o.partner_id.name"/>
+                                        <span style="font-size: 9px;" t-esc="o.x_received_by_name or (o.sale_id.x_partner_mask_name if o.sale_id else False) or o.partner_id.name"/>
                                     </div>
                                 </div>
                                 <div class="col-3"></div>

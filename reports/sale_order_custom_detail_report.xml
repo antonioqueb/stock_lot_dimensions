@@ -172,8 +172,8 @@
                                         <!-- CLIENTE -->
                                         <td style="vertical-align: top; padding: 0; border: 1px solid #d8d8d8 !important;">
                                             <div style="padding: 6px 8px; border-bottom: 1px solid #d8d8d8 !important; overflow-wrap: anywhere; word-break: break-word;">
-                                                <span style="font-weight: bold; font-size: 11px;" t-field="o.partner_id.name"/>
-                                                <span t-if="o.partner_id.vat" style="display: block; font-size: 8.5px; color: #555; margin-top: 2px;">
+                                                <span style="font-weight: bold; font-size: 11px;" t-esc="o.x_partner_display"/>
+                                                <span t-if="o.partner_id.vat and not o.x_partner_mask_name" style="display: block; font-size: 8.5px; color: #555; margin-top: 2px;">
                                                     RFC: <span t-field="o.partner_id.vat"/>
                                                 </span>
                                             </div>
