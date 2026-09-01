@@ -124,7 +124,9 @@
                     </div>
                     <group>
                         <group string="Datos del Cliente">
-                            <field name="partner_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
+                            <!-- Cliente y vendedor SIEMPRE editables: al cambiarlos el
+                                 backend re-asigna los holds de las placas al nuevo dueño. -->
+                            <field name="partner_id"/>
                             <!-- Correo y teléfono del cliente (related
                                  editable): el correo es el que recibe la
                                  confirmación y los avisos de vencimiento.
@@ -140,7 +142,7 @@
                             <field name="arquitecto_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
                         </group>
                         <group string="Información">
-                            <field name="user_id" readonly="state in ['done', 'cancel'] or sale_order_id"/>
+                            <field name="user_id"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="fecha_orden" readonly="1"/>
                             <field name="fecha_expiracion" readonly="1"/>

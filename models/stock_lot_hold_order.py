@@ -412,6 +412,71 @@ class StockLotHoldOrder(models.Model):
 
         return quant
 
+    # ------------------------------------------------------------------
+    # DUEÑO DE LA RESERVA: cliente / vendedor / proyecto / embajador.
+    # Cambiar cualquiera en la orden cambia el dueño de los holds de sus
+    # placas EN ESE MISMO INSTANTE. Antes los holds se quedaban con el
+    # cliente original y la conversión a venta tronaba con "reservado
+    # para otro cliente".
+    # ------------------------------------------------------------------
+    _SOM_HOLD_OWNER_FIELDS = ('partner_id', 'user_id', 'project_id', 'arquitecto_id')
+    _SOM_HOLD_OWNER_LABELS = {
+        'partner_id': 'Cliente',
+        'user_id': 'Vendedor',
+        'project_id': 'Proyecto',
+        'arquitecto_id': 'Embajador',
+    }
+
+    def write(self, vals):
+        owner_keys = [k for k in self._SOM_HOLD_OWNER_FIELDS if k in vals]
+        before = {}
+        if owner_keys:
+            for order in self:
+                before[order.id] = {
+                    k: (order[k].id, order[k].display_name) for k in owner_keys}
+        res = super().write(vals)
+        if owner_keys:
+            self._som_propagate_owner_to_holds(owner_keys, before)
+        return res
+
+    def _som_order_holds(self):
+        """Todos los holds ligados a las líneas de la orden (activos e
+        históricos): el dueño debe ser coherente en todos."""
+        self.ensure_one()
+        Hold = self.env['stock.lot.hold'].sudo()
+        holds = Hold.browse()
+        for line in self.hold_line_ids:
+            holds |= line.hold_ids.sudo()
+            if line.hold_id:
+                holds |= line.hold_id.sudo()
+        return holds
+
+    def _som_propagate_owner_to_holds(self, owner_keys, before=None):
+        before = before or {}
+        for order in self:
+            prev = before.get(order.id, {})
+            changed = [
+                k for k in owner_keys
+                if prev.get(k, (None, None))[0] != (order[k].id or False)]
+            if not changed:
+                continue
+            holds = order._som_order_holds()
+            if holds:
+                holds.with_context(skip_hold_validation=True).write({
+                    k: order[k].id or False for k in changed})
+            active = len(holds.filtered(lambda h: h.estado == 'activo'))
+            detail = Markup('<br/>').join(
+                Markup('%s: %s → <b>%s</b>') % (
+                    self._SOM_HOLD_OWNER_LABELS[k],
+                    prev.get(k, (None, None))[1] or '—',
+                    order[k].display_name if order[k] else '—')
+                for k in changed)
+            order.message_post(body=Markup(
+                '🔁 <b>Cambio de dueño de la reserva.</b><br/>%s<br/>'
+                '<small>%d hold(s) actualizados (%d activos): el material '
+                'queda a nombre del nuevo cliente/vendedor.</small>') % (
+                    detail, len(holds), active))
+
     def action_confirm(self):
         for order in self:
             # Guard de estado: sin esto, una orden cancelada podía re-confirmarse
@@ -1251,6 +1316,10 @@ class StockLotHoldOrder(models.Model):
 
             if result.get('success'):
                 sale_order = self.env['sale.order'].browse(result['order_id'])
+                # La venta nace a nombre del VENDEDOR de la reserva (no de
+                # quien pulsa Convertir): el dueño del material es él.
+                if self.user_id and sale_order.user_id != self.user_id:
+                    sale_order.sudo().write({'user_id': self.user_id.id})
                 self.write({'sale_order_id': sale_order.id, 'state': 'done'})
 
                 for line in self.hold_line_ids:
