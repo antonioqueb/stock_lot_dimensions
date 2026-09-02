@@ -127,11 +127,17 @@ class PackingListImportWizard(models.TransientModel):
         return (res[0] + 1) if res and res[0] else 1
 
     def _get_next_lot_number_for_prefix(self, prefix):
+        # CANDADO GLOBAL DE FOLIOS: el siguiente numero se calcula sobre
+        # TODOS los lotes existentes con ese prefijo (cualquier producto,
+        # cualquier estado del picking, archivados incluidos). El join a
+        # pickings validados hacia invisible un lote recien creado en una
+        # recepcion sin validar y el mismo numero se estrenaba dos veces
+        # (caso S68-01: PULIDO y CEPILLADO homonimos en el mismo contenedor).
         self.env.cr.execute("""
             SELECT sl.name FROM stock_lot sl
-            INNER JOIN stock_move_line sml ON sml.lot_id = sl.id
-            INNER JOIN stock_picking sp ON sp.id = sml.picking_id
-            WHERE sl.name LIKE %s AND sp.state = 'done' AND sp.company_id = %s
+            WHERE sl.name LIKE %s
+              AND (sl.company_id = %s OR sl.company_id IS NULL)
+              AND SUBSTRING(sl.name FROM '-([0-9]+)$') IS NOT NULL
             ORDER BY CAST(SUBSTRING(sl.name FROM '-([0-9]+)$') AS INTEGER) DESC LIMIT 1
         """, (f'{prefix}-%', self.picking_id.company_id.id))
         res = self.env.cr.fetchone()
