@@ -91,11 +91,45 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <t t-foreach="doc.order_line" t-as="line">
-                                    <tr t-if="line.display_type == 'line_section'" style="background: #eef2f7;">
-                                        <td colspan="7" style="padding: 4px 8px; font-weight: 800; font-size: 9px; text-transform: uppercase; color: #334155; border: 1px solid #e2e8f0;" t-esc="line.name"/>
+                                <!-- AGRUPADO POR TIPO DE PRODUCTO (misma clasificación y orden que
+                                     "Orden de Venta - Detalle"): Placas · Formatos · Adhesivos y
+                                     Selladores · Accesorios · Otros Materiales · Servicios · Descuentos.
+                                     Dentro de cada grupo, la sección capturada por el vendedor
+                                     (x_user_section_name) se muestra como subtítulo. -->
+                                <t t-set="prop_lines" t-value="doc.order_line.filtered(lambda l: not l.display_type and l.product_id)"/>
+                                <t t-set="prop_normal" t-value="prop_lines.filtered(lambda l: l.price_subtotal &gt;= 0)"/>
+                                <t t-set="prop_discounts" t-value="prop_lines.filtered(lambda l: l.price_subtotal &lt; 0)"/>
+                                <t t-set="prop_placas" t-value="prop_normal.filtered(lambda l: l.product_id.type != 'service' and 'Placas' in (l.product_id.categ_id.complete_name or ''))"/>
+                                <t t-set="prop_formatos" t-value="prop_normal.filtered(lambda l: l.product_id.type != 'service' and 'Formatos' in (l.product_id.categ_id.complete_name or ''))"/>
+                                <t t-set="prop_adhesivos" t-value="prop_normal.filtered(lambda l: l.product_id.type != 'service' and ('Adhesivos' in (l.product_id.categ_id.complete_name or '') or 'Selladores' in (l.product_id.categ_id.complete_name or '')))"/>
+                                <t t-set="prop_accesorios" t-value="prop_normal.filtered(lambda l: l.product_id.type != 'service' and 'Accesorios' in (l.product_id.categ_id.complete_name or ''))"/>
+                                <t t-set="prop_services" t-value="prop_normal.filtered(lambda l: l.product_id.type == 'service' or 'Servicios' in (l.product_id.categ_id.complete_name or ''))"/>
+                                <t t-set="prop_classified_ids" t-value="(prop_placas | prop_formatos | prop_adhesivos | prop_accesorios | prop_services).ids"/>
+                                <t t-set="prop_otros" t-value="prop_normal.filtered(lambda l: l.id not in prop_classified_ids)"/>
+
+                                <t t-foreach="[
+                                    (prop_placas, 'Placas'),
+                                    (prop_formatos, 'Formatos'),
+                                    (prop_adhesivos, 'Adhesivos y Selladores'),
+                                    (prop_accesorios, 'Accesorios'),
+                                    (prop_otros, 'Otros Materiales'),
+                                    (prop_services, 'Servicios'),
+                                    (prop_discounts, 'Descuentos'),
+                                ]" t-as="prop_group">
+                                <t t-set="group_lines" t-value="prop_group[0]"/>
+                                <t t-set="group_title" t-value="prop_group[1]"/>
+                                <t t-if="group_lines">
+                                <tr style="background: #0f172a;">
+                                    <td colspan="7" style="padding: 4px 8px; font-weight: 800; font-size: 9px; text-transform: uppercase; letter-spacing: .5px; color: #ffffff; border: 1px solid #0f172a;" t-esc="group_title"/>
+                                </tr>
+                                <t t-set="prop_last_usec" t-value="''"/>
+                                <t t-foreach="group_lines" t-as="line">
+                                    <t t-set="prop_usec" t-value="line.x_user_section_name if 'x_user_section_name' in line._fields else ''"/>
+                                    <tr t-if="prop_usec and prop_usec != prop_last_usec" style="background: #eef2f7;">
+                                        <td colspan="7" style="padding: 3px 8px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #334155; border: 1px solid #e2e8f0;" t-esc="prop_usec"/>
                                     </tr>
-                                    <tr t-elif="not line.display_type and line.product_id" style="page-break-inside: avoid;">
+                                    <t t-set="prop_last_usec" t-value="prop_usec or prop_last_usec"/>
+                                    <tr style="page-break-inside: avoid;">
                                         <td style="padding: 4px 6px; border: 1px solid #e2e8f0; font-weight: 700; color: #0f172a;">
                                             <t t-esc="line.x_mask_name or line.product_id.display_name"/>
                                         </td>
@@ -121,6 +155,17 @@
                                             <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
                                         </td>
                                     </tr>
+                                </t>
+                                <!-- Subtotal del grupo -->
+                                <tr style="background: #f8fafc;">
+                                    <td colspan="6" style="padding: 3px 8px; text-align: right; font-size: 8px; font-weight: 700; color: #475569; border: 1px solid #e2e8f0; text-transform: uppercase;">
+                                        Subtotal <t t-esc="group_title"/>
+                                    </td>
+                                    <td style="padding: 3px 6px; text-align: right; border: 1px solid #e2e8f0; white-space: nowrap; font-weight: 800; color: #0f172a;">
+                                        <span t-esc="sum(group_lines.mapped('price_subtotal'))" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                    </td>
+                                </tr>
+                                </t>
                                 </t>
                             </tbody>
                         </table>
