@@ -460,7 +460,9 @@ class SaleOrder(models.Model):
                         'needs_authorization': True,
                         'authorization_id': result['authorization_id'],
                         'authorization_name': result['authorization_name'],
-                        'message': f'Solicitud de autorización {result["authorization_name"]} creada. Espere aprobación del autorizador.'
+                        'message': result.get('message') or (
+                            f'Solicitud de autorización {result["authorization_name"]} creada. '
+                            'Espere aprobación del autorizador.')
                     }
         
         company_id = self.env.context.get('company_id') or self.env.company.id
