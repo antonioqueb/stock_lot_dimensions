@@ -50,6 +50,25 @@
             flex: 1 1 340px;
             max-width: 520px;
 
+            // Buscador por lote: más angosto y con botón para quitar el filtro
+            &.o_slr_lotsearch {
+                flex: 1 1 260px;
+                max-width: 360px;
+
+                input.form-control { padding-right: 36px; }
+
+                .o_slr_lotclear {
+                    position: absolute;
+                    right: 4px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #64748b;
+                    z-index: 2;
+                    padding: 4px 8px;
+                    text-decoration: none;
+                }
+            }
+
             input.form-control {
                 height: 42px;
                 border-radius: 12px;

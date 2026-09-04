@@ -18,6 +18,11 @@ export class ResizePlates extends Component {
             productQuery: "",
             productOptions: [],
             product: null,
+            // Búsqueda por LOTE: opciones del servidor y filtro sobre la
+            // cuadrícula cargada (texto libre, coincidencia parcial).
+            lotQuery: "",
+            lotOptions: [],
+            lotFilter: "",
             loading: false,
             plates: [],
             // ediciones por lot_id: { alto, ancho }
@@ -55,7 +60,58 @@ export class ResizePlates extends Component {
         this.state.product = opt;
         this.state.productOptions = [];
         this.state.productQuery = opt.name;
+        this.state.lotFilter = "";
         await this.loadPlates();
+    }
+
+    // ── Buscador por lote (cualquier producto con stock interno) ──
+    onLotQuery(ev) {
+        this.state.lotQuery = ev.target.value;
+        // Si ya hay placas cargadas, el mismo texto filtra la cuadrícula.
+        this.state.lotFilter = this.state.product ? this.state.lotQuery : "";
+        clearTimeout(this._lotTimer);
+        this._lotTimer = setTimeout(() => this.searchLots(), 250);
+    }
+
+    async searchLots() {
+        const q = (this.state.lotQuery || "").trim();
+        if (q.length < 2) {
+            this.state.lotOptions = [];
+            return;
+        }
+        try {
+            this.state.lotOptions = await this.orm.call("stock.lot", "slr_search_lots", [q]);
+        } catch (e) {
+            this.state.lotOptions = [];
+        }
+    }
+
+    async pickLot(opt) {
+        this.state.lotOptions = [];
+        this.state.lotQuery = opt.lot_name;
+        if (!this.state.product || this.state.product.id !== opt.product_id) {
+            this.state.product = { id: opt.product_id, name: opt.product_name };
+            this.state.productQuery = opt.product_name;
+            this.state.productOptions = [];
+            await this.loadPlates();
+        }
+        this.state.lotFilter = opt.lot_name;
+    }
+
+    clearLotFilter() {
+        this.state.lotFilter = "";
+        this.state.lotQuery = "";
+        this.state.lotOptions = [];
+    }
+
+    // Placas visibles: las cargadas del producto, acotadas por el filtro
+    // de lote (coincidencia parcial, sin distinguir mayúsculas).
+    get visiblePlates() {
+        const f = (this.state.lotFilter || "").trim().toUpperCase();
+        if (!f) {
+            return this.state.plates;
+        }
+        return this.state.plates.filter((p) => (p.lot_name || "").toUpperCase().includes(f));
     }
 
     async loadPlates() {
@@ -83,7 +139,7 @@ export class ResizePlates extends Component {
     // ── Agrupado por bloque (mismo lenguaje del selector de ventas/hold) ──
     get groups() {
         const map = new Map();
-        for (const p of this.state.plates) {
+        for (const p of this.visiblePlates) {
             if (!map.has(p.bloque)) {
                 map.set(p.bloque, []);
             }
@@ -102,11 +158,11 @@ export class ResizePlates extends Component {
     }
 
     toggleAll() {
-        if (this.selCount === this.state.plates.length) {
+        if (this.selCount === this.visiblePlates.length) {
             this.state.selected = {};
         } else {
             const s = {};
-            for (const p of this.state.plates) {
+            for (const p of this.visiblePlates) {
                 s[p.lot_id] = true;
             }
             this.state.selected = s;
@@ -210,7 +266,14 @@ export class ResizePlates extends Component {
     }
 
     get totalM2() {
-        return this.state.plates.reduce((a, p) => a + (p.m2 || 0), 0);
+        return this.visiblePlates.reduce((a, p) => a + (p.m2 || 0), 0);
+    }
+
+    // Las plantillas OWL no exponen Math: el resaltado de m² cambiado se
+    // decide aquí (Math.abs en el XML tumbaba la pantalla al capturar).
+    isChanged(p) {
+        const m2 = this.newM2(p);
+        return m2 !== null && Math.abs(m2 - p.m2) > 0.0005;
     }
 
     fmt(n) {

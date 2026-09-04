@@ -28,6 +28,26 @@
                         </div>
                     </div>
                 </div>
+                <!-- Búsqueda por LOTE: cualquier producto; al elegir carga el
+                     producto y acota la cuadrícula a ese lote. -->
+                <div class="o_slr_product o_slr_lotsearch">
+                    <i class="fa fa-barcode o_slr_search_ic"/>
+                    <input type="text" class="form-control"
+                           placeholder="Busca por lote (ej. S28-75 o 20542)…"
+                           t-att-value="state.lotQuery"
+                           t-on-input="onLotQuery"/>
+                    <button t-if="state.lotFilter" type="button" class="btn btn-link o_slr_lotclear"
+                            title="Quitar filtro de lote" t-on-click="clearLotFilter">
+                        <i class="fa fa-times"/>
+                    </button>
+                    <div t-if="state.lotOptions.length" class="o_slr_options">
+                        <div t-foreach="state.lotOptions" t-as="opt" t-key="opt.lot_id"
+                             class="o_slr_option" t-on-click="() => this.pickLot(opt)">
+                            <b t-esc="opt.lot_name"/>
+                            <span class="text-muted ms-2"><t t-esc="opt.product_name"/> · <t t-esc="opt.location_name"/> · <t t-esc="fmt(opt.m2)"/> m²</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div t-if="state.loading" class="o_slr_empty">
@@ -46,13 +66,18 @@
                     <div class="big"><i class="fa fa-inbox"/></div>
                     <b>Este producto no tiene placas con stock interno</b>
                 </div>
+                <div t-if="state.plates.length and !visiblePlates.length" class="o_slr_empty">
+                    <div class="big"><i class="fa fa-filter"/></div>
+                    <b>Ningún lote de este producto coincide con "<t t-esc="state.lotFilter"/>"</b>
+                    <span><a href="#" t-on-click.prevent="clearLotFilter">Quitar el filtro</a> para ver las <t t-esc="state.plates.length"/> placas.</span>
+                </div>
 
-                <t t-if="state.plates.length">
+                <t t-if="visiblePlates.length">
                     <!-- Chips de resumen -->
                     <div class="o_slr_stats">
                         <div class="o_slr_stat">
-                            <div class="l">Placas</div>
-                            <div class="v" t-esc="state.plates.length"/>
+                            <div class="l">Placas<t t-if="state.lotFilter"> (filtro: <t t-esc="state.lotFilter"/>)</t></div>
+                            <div class="v" t-esc="visiblePlates.length"/>
                         </div>
                         <div class="o_slr_stat">
                             <div class="l">M² en stock</div>
@@ -101,7 +126,7 @@
                                 <tr>
                                     <th class="text-center" style="width:36px;">
                                         <input type="checkbox"
-                                               t-att-checked="selCount === state.plates.length"
+                                               t-att-checked="selCount === visiblePlates.length"
                                                t-on-click="toggleAll"/>
                                     </th>
                                     <th>Lote</th>
@@ -159,7 +184,7 @@
                                         </td>
                                         <td class="text-end">
                                             <span t-if="newM2(p) !== null"
-                                                  t-attf-class="o_slr_newm2 {{ Math.abs(newM2(p) - p.m2) > 0.0005 ? 'changed' : '' }}"
+                                                  t-att-class="isChanged(p) ? 'o_slr_newm2 changed' : 'o_slr_newm2'"
                                                   t-esc="fmt(newM2(p))"/>
                                             <span t-else="" class="text-muted">—</span>
                                         </td>

@@ -74,6 +74,40 @@ class StockLotResize(models.Model):
         return rows
 
     @api.model
+    def slr_search_lots(self, query, limit=15):
+        """Búsqueda POR LOTE (4 sep 2026): lotes con stock interno cuyo
+        nombre contenga el texto, de cualquier producto. Devuelve lote,
+        producto y ubicación para que la pantalla cargue el producto y
+        filtre a ese lote."""
+        self._slr_check_manager()
+        query = (query or '').strip()
+        if len(query) < 2:
+            return []
+        quants = self.env['stock.quant'].sudo().search([
+            ('lot_id.name', 'ilike', query),
+            ('location_id.usage', '=', 'internal'),
+            ('quantity', '>', 0),
+            ('lot_id', '!=', False),
+            ('company_id', 'in', self.env.companies.ids),
+        ], order='id desc', limit=200)
+        seen, rows = set(), []
+        for q in quants:
+            if q.lot_id.id in seen:
+                continue
+            seen.add(q.lot_id.id)
+            rows.append({
+                'lot_id': q.lot_id.id,
+                'lot_name': q.lot_id.name or '',
+                'product_id': q.product_id.id,
+                'product_name': q.product_id.display_name or '',
+                'location_name': '/'.join(
+                    (q.location_id.complete_name or '').split('/')[-2:]),
+                'm2': round(q.quantity, 3),
+            })
+        rows.sort(key=lambda r: (len(r['lot_name']), r['lot_name']))
+        return rows[:int(limit or 15)]
+
+    @api.model
     def slr_apply_resizes(self, changes):
         """Aplica los cambios de dimensiones. changes = lista de
         {lot_id, alto, ancho}. Todo o nada (una transacción)."""
