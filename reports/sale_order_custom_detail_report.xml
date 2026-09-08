@@ -483,20 +483,8 @@
                                             </t>
                                         </t>
 
-                                        <!-- TOTAL DE LA SECCIÓN: SOLO MONTO (los m² del resumen
-                                             diferían del desglose por lotes de las líneas; por regla
-                                             del negocio los resúmenes llevan únicamente importes). -->
-                                        <t t-if="show_prices">
-                                            <t t-set="sec_amount_total" t-value="sum([l.price_subtotal for l in section_lines])"/>
-                                            <tr style="background-color: #2f2f2f; color: #fff; page-break-inside: avoid;">
-                                                <td colspan="8" class="text-end" style="color: #fff; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px; padding: 5px 8px;">
-                                                    Total <t t-esc="section_title"/>
-                                                </td>
-                                                <td t-att-colspan="6 if has_line_discount_columns else 4" class="text-end" style="color: #fff; font-weight: 900; white-space: nowrap; padding: 5px 8px;">
-                                                    <span t-esc="sec_amount_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                                </td>
-                                            </tr>
-                                        </t>
+                                        <!-- Sin total por sección (8 sep 2026): solo los totales
+                                             generales al pie, para no confundir al cliente. -->
                                     </tbody>
                                 </table>
                             </t>
@@ -641,19 +629,8 @@
                                             </t>
                                         </t>
 
-                                        <!-- TOTAL DE LA SECCIÓN: SOLO MONTO (regla del negocio:
-                                             los resúmenes no llevan m²/pzas, solo importes). -->
-                                        <t t-if="section_title != 'Servicios' and show_prices">
-                                            <t t-set="sec_amount_total" t-value="sum([l.price_subtotal for l in section_lines])"/>
-                                            <tr style="background-color: #2f2f2f; color: #fff; page-break-inside: avoid;">
-                                                <td colspan="3" class="text-end" style="color: #fff; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px; padding: 5px 8px;">
-                                                    Total <t t-esc="section_title"/>
-                                                </td>
-                                                <td t-att-colspan="6 if has_line_discount_columns else 4" class="text-end" style="color: #fff; font-weight: 900; white-space: nowrap; padding: 5px 8px;">
-                                                    <span t-esc="sec_amount_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                                </td>
-                                            </tr>
-                                        </t>
+                                        <!-- Sin total por sección (8 sep 2026): solo los totales
+                                             generales al pie, para no confundir al cliente. -->
                                     </tbody>
                                 </table>
                             </t>
