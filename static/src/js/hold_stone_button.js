@@ -1235,15 +1235,18 @@ export class HoldStoneButton extends Component {
                     domain.push(["product_id", "=", state.productId]);
                 }
 
+                // som_apartable = al quant le queda saldo libre para apartar
+                // (descuenta la reserva del sistema y la parcialidad del hold
+                // activo). Antes se exigía x_tiene_hold=false Y
+                // reserved_quantity=0: eso descartaba un lote de formato
+                // completo por UNA sola caja reservada o por un hold parcial de
+                // otro cliente, aunque sobraran decenas de m².
                 if (currentIds.length) {
                     domain.push("|");
-                    domain.push("&");
-                    domain.push(["x_tiene_hold", "=", false]);
-                    domain.push(["reserved_quantity", "=", 0]);
+                    domain.push(["som_apartable", "=", true]);
                     domain.push(["lot_id", "in", currentIds]);
                 } else {
-                    domain.push(["x_tiene_hold", "=", false]);
-                    domain.push(["reserved_quantity", "=", 0]);
+                    domain.push(["som_apartable", "=", true]);
                 }
 
                 if (state.filters.lot_name) {

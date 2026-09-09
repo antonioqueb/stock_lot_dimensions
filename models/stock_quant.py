@@ -126,6 +126,23 @@ class StockQuant(models.Model):
         help='Indica si el lote tiene una reserva manual activa'
     )
     
+    # Apartable = queda material LIBRE en el quant para un apartado nuevo.
+    # Sustituye al par de condiciones duras (x_tiene_hold=False AND
+    # reserved_quantity=0) que usaba el selector de placas: esas dos descartaban
+    # el lote completo en cuanto había UNA caja reservada o un hold parcial de
+    # otro cliente, aunque sobrara material. En PLACAS el resultado es idéntico
+    # (son atómicas: el hold retiene el quant entero y la reserva del sistema se
+    # lleva toda la pieza); en FORMATO/PIEZA libera el remanente, que es lo que
+    # el negocio necesita — el mismo lote puede servir a varios pedidos.
+    som_apartable = fields.Boolean(
+        string='Apartable',
+        compute='_compute_som_apartable',
+        store=False,
+        search='_search_som_apartable',
+        compute_sudo=True,
+        help='Queda cantidad libre en este quant para crear un apartado nuevo'
+    )
+
     x_hold_activo_id = fields.Many2one(
         'stock.lot.hold',
         string='Hold Activo',
@@ -204,6 +221,64 @@ class StockQuant(models.Model):
             ('estado', '=', 'activo')
         ])
         return [('id', 'in', holds.mapped('quant_id').ids)]
+
+    def som_apartable_free_qty(self):
+        """Cantidad realmente libre para un apartado nuevo.
+
+        Descuenta lo que se lleva la reserva del sistema (entregas) y lo que
+        retiene el hold manual activo. En placas som_hold_held_qty() devuelve el
+        quant completo, así que el resultado es 0 en cuanto hay hold: mismo
+        comportamiento que antes.
+        """
+        self.ensure_one()
+        libre = (self.quantity or 0.0) - (self.reserved_quantity or 0.0) - self.som_hold_held_qty()
+        return max(libre, 0.0)
+
+    def _compute_som_apartable(self):
+        for quant in self:
+            quant.som_apartable = quant.som_apartable_free_qty() > 0.0001
+
+    def _search_som_apartable(self, operator, value):
+        """Filtro sin campo almacenado.
+
+        Se recorren solo los quants que PUEDEN estar bloqueados —los que tienen
+        hold activo o alguna reserva del sistema—, no toda la tabla: el resto,
+        por definición, tiene todo su saldo libre.
+        """
+        if operator not in ('=', '!='):
+            raise UserError('Operación no soportada para el filtro Apartable.')
+
+        Hold = self.env['stock.lot.hold'].sudo()
+        holds_activos = Hold.search([
+            ('estado', '=', 'activo'),
+            '|',
+            ('fecha_expiracion', '=', False),
+            ('fecha_expiracion', '>', fields.Datetime.now()),
+            ('company_id', 'in', self.env.companies.ids),
+        ])
+        con_hold_ids = set(holds_activos.mapped('quant_id').ids)
+
+        bloqueados = []
+
+        # 1) Sin hold: basta la aritmética del quant, sin tocar la tabla de
+        #    holds ni la de líneas de reserva.
+        solo_reservados = self.sudo().search([
+            ('reserved_quantity', '>', 0),
+            ('id', 'not in', list(con_hold_ids)),
+        ])
+        for q in solo_reservados:
+            if (q.quantity or 0.0) - (q.reserved_quantity or 0.0) <= 0.0001:
+                bloqueados.append(q.id)
+
+        # 2) Con hold: aquí sí hace falta la parcialidad del desglose, que se
+        #    consulta por quant. El conjunto está acotado por el número de holds
+        #    activos, no por el tamaño de stock.quant.
+        for q in self.sudo().browse(sorted(con_hold_ids)).exists():
+            if q.som_apartable_free_qty() <= 0.0001:
+                bloqueados.append(q.id)
+
+        busca_apartables = (operator == '=' and value) or (operator == '!=' and not value)
+        return [('id', 'not in', bloqueados)] if busca_apartables else [('id', 'in', bloqueados)]
 
     # ==================== MÉTODOS COMPUTADOS ====================
     @api.depends('lot_id.x_detalles_placa')
