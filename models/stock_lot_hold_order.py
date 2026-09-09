@@ -620,6 +620,14 @@ class StockLotHoldOrder(models.Model):
         conflicts = set()
         for sol in sols:
             for lot in (sol.lot_ids & lots):
+                # FORMATO/PIEZA: la venta solo compromete SU parcialidad. Si
+                # el lote conserva material libre suficiente para lo que
+                # esta reserva pide, no hay conflicto (reserva 621: el
+                # formato 21230-13 estaba en V/541 y V/737 en parte y aún
+                # tenía remanente). La placa sigue siendo todo o nada.
+                if self._som_lot_is_fractionable(lot) \
+                        and self._som_lot_fits_free(lot):
+                    continue
                 conflicts.add('• %s → %s (%s)' % (
                     lot.name, sol.order_id.name,
                     sol.order_id.partner_id.display_name or ''))
@@ -629,6 +637,39 @@ class StockLotHoldOrder(models.Model):
                 'una orden de venta activa:\n%s\n\n'
                 'Quita esos lotes de la reserva, o libéralos de la venta '
                 'primero.' % '\n'.join(sorted(conflicts)))
+
+    @staticmethod
+    def _som_lot_is_fractionable(lot):
+        return str(getattr(lot, 'x_tipo', '') or '').lower() in ('formato', 'pieza')
+
+    def _som_lot_fits_free(self, lot):
+        """True si lo que las líneas de ESTA reserva piden del lote cabe en
+        su material libre (físico − asignado a ventas/entregas − retenido
+        por otras reservas), calculado por _som_lot_free_qty."""
+        self.ensure_one()
+        lines = self.hold_line_ids.filtered(lambda l: lot in l.lot_ids)
+        if not lines:
+            return True
+        requested = 0.0
+        for line in lines:
+            bd = getattr(line, 'x_lot_breakdown_json', None) or {}
+            if isinstance(bd, str):
+                import json as _json
+                try:
+                    bd = _json.loads(bd)
+                except (TypeError, ValueError):
+                    bd = {}
+            qty = bd.get(str(lot.id)) if isinstance(bd, dict) else None
+            if qty is None:
+                qty = line.cantidad_m2 if len(line.lot_ids) == 1 else None
+            if qty is None:
+                return False  # sin parcialidad conocida: lote completo
+            requested += float(qty or 0.0)
+        try:
+            _fisico, _asignado, libre = lines[0]._som_lot_free_qty(lot)
+        except Exception:  # noqa: BLE001
+            return False
+        return requested <= libre + 0.0001
 
     def action_renew(self):
         """Renueva la orden completa: extiende los holds activos y REACTIVA los
