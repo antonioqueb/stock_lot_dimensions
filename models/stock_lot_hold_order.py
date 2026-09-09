@@ -532,12 +532,28 @@ class StockLotHoldOrder(models.Model):
             ('quant_id', '=', quant.id),
             ('estado', '=', 'activo'),
             ('company_id', '=', self.company_id.id),
-        ], limit=1)
+        ])
 
         if existing:
-            raise UserError(
-                f'El lote {lot.name} ya tiene reserva activa para {existing.partner_id.name}.'
-            )
+            tipo = str(getattr(lot, 'x_tipo', '') or '').lower()
+            if tipo not in ('formato', 'pieza'):
+                raise UserError(
+                    f'El lote {lot.name} ya tiene reserva activa para {existing[0].partner_id.name}.'
+                )
+            # APARTADO PARCIAL: el formato/pieza admite otra reserva sobre su
+            # remanente (20 m² apartados → 15, los 5 libres van a otra
+            # reserva). Se valida contra el físico menos lo retenido por
+            # las demás reservas.
+            held_others = sum(h._som_held_qty() for h in existing)
+            free = max((quant.quantity or 0.0) - held_others, 0.0)
+            requested = self._som_line_requested_qty_for_lot(line, lot, quant)
+            if requested > free + 0.0001:
+                raise UserError(
+                    'El lote %s solo tiene %.2f m² libres (físico %.2f, apartado '
+                    'en %s: %.2f) y esta reserva pide %.2f. Ajusta la parcialidad.' % (
+                        lot.name, free, quant.quantity or 0.0,
+                        ', '.join(existing.mapped('partner_id.name')),
+                        held_others, requested))
 
         notas_hold = f'Orden: {self.name}\n'
         if self.notas:
@@ -557,6 +573,26 @@ class StockLotHoldOrder(models.Model):
         })
         line.write({'hold_ids': [(4, hold.id)]})
         return hold
+
+    def _som_line_requested_qty_for_lot(self, line, lot, quant):
+        """Parcialidad que la línea pide de ESTE lote: desglose, o la
+        cantidad de la línea si tiene un solo lote, o el quant completo."""
+        bd = getattr(line, 'x_lot_breakdown_json', None) or {}
+        if isinstance(bd, str):
+            import json as _json
+            try:
+                bd = _json.loads(bd)
+            except (TypeError, ValueError):
+                bd = {}
+        qty = bd.get(str(lot.id)) if isinstance(bd, dict) else None
+        if qty is None and len(line.lot_ids) == 1:
+            qty = line.cantidad_m2
+        if qty is None:
+            return quant.quantity or 0.0
+        try:
+            return float(qty or 0.0)
+        except (TypeError, ValueError):
+            return quant.quantity or 0.0
 
     def action_cancel(self):
         self._release_related_holds()
@@ -1739,12 +1775,17 @@ class StockLotHoldOrderLine(models.Model):
         own_hold_ids = set()
         if self and 'hold_ids' in self._fields:
             own_hold_ids = set(self.hold_ids.ids)
+        # Con apartados parciales un quant puede tener VARIOS holds activos:
+        # se suma lo retenido por los holds AJENOS a esta orden.
         retenido = 0.0
+        Hold = self.env['stock.lot.hold'].sudo()
         for q in quants:
-            h = getattr(q, 'x_hold_activo_id', False)
-            if not h or h.id in own_hold_ids:
-                continue
-            retenido += q.som_hold_held_qty()
+            holds = Hold.search([('quant_id', '=', q.id), ('estado', '=', 'activo')])
+            for h in holds:
+                if h.id in own_hold_ids:
+                    continue
+                retenido += h._som_held_qty()
+        retenido = min(retenido, fisico)
 
         asignado = max(reservado, asignado_so, min(asignado_sol, fisico))
         return fisico, asignado, max(fisico - asignado - retenido, 0.0)

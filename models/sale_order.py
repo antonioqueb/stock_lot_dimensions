@@ -478,9 +478,11 @@ class SaleOrder(models.Model):
             for quant_id in product['selected_lots']:
                 quant = self.env['stock.quant'].browse(quant_id)
                 if quant.x_tiene_hold:
-                    hold_partner = quant.x_hold_activo_id.partner_id
-                    if hold_partner.commercial_partner_id != order_commercial:
-                        raise UserError(f"El lote {quant.lot_id.name} está apartado para {hold_partner.name}")
+                    blocker = quant.som_hold_blocking_partner(
+                        partner_id=partner_id,
+                        hold_order_id=self.env.context.get('hold_order_id'))
+                    if blocker:
+                        raise UserError(f"El lote {quant.lot_id.name} está apartado para {blocker.name}")
         
         sale_order = self.with_company(company_id).create({
             'partner_id': partner_id,

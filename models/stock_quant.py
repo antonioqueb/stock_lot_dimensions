@@ -35,36 +35,53 @@ class StockQuant(models.Model):
     # desglose de su orden de reserva; el resto del lote sigue usable.
     # Las PLACAS son atómicas: su hold retiene el quant completo.
     def som_hold_held_qty(self):
+        """m² retenidos por TODOS los holds activos del quant (formato/pieza
+        pueden tener varios, uno por orden de reserva). Placa: el quant
+        completo."""
         self.ensure_one()
-        hold = self.x_hold_activo_id if getattr(self, 'x_tiene_hold', False) else False
-        if not hold:
+        if not getattr(self, 'x_tiene_hold', False):
             return 0.0
-        lot = self.lot_id
-        tipo = str(getattr(lot, 'x_tipo', '') or '').lower()
-        if tipo not in ('formato', 'pieza'):
-            return self.quantity or 0.0
-        Line = self.env['stock.lot.hold.order.line'].sudo()
-        line = Line.search([('hold_ids', 'in', hold.id)], limit=1)
-        if not line:
-            line = Line.search([('hold_id', '=', hold.id)], limit=1)
-        if not line:
-            return self.quantity or 0.0
-        bd = {}
-        if 'x_lot_breakdown_json' in line._fields and line.x_lot_breakdown_json:
-            bd = line.x_lot_breakdown_json
-            if isinstance(bd, str):
-                import json as _json
-                try:
-                    bd = _json.loads(bd)
-                except (TypeError, ValueError):
-                    bd = {}
-        qty = bd.get(str(lot.id)) if isinstance(bd, dict) else None
-        if qty is None:
-            return self.quantity or 0.0
-        try:
-            return min(float(qty or 0.0), self.quantity or 0.0)
-        except (TypeError, ValueError):
-            return self.quantity or 0.0
+        Hold = self.env['stock.lot.hold'].sudo()
+        domain = [('quant_id', '=', self.id), ('estado', '=', 'activo')]
+        if self.company_id:
+            domain.append(('company_id', '=', self.company_id.id))
+        holds = Hold.search(domain)
+        if not holds:
+            hold = self.x_hold_activo_id
+            holds = hold if hold else Hold
+        if not holds:
+            return 0.0
+        total = sum(h._som_held_qty() for h in holds)
+        return min(total, self.quantity or 0.0)
+
+    def som_hold_blocking_partner(self, partner_id=None, hold_order_id=None):
+        """Partner del hold que BLOQUEA a `partner_id` en este quant, o False.
+        Con apartados parciales un quant puede tener varios holds activos:
+        no bloquea si (a) alguno es del mismo partner comercial, (b) alguno
+        pertenece a la orden de reserva `hold_order_id` (la que se está
+        convirtiendo), o (c) el formato/pieza aún tiene remanente libre."""
+        self.ensure_one()
+        if not getattr(self, 'x_tiene_hold', False):
+            return False
+        Hold = self.env['stock.lot.hold'].sudo()
+        domain = [('quant_id', '=', self.id), ('estado', '=', 'activo')]
+        if self.company_id:
+            domain.append(('company_id', '=', self.company_id.id))
+        holds = Hold.search(domain) or (self.x_hold_activo_id if self.x_hold_activo_id else Hold)
+        if not holds:
+            return False
+        commercial = False
+        if partner_id:
+            commercial = self.env['res.partner'].browse(int(partner_id)).commercial_partner_id.id
+        for h in holds:
+            if commercial and h.partner_id.commercial_partner_id.id == commercial:
+                return False
+            if hold_order_id and getattr(h, 'hold_order_id', False) \
+                    and h.hold_order_id.id == int(hold_order_id):
+                return False
+        if not self.som_hold_blocks_fully():
+            return False
+        return holds[0].partner_id
 
     def som_hold_free_qty(self):
         """m² del quant NO retenidos por su hold activo."""

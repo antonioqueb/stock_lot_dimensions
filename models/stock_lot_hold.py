@@ -132,12 +132,15 @@ class StockLotHold(models.Model):
     # Se reemplaza por una restricción de Python.
     
     def init(self):
-        """Garantía a nivel BASE DE DATOS de 'solo un hold ACTIVO por quant y
-        compañía'. El constraint Python no protege contra dos transacciones
-        simultáneas (ninguna ve la fila no confirmada de la otra); el índice
-        único parcial sí: la segunda revienta al confirmar, sin excepciones."""
-        # Sanear duplicados históricos ANTES de crear el índice: se conserva
-        # el hold activo más antiguo y los posteriores se marcan expirados.
+        """APARTADOS PARCIALES (9 sep 2026): un FORMATO/PIEZA puede tener
+        VARIOS holds activos (uno por orden de reserva) mientras la suma de
+        parcialidades no rebase el físico del quant; la PLACA sigue siendo
+        atómica (un solo hold activo). El índice único por quant impedía
+        apartar en otra reserva los m² liberados de un formato (20 → 15 y los
+        5 libres no se podían tomar). El índice se retira; la regla vive en
+        _check_unique_active_hold. El saneo de duplicados históricos se
+        conserva SOLO para placas."""
+        self.env.cr.execute("DROP INDEX IF EXISTS stock_lot_hold_unique_active_idx")
         self.env.cr.execute("""
             UPDATE stock_lot_hold h
                SET estado = 'expirado'
@@ -149,29 +152,81 @@ class StockLotHold(models.Model):
                       AND h2.estado = 'activo'
                       AND h2.id < h.id
                )
+               AND NOT EXISTS (
+                   SELECT 1 FROM stock_lot l
+                    WHERE l.id = h.lot_id
+                      AND lower(COALESCE(l.x_tipo, '')) IN ('formato', 'pieza')
+               )
         """)
-        self.env.cr.execute("""
-            CREATE UNIQUE INDEX IF NOT EXISTS stock_lot_hold_unique_active_idx
-                ON stock_lot_hold (quant_id, company_id)
-             WHERE estado = 'activo'
-        """)
+
+    def _som_is_fractionable(self):
+        self.ensure_one()
+        tipo = str(getattr(self.lot_id, 'x_tipo', '') or '').lower()
+        return tipo in ('formato', 'pieza')
+
+    def _som_held_qty(self):
+        """m² que retiene ESTE hold: la parcialidad del desglose de su línea
+        de orden de reserva (formato/pieza) o el quant completo (placa /
+        sin desglose)."""
+        self.ensure_one()
+        quant_qty = self.quant_id.quantity or 0.0
+        if not self._som_is_fractionable():
+            return quant_qty
+        Line = self.env['stock.lot.hold.order.line'].sudo()
+        line = Line.search([('hold_ids', 'in', self.id)], limit=1)
+        if not line and 'hold_id' in Line._fields:
+            line = Line.search([('hold_id', '=', self.id)], limit=1)
+        if not line:
+            return quant_qty
+        bd = getattr(line, 'x_lot_breakdown_json', None) or {}
+        if isinstance(bd, str):
+            import json as _json
+            try:
+                bd = _json.loads(bd)
+            except (TypeError, ValueError):
+                bd = {}
+        qty = bd.get(str(self.lot_id.id)) if isinstance(bd, dict) else None
+        if qty is None:
+            # Sin desglose: si la línea tiene UN solo lote, su cantidad es la
+            # parcialidad; si no, se asume el quant completo.
+            if 'lot_ids' in line._fields and len(line.lot_ids) == 1:
+                qty = line.cantidad_m2
+            else:
+                return quant_qty
+        try:
+            return min(float(qty or 0.0), quant_qty)
+        except (TypeError, ValueError):
+            return quant_qty
 
     @api.constrains('quant_id', 'company_id', 'estado')
     def _check_unique_active_hold(self):
-        """
-        Valida que solo exista una reserva activa por lote y compañía.
-        Reemplaza al antiguo _sql_constraints.
-        """
+        """PLACA: una sola reserva activa por lote y compañía.
+        FORMATO/PIEZA: varias reservas activas, mientras la suma de sus
+        parcialidades no rebase el físico del quant."""
         for record in self:
-            if record.estado == 'activo':
-                domain = [
-                    ('quant_id', '=', record.quant_id.id),
-                    ('company_id', '=', record.company_id.id),
-                    ('estado', '=', 'activo'),
-                    ('id', '!=', record.id)  # Excluir el registro actual
-                ]
-                if self.search_count(domain) > 0:
-                    raise ValidationError('Solo puede haber una reserva activa por lote y compañía.')
+            if record.estado != 'activo':
+                continue
+            others = self.search([
+                ('quant_id', '=', record.quant_id.id),
+                ('company_id', '=', record.company_id.id),
+                ('estado', '=', 'activo'),
+                ('id', '!=', record.id),
+            ])
+            if not others:
+                continue
+            if not record._som_is_fractionable():
+                raise ValidationError('Solo puede haber una reserva activa por lote y compañía.')
+            quant_qty = record.quant_id.quantity or 0.0
+            held_others = sum(h._som_held_qty() for h in others)
+            mine = record._som_held_qty()
+            if held_others + mine > quant_qty + 0.0001:
+                raise ValidationError(
+                    'El lote %s no tiene suficiente material libre para esta '
+                    'reserva: físico %.2f, ya apartado en otras reservas %.2f '
+                    '(%s), libre %.2f, solicitado %.2f.' % (
+                        record.lot_id.name, quant_qty, held_others,
+                        ', '.join(others.mapped('partner_id.name')),
+                        max(quant_qty - held_others, 0.0), mine))
 
     # ==================== MÉTODOS COMPUTADOS ====================
     @api.depends('lot_id', 'partner_id', 'company_id')
