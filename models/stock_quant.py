@@ -589,6 +589,17 @@ class StockQuant(models.Model):
         if not quants:
             return quants
 
+        # strict=True = el llamador ya sabe EXACTAMENTE qué (ubicación, lote)
+        # quiere: _update_available_quantity al validar/desreservar/mover
+        # de bin, y la re-reserva de una línea existente. Ocultarle ahí el
+        # quant apartado hacía que el core "no encontrara" la existencia y
+        # creara un quant duplicado (negativo fantasma en la ubicación
+        # vieja al cambiar de bin una placa apartada; 13 pares duplicados
+        # en QA). El apartado solo debe esconder stock a la selección
+        # automática (strict=False: FIFO, selector, disponibilidad).
+        if strict:
+            return quants
+
         # Filtrar por holds de manera eficiente
         return self._filter_quants_by_hold(quants)
     
