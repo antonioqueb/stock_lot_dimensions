@@ -315,8 +315,8 @@
                                        style="width: 100%; font-size: 8.2px; border-collapse: collapse; page-break-inside: auto;">
                                     <thead>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
-                                            <th class="text-center" style="color: #fff; width: 3%; font-weight: bold;">#</th>
-                                            <th style="color: #fff; width: 17%; font-weight: bold;">Lote</th>
+                                            <th class="text-center" style="color: #fff; width: 5.5%; font-weight: bold; white-space: nowrap;">#</th>
+                                            <th style="color: #fff; width: 15.5%; font-weight: bold;">Lote</th>
                                             <th style="color: #fff; width: 9%; font-weight: bold;">Bloque</th>
                                             <th style="color: #fff; width: 9%; font-weight: bold;">Ubicación</th>
                                             <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Espesor</th>
@@ -376,7 +376,7 @@
                                                     <t t-set="row_subtotal" t-value="line.price_subtotal * row_tax_ratio"/>
 
                                                     <tr style="page-break-inside: avoid;">
-                                                        <td class="text-center align-middle" style="overflow-wrap: anywhere; word-break: break-word;">
+                                                        <td class="text-center align-middle" style="white-space: nowrap;">
                                                             <span t-esc="global_seq"/>
                                                             <t t-set="global_seq" t-value="global_seq + 1"/>
                                                         </td>
@@ -533,7 +533,7 @@
                                        style="width: 100%; font-size: 9px; border-collapse: collapse; page-break-inside: auto;">
                                     <thead>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
-                                            <th class="text-center" style="color: #fff; width: 4%; font-weight: bold;">#</th>
+                                            <th class="text-center" style="color: #fff; width: 5.5%; font-weight: bold; white-space: nowrap;">#</th>
                                             <th style="color: #fff; font-weight: bold;">Descripción</th>
                                             <th class="text-end" style="color: #fff; width: 12%; font-weight: bold;">Cantidad</th>
                                             <t t-if="show_prices">
@@ -559,7 +559,7 @@
                                             <t t-set="line_discount_amount" t-value="line.currency_id.round(line_gross - line.price_subtotal) if (line.discount or 0.0) &gt; 0 and line_gross &gt;= line.price_subtotal else 0.0"/>
 
                                             <tr style="page-break-inside: avoid;">
-                                                <td class="text-center align-middle" style="overflow-wrap: anywhere; word-break: break-word;">
+                                                <td class="text-center align-middle" style="white-space: nowrap;">
                                                     <span t-esc="global_seq"/>
                                                     <t t-set="global_seq" t-value="global_seq + 1"/>
                                                 </td>
