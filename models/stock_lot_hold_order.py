@@ -1306,6 +1306,11 @@ class StockLotHoldOrder(models.Model):
                     'selected_lots': [],
                     'price_unit': line.precio_unitario or 0.0,
                     'mask_name': line.x_mask_name or '',
+                    # Nivel de precio del apartado (N1..N5 / custom): la
+                    # venta nace con la misma etiqueta y su precio de lista;
+                    # antes solo viajaba el importe y todo caía en
+                    # Personalizado.
+                    'price_selector': getattr(line, 'x_price_selector', False) or 'custom',
                 }
             # La MÁSCARA viaja a la orden de venta: si varias líneas del
             # mismo producto traen máscara, gana la primera no vacía.
