@@ -316,12 +316,15 @@
                                     <thead>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
                                             <th class="text-center" style="color: #fff; width: 5.5%; font-weight: bold; white-space: nowrap;">#</th>
-                                            <th style="color: #fff; width: 15.5%; font-weight: bold;">Lote</th>
+                                            <t t-set="dims_cols" t-value="section_key != 'formatos'"/>
+                                            <th t-attf-style="color: #fff; width: #{'15.5%' if dims_cols else '30.5%'}; font-weight: bold;">Lote</th>
                                             <th style="color: #fff; width: 9%; font-weight: bold;">Bloque</th>
                                             <th style="color: #fff; width: 9%; font-weight: bold;">Ubicación</th>
-                                            <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Espesor</th>
-                                            <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Largo</th>
-                                            <th class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Alto</th>
+                                            <!-- FORMATOS: sin Espesor/Largo/Alto (15 sep 2026); su
+                                                 espacio pasa a Lote, la tabla no se angosta. -->
+                                            <th t-if="dims_cols" class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Espesor</th>
+                                            <th t-if="dims_cols" class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Largo</th>
+                                            <th t-if="dims_cols" class="text-center" style="color: #fff; width: 5%; font-weight: bold;">Alto</th>
                                             <th class="text-end" style="color: #fff; width: 9%; font-weight: bold;">m²</th>
                                             <t t-if="show_prices">
                                                 <th class="text-end" style="color: #fff; width: 10%; font-weight: bold;">P. Unitario</th>
@@ -349,7 +352,7 @@
                                                  SELECCIONADOS viaja en la misma línea (solo bienes
                                                  tangibles; los servicios no pasan por aquí). -->
                                             <tr style="background-color: #f2f2f2; color: #222; page-break-inside: avoid;">
-                                                <td t-att-colspan="((14 if has_line_discount_columns else 12) if show_prices else 8)"
+                                                <td t-att-colspan="(((14 if has_line_discount_columns else 12) if show_prices else 8) - (0 if dims_cols else 3))"
                                                     style="background-color: #f2f2f2; padding: 4px 8px !important; font-weight: 800; color: #222; font-size: 10.8px; text-transform: uppercase; border: 1px solid #d8d8d8 !important; overflow-wrap: anywhere; word-break: break-word;">
                                                     <span t-if="all_lots_data and line.product_id.type != 'service'"
                                                           style="float: right; font-weight: 900; text-transform: none; white-space: nowrap; padding-left: 10px;">
@@ -393,17 +396,17 @@
                                                             <span t-esc="lot.som_short_location(1) or ''"/>
                                                         </td>
 
-                                                        <td class="text-center align-middle" style="white-space: nowrap;">
+                                                        <td t-if="dims_cols" class="text-center align-middle" style="white-space: nowrap;">
                                                             <span t-if="lot.x_grosor and str(lot.x_grosor).strip().replace('.','',1).replace('-','',1).isdigit()" t-esc="'%.2f' % float(lot.x_grosor)"/>
                                                             <span t-else="" t-esc="lot.x_grosor or ''"/>
                                                         </td>
 
-                                                        <td class="text-center align-middle" style="white-space: nowrap;">
+                                                        <td t-if="dims_cols" class="text-center align-middle" style="white-space: nowrap;">
                                                             <span t-if="lot.x_ancho and str(lot.x_ancho).strip().replace('.','',1).replace('-','',1).isdigit()" t-esc="'%.3f' % float(lot.x_ancho)"/>
                                                             <span t-else="" t-esc="lot.x_ancho or ''"/>
                                                         </td>
 
-                                                        <td class="text-center align-middle" style="white-space: nowrap;">
+                                                        <td t-if="dims_cols" class="text-center align-middle" style="white-space: nowrap;">
                                                             <span t-if="lot.x_alto and str(lot.x_alto).strip().replace('.','',1).replace('-','',1).isdigit()" t-esc="'%.3f' % float(lot.x_alto)"/>
                                                             <span t-else="" t-esc="lot.x_alto or ''"/>
                                                         </td>
@@ -448,7 +451,7 @@
                                                         <t t-set="global_seq" t-value="global_seq + 1"/>
                                                     </td>
 
-                                                    <td colspan="6" class="align-middle" style="font-style: italic; color: #555; font-size: 8px; overflow-wrap: anywhere; word-break: break-word;">
+                                                    <td t-att-colspan="(6 if dims_cols else 3)" class="align-middle" style="font-style: italic; color: #555; font-size: 8px; overflow-wrap: anywhere; word-break: break-word;">
                                                         <t t-if="section_key == 'placas'">(Sin selección de placas específicas)</t>
                                                         <t t-else="">(Sin selección de lotes específicos)</t>
                                                     </td>
@@ -490,7 +493,7 @@
                                              ya trae ese mismo total y la suma sería redundante. -->
                                         <t t-set="section_uoms" t-value="sorted(set(section_lines.mapped(lambda l: l.product_uom_id.name or '')))"/>
                                         <tr t-if="len(section_lines) &gt; 1" style="background-color: #e4e4e4; color: #111; page-break-inside: avoid;">
-                                            <td colspan="7" class="text-end" style="font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: .4px; border: 1px solid #cfcfcf !important;">
+                                            <td t-att-colspan="(7 if dims_cols else 4)" class="text-end" style="font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: .4px; border: 1px solid #cfcfcf !important;">
                                                 Subtotal <t t-esc="section_title"/>
                                             </td>
                                             <td class="text-end" style="font-weight: 900; font-size: 9.5px; white-space: nowrap; border: 1px solid #cfcfcf !important;">
