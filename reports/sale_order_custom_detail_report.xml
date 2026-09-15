@@ -485,9 +485,11 @@
 
                                         <!-- SUBTOTAL POR TIPO DE MATERIAL (15 sep 2026): cantidad
                                              por unidad de medida (lo seleccionado en placas; sin
-                                             selección, lo solicitado) e importe de la sección. -->
+                                             selección, lo solicitado) e importe de la sección.
+                                             Solo con 2+ materiales: con uno, la fila del material
+                                             ya trae ese mismo total y la suma sería redundante. -->
                                         <t t-set="section_uoms" t-value="sorted(set(section_lines.mapped(lambda l: l.product_uom_id.name or '')))"/>
-                                        <tr style="background-color: #e4e4e4; color: #111; page-break-inside: avoid;">
+                                        <tr t-if="len(section_lines) &gt; 1" style="background-color: #e4e4e4; color: #111; page-break-inside: avoid;">
                                             <td colspan="7" class="text-end" style="font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: .4px; border: 1px solid #cfcfcf !important;">
                                                 Subtotal <t t-esc="section_title"/>
                                             </td>
@@ -650,7 +652,7 @@
 
                                         <!-- SUBTOTAL POR TIPO DE MATERIAL (15 sep 2026). -->
                                         <t t-set="section_uoms" t-value="sorted(set(section_lines.mapped(lambda l: l.product_uom_id.name or '')))"/>
-                                        <tr style="background-color: #e4e4e4; color: #111; page-break-inside: avoid;">
+                                        <tr t-if="len(section_lines) &gt; 1" style="background-color: #e4e4e4; color: #111; page-break-inside: avoid;">
                                             <td colspan="2" class="text-end" style="font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: .4px; border: 1px solid #cfcfcf !important;">
                                                 Subtotal <t t-esc="section_title"/>
                                             </td>
