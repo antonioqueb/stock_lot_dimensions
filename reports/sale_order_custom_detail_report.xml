@@ -486,28 +486,16 @@
                                             </t>
                                         </t>
 
-                                        <!-- SUBTOTAL POR TIPO DE MATERIAL (15 sep 2026): cantidad
-                                             por unidad de medida (lo seleccionado en placas; sin
-                                             selección, lo solicitado) e importe de la sección.
-                                             Solo con 2+ materiales: con uno, la fila del material
-                                             ya trae ese mismo total y la suma sería redundante. -->
-                                        <t t-set="section_uoms" t-value="sorted(set(section_lines.mapped(lambda l: l.product_uom_id.name or '')))"/>
-                                        <tr t-if="len(section_lines) &gt; 1" style="background-color: #e4e4e4; color: #111; page-break-inside: avoid;">
-                                            <td t-att-colspan="(7 if dims_cols else 4)" class="text-end" style="font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: .4px; border: 1px solid #cfcfcf !important;">
+                                        <!-- SUBTOTAL POR TIPO DE MATERIAL (15 sep 2026): solo el
+                                             IMPORTE de la sección. La suma de m² no va: cada
+                                             material ya trae su "Total seleccionado". -->
+                                        <tr t-if="show_prices" style="background-color: #e4e4e4; color: #111; page-break-inside: avoid;">
+                                            <td t-att-colspan="(8 if dims_cols else 5)" class="text-end" style="font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: .4px; border: 1px solid #cfcfcf !important;">
                                                 Subtotal <t t-esc="section_title"/>
                                             </td>
-                                            <td class="text-end" style="font-weight: 900; font-size: 9.5px; white-space: nowrap; border: 1px solid #cfcfcf !important;">
-                                                <t t-foreach="section_uoms" t-as="su">
-                                                    <t t-set="su_lines" t-value="section_lines.filtered(lambda l: (l.product_uom_id.name or '') == su)"/>
-                                                    <t t-set="su_qty" t-value="sum(su_lines.mapped(lambda l: (sum([float(li['quantity'] or 0) for li in (l._get_all_sale_lots_with_qty() or [])]) or (l.product_uom_qty or 0.0))))"/>
-                                                    <div><t t-esc="'%g' % su_qty"/> <t t-esc="su"/></div>
-                                                </t>
+                                            <td t-att-colspan="(4 if has_line_discount_columns else 2)" class="text-end" style="font-weight: 900; font-size: 9.5px; white-space: nowrap; border: 1px solid #cfcfcf !important;">
+                                                <span t-esc="o.currency_id.format(sum(section_lines.mapped('price_subtotal')))"/>
                                             </td>
-                                            <t t-if="show_prices">
-                                                <td t-att-colspan="(4 if has_line_discount_columns else 2)" class="text-end" style="font-weight: 900; font-size: 9.5px; white-space: nowrap; border: 1px solid #cfcfcf !important;">
-                                                    <span t-esc="o.currency_id.format(sum(section_lines.mapped('price_subtotal')))"/>
-                                                </td>
-                                            </t>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -653,23 +641,14 @@
                                             </t>
                                         </t>
 
-                                        <!-- SUBTOTAL POR TIPO DE MATERIAL (15 sep 2026). -->
-                                        <t t-set="section_uoms" t-value="sorted(set(section_lines.mapped(lambda l: l.product_uom_id.name or '')))"/>
-                                        <tr t-if="len(section_lines) &gt; 1" style="background-color: #e4e4e4; color: #111; page-break-inside: avoid;">
-                                            <td colspan="2" class="text-end" style="font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: .4px; border: 1px solid #cfcfcf !important;">
+                                        <!-- SUBTOTAL POR TIPO DE MATERIAL (15 sep 2026): solo importe. -->
+                                        <tr t-if="show_prices" style="background-color: #e4e4e4; color: #111; page-break-inside: avoid;">
+                                            <td colspan="3" class="text-end" style="font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: .4px; border: 1px solid #cfcfcf !important;">
                                                 Subtotal <t t-esc="section_title"/>
                                             </td>
-                                            <td class="text-end" style="font-weight: 900; font-size: 9.5px; white-space: nowrap; border: 1px solid #cfcfcf !important;">
-                                                <t t-foreach="section_uoms" t-as="su">
-                                                    <t t-set="su_qty" t-value="sum(section_lines.filtered(lambda l: (l.product_uom_id.name or '') == su).mapped('product_uom_qty'))"/>
-                                                    <div><t t-esc="'%g' % su_qty"/> <t t-esc="su"/></div>
-                                                </t>
+                                            <td t-att-colspan="(4 if has_line_discount_columns else 2)" class="text-end" style="font-weight: 900; font-size: 9.5px; white-space: nowrap; border: 1px solid #cfcfcf !important;">
+                                                <span t-esc="o.currency_id.format(sum(section_lines.mapped('price_subtotal')))"/>
                                             </td>
-                                            <t t-if="show_prices">
-                                                <td t-att-colspan="(4 if has_line_discount_columns else 2)" class="text-end" style="font-weight: 900; font-size: 9.5px; white-space: nowrap; border: 1px solid #cfcfcf !important;">
-                                                    <span t-esc="o.currency_id.format(sum(section_lines.mapped('price_subtotal')))"/>
-                                                </td>
-                                            </t>
                                         </tr>
                                     </tbody>
                                 </table>
