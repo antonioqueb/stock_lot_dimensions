@@ -1825,7 +1825,18 @@ class StockLotHoldOrderLine(models.Model):
                 if qty is None:
                     # Sin desglose = lote tomado completo (placas).
                     qty = fisico
-                asignado_sol += float(qty or 0.0)
+                qty = float(qty or 0.0)
+                # LO YA ENTREGADO NO SE DESCUENTA DOS VECES (RES/00814,
+                # formato 21216-4): la venta conserva el lote en lot_ids y
+                # su parcialidad en el desglose aunque esa parte ya salió
+                # de bodega, y el físico interno YA no la incluye. Restarla
+                # otra vez dejaba "libre" 14.40 en un guacal con 18.72
+                # reales y la reserva del remanente tronaba. La venta solo
+                # compromete lo que le falta por entregar.
+                pend_sol = max(
+                    (sol.product_uom_qty or 0.0) - (sol.qty_delivered or 0.0),
+                    0.0)
+                asignado_sol += min(qty, pend_sol)
 
         # Retenido por holds ACTIVOS de otras órdenes de reserva (el
         # apartado parcial solo retiene su parcialidad; placas completas).
