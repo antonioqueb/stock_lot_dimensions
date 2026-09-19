@@ -1762,7 +1762,18 @@ class StockLotHoldOrderLine(models.Model):
                     order._create_hold_for_line_lot(line, lot)
 
     def _som_lot_free_qty(self, lot):
-        """m² LIBRES del lote: físico interno menos lo ya asignado.
+        """m² LIBRES del lote: físico (interno o EN TRÁNSITO) menos lo ya
+        asignado.
+
+        El físico incluye las ubicaciones de tipo tránsito: el apartado sí
+        puede caer sobre una placa que viene en camino (la Torre de Control
+        lo crea al recibir a SOM/TRANSIT cuando la línea de venta tiene
+        "Pedir"), y el resto del módulo ya lo contempla (búsqueda de quant
+        en tránsito, aviso "el lote está EN TRÁNSITO" al vender). Cuando
+        SOM/TRANSIT pasó de interna a tipo tránsito (14 sep 2026) esta
+        validación dejó de ver ese material y rechazaba el apartado
+        automático con "físico 0.00" (caso C169 / S152-01), abortando la
+        recepción completa.
 
         'Asignado' cubre las dos rutas reales:
         - reserved_quantity del quant (reservas estándar de inventario), y
@@ -1778,7 +1789,7 @@ class StockLotHoldOrderLine(models.Model):
         quants = self.env['stock.quant'].sudo().search([
             ('lot_id', '=', lot.id),
             ('quantity', '>', 0),
-            ('location_id.usage', '=', 'internal'),
+            ('location_id.usage', 'in', ('internal', 'transit')),
             ('company_id', '=', company.id),
         ])
         fisico = sum(quants.mapped('quantity'))
