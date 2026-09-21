@@ -1350,8 +1350,23 @@ class StockLotHoldOrder(models.Model):
                         )
                     raise UserError(f'El lote {lot.name} ya no tiene stock disponible.')
 
-                product_groups[pid]['quantity'] += quant.quantity
+                # PARCIALIDAD (21 sep 2026, RES/00837): la venta toma lo que la
+                # línea de reserva apartó de cada lote (formato/pieza con
+                # desglose), no el quant completo. Antes 31.09 de un formato
+                # de 99.91 se convertía en 99.91 y la cotización salía con
+                # 199.82 en lugar de 131 (y 3,280 piezas en lugar de 3,250).
+                # La placa sigue entera. El desglose viaja con clave de lote
+                # y de quant (mismo espejo que usa el carrito).
+                requested = self._som_line_requested_qty_for_lot(line, lot, quant)
+                if not requested or requested > (quant.quantity or 0.0):
+                    requested = quant.quantity or 0.0
+                product_groups[pid]['quantity'] += requested
                 product_groups[pid]['selected_lots'].append(quant.id)
+                if self._som_lot_is_fractionable(lot):
+                    product_groups[pid].setdefault('lots_breakdown', []).extend([
+                        {'id': lot.id, 'quantity': requested},
+                        {'id': quant.id, 'quantity': requested},
+                    ])
 
             # Material sin existencia / "mandar a pedir": no tiene placas pero sí
             # una cantidad capturada manualmente. Esa cantidad debe propagarse a
