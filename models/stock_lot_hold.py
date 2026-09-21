@@ -121,6 +121,11 @@ class StockLotHold(models.Model):
     )
     
     notas = fields.Text(string='Notas')
+    x_held_qty = fields.Float(
+        string='Cantidad apartada (parcial)', digits=(16, 4), default=0.0,
+        help='FORMATO/PIEZA: m²/piezas que retiene ESTE hold cuando nace desde una '
+             'orden de reserva con desglose (se fija al crearlo para que la validación '
+             'de suma de parcialidades funcione antes de ligar la línea). 0 = quant completo.')
     
     dias_restantes = fields.Integer(
         string='Días Hábiles Restantes',
@@ -177,7 +182,10 @@ class StockLotHold(models.Model):
         if not line and 'hold_id' in Line._fields:
             line = Line.search([('hold_id', '=', self.id)], limit=1)
         if not line:
-            return quant_qty
+            # Recién creado (la línea se liga después) o creado con cantidad
+            # explícita: vale la parcialidad guardada en el hold.
+            held = float(getattr(self, 'x_held_qty', 0.0) or 0.0)
+            return min(held, quant_qty) if held > 0 else quant_qty
         bd = getattr(line, 'x_lot_breakdown_json', None) or {}
         if isinstance(bd, str):
             import json as _json
@@ -294,21 +302,50 @@ class StockLotHold(models.Model):
                     "SELECT id FROM stock_quant WHERE id = %s FOR UPDATE",
                     [int(vals['quant_id'])],
                 )
-                hold_existente = self.search([
+                existentes = self.search([
                     ('quant_id', '=', vals['quant_id']),
                     ('company_id', '=', vals['company_id']),
                     ('estado', '=', 'activo')
-                ], limit=1)
-                
-                if hold_existente:
-                    quant = self.env['stock.quant'].browse(vals['quant_id'])
-                    company = self.env['res.company'].browse(vals['company_id'])
-                    raise UserError(
-                        f'Ya existe una reserva activa para el lote {quant.lot_id.name} '
-                        f'en la compañía {company.name}. Cliente: {hold_existente.partner_id.name}'
-                    )
+                ])
+
+                if existentes:
+                    self._som_check_can_add_hold(vals, existentes)
         
         return super(StockLotHold, self).create(vals_list)
+
+    @api.model
+    def _som_check_can_add_hold(self, vals, existentes):
+        """Misma regla que _check_unique_active_hold, pero ANTES de crear y con
+        mensaje accionable (21 sep 2026, caso 18574-1 / RES/00829):
+        - PLACA: una sola reserva activa por lote y compañía.
+        - FORMATO/PIEZA: varias reservas mientras la suma de parcialidades
+          quepa en el físico del quant. La parcialidad de la nueva viene en
+          vals['x_held_qty']; sin ella se asume el quant completo (holds de
+          galería/botón), que solo cabe si nadie más lo tiene apartado."""
+        quant = self.env['stock.quant'].sudo().browse(int(vals['quant_id']))
+        lot = quant.lot_id
+        tipo = str(getattr(lot, 'x_tipo', '') or '').lower()
+        clientes = ', '.join(sorted(set(existentes.mapped('partner_id.name'))))
+        if tipo not in ('formato', 'pieza'):
+            h = existentes[0]
+            raise UserError(
+                'La placa %s ya está apartada para %s (%s, vence %s). Una placa '
+                'solo admite una reserva activa: elige otra placa o espera a que '
+                'se libere.' % (
+                    lot.name, clientes, h.name or '-',
+                    som_format_date(h.fecha_expiracion, with_time=True) if h.fecha_expiracion else '-'))
+        fisico = quant.quantity or 0.0
+        apartado = sum(h._som_held_qty() for h in existentes)
+        libre = max(fisico - apartado, 0.0)
+        pedido = float(vals.get('x_held_qty') or 0.0) or fisico
+        if pedido > libre + 0.0001:
+            unidad = 'm²' if (lot.product_id.uom_id.name or '').lower().startswith('m') else (lot.product_id.uom_id.name or '')
+            raise UserError(
+                'El lote %s (%s) tiene %.2f %s apartados para %s y solo quedan %.2f %s '
+                'libres de %.2f; esta reserva pide %.2f %s. Reduce la cantidad de este '
+                'lote a %.2f o elige otro lote.' % (
+                    lot.name, tipo, apartado, unidad, clientes, libre, unidad, fisico,
+                    pedido, unidad, libre))
     
     # ==================== ACCIONES ====================
     def action_renovar_hold(self):

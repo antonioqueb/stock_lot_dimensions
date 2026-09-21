@@ -534,9 +534,15 @@ class StockLotHoldOrder(models.Model):
             ('company_id', '=', self.company_id.id),
         ])
 
+        tipo = str(getattr(lot, 'x_tipo', '') or '').lower()
+        fractionable = tipo in ('formato', 'pieza')
+        # Parcialidad que retiene ESTE hold (formato/pieza): viaja en el hold
+        # para que la validación de suma funcione al crearlo, antes de ligar
+        # la línea (21 sep 2026, caso 18574-1 / RES/00829).
+        held_qty = self._som_line_requested_qty_for_lot(line, lot, quant) if fractionable else 0.0
+
         if existing:
-            tipo = str(getattr(lot, 'x_tipo', '') or '').lower()
-            if tipo not in ('formato', 'pieza'):
+            if not fractionable:
                 raise UserError(
                     f'El lote {lot.name} ya tiene reserva activa para {existing[0].partner_id.name}.'
                 )
@@ -570,6 +576,7 @@ class StockLotHoldOrder(models.Model):
             'fecha_expiracion': self.fecha_expiracion,
             'notas': notas_hold,
             'company_id': self.company_id.id,
+            'x_held_qty': held_qty if fractionable else 0.0,
         })
         line.write({'hold_ids': [(4, hold.id)]})
         return hold
