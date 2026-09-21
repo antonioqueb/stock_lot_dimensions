@@ -625,7 +625,14 @@ class StockLotHoldOrder(models.Model):
         if not sols:
             return
         conflicts = set()
+        # El MISMO cliente no se bloquea a sí mismo (21 sep 2026, C169 /
+        # S152-01): la Torre de Control asigna el lote a la venta del
+        # cliente y en la misma transacción crea su apartado. La venta de
+        # OTRO partner comercial sí bloquea.
+        own_commercial = self.partner_id.commercial_partner_id.id if self.partner_id else False
         for sol in sols:
+            if own_commercial and sol.order_id.partner_id.commercial_partner_id.id == own_commercial:
+                continue
             for lot in (sol.lot_ids & lots):
                 # FORMATO/PIEZA: la venta solo compromete SU parcialidad. Si
                 # el lote conserva material libre suficiente para lo que
