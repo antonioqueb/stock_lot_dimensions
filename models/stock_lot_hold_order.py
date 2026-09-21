@@ -1808,6 +1808,15 @@ class StockLotHoldOrderLine(models.Model):
         # sudo salta las reglas: se acota a la compañía de la ORDEN (con
         # varias compañías el mismo lote no debe sumar stock ajeno).
         company = self.order_id.company_id or self.env.company
+        # EL MISMO CLIENTE NO SE BLOQUEA A SÍ MISMO (21 sep 2026, C169 /
+        # S152-01, segunda capa): al recibir a tránsito la Torre de Control
+        # asigna el lote a la venta del cliente (lot_ids / move lines) y en
+        # la MISMA transacción crea el apartado para ese cliente; ese
+        # material "asignado" es suyo, no de otro documento. Solo bloquean
+        # las ventas y entregas de OTROS clientes (partner comercial).
+        own_commercial = False
+        if self.order_id and self.order_id.partner_id:
+            own_commercial = self.order_id.partner_id.commercial_partner_id.id
         quants = self.env['stock.quant'].sudo().search([
             ('lot_id', '=', lot.id),
             ('quantity', '>', 0),
@@ -1825,6 +1834,9 @@ class StockLotHoldOrderLine(models.Model):
             ('move_id.sale_line_id', '!=', False),
             ('move_id.sale_line_id.order_id.state', 'in', ('sale', 'done')),
         ])
+        if own_commercial:
+            mls = mls.filtered(
+                lambda ml: ml.move_id.sale_line_id.order_id.partner_id.commercial_partner_id.id != own_commercial)
         asignado_so = sum(mls.mapped(qty_field))
 
         # Asignación CAPTURADA en órdenes/cotizaciones vivas (lot_ids +
@@ -1839,6 +1851,8 @@ class StockLotHoldOrderLine(models.Model):
                 ('order_id.state', 'in', ('draft', 'sent', 'sale')),
             ])
             for sol in sols:
+                if own_commercial and sol.order_id.partner_id.commercial_partner_id.id == own_commercial:
+                    continue
                 qty = None
                 if hasattr(sol, '_som_breakdown_qty_for_lot'):
                     bd = getattr(sol, 'x_lot_breakdown_json', None)
