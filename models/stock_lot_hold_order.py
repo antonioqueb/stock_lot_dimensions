@@ -1362,18 +1362,20 @@ class StockLotHoldOrder(models.Model):
                 # desglose), no el quant completo. Antes 31.09 de un formato
                 # de 99.91 se convertía en 99.91 y la cotización salía con
                 # 199.82 en lugar de 131 (y 3,280 piezas en lugar de 3,250).
-                # La placa sigue entera. El desglose viaja con clave de lote
-                # y de quant (mismo espejo que usa el carrito).
+                # La placa sigue entera. El desglose viaja SOLO con clave de
+                # LOTE: la estrategia de reserva (_get_sol_lot_selection) lee
+                # toda clave numérica como id de lote, y los ids de quant
+                # chocan con lotes reales (22 sep 2026: el quant 18638 se leía
+                # como el lote 21068-24). Los quants ya viajan en
+                # selected_lots / x_selected_lots.
                 requested = self._som_line_requested_qty_for_lot(line, lot, quant)
                 if not requested or requested > (quant.quantity or 0.0):
                     requested = quant.quantity or 0.0
                 product_groups[pid]['quantity'] += requested
                 product_groups[pid]['selected_lots'].append(quant.id)
                 if self._som_lot_is_fractionable(lot):
-                    product_groups[pid].setdefault('lots_breakdown', []).extend([
-                        {'id': lot.id, 'quantity': requested},
-                        {'id': quant.id, 'quantity': requested},
-                    ])
+                    product_groups[pid].setdefault('lots_breakdown', []).append(
+                        {'id': lot.id, 'quantity': requested})
 
             # Material sin existencia / "mandar a pedir": no tiene placas pero sí
             # una cantidad capturada manualmente. Esa cantidad debe propagarse a
