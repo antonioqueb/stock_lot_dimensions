@@ -573,6 +573,28 @@ class StockQuant(models.Model):
         return {'success': True}
     
     # ==================== OVERRIDE CRÍTICO - FILTRADO DE QUANTS (OPTIMIZADO) ====================
+    # ------------------------------------------------------------------
+    # El apartado viaja con la placa: antes de que el core borre quants en
+    # cero o funda duplicados (cascada sobre stock.lot.hold), los holds
+    # activos se re-anclan al quant vivo del lote. Ver
+    # stock.lot.hold._som_reanchor_to_live_quants.
+    # ------------------------------------------------------------------
+    @api.model
+    def _unlink_zero_quants(self):
+        try:
+            self.env['stock.lot.hold']._som_reanchor_to_live_quants()
+        except Exception:  # noqa: BLE001 - jamás tumbar un movimiento por el re-anclaje
+            _logger.exception('[SOM_HOLD] re-anclaje de apartados antes de limpiar quants en cero')
+        return super()._unlink_zero_quants()
+
+    @api.model
+    def _merge_quants(self):
+        try:
+            self.env['stock.lot.hold']._som_reanchor_before_merge()
+        except Exception:  # noqa: BLE001
+            _logger.exception('[SOM_HOLD] re-anclaje de apartados antes de fundir quants')
+        return super()._merge_quants()
+
     def _gather(self, product_id, location_id, lot_id=None, package_id=None, 
                 owner_id=None, strict=False, qty=None):
         """

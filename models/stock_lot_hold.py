@@ -236,6 +236,91 @@ class StockLotHold(models.Model):
                         ', '.join(others.mapped('partner_id.name')),
                         max(quant_qty - held_others, 0.0), mine))
 
+    # ==================== EL APARTADO VIAJA CON LA PLACA ====================
+    @api.model
+    def _som_reanchor_to_live_quants(self, lot_ids=None, dest_location_id=None):
+        """Re-ancla los apartados activos cuyo quant se quedó en CERO al quant
+        vivo del mismo lote (23 sep 2026).
+
+        El hold cuelga del quant (ondelete cascade) y Odoo 19 borra los
+        quants en cero al terminar cualquier movimiento
+        (stock.move._action_done → _unlink_zero_quants): al cambiar de bin
+        una placa apartada, el apartado moría con el quant viejo o quedaba
+        "apartada en el bin viejo y libre en el nuevo". Por eso el carrito
+        bloqueaba mover placas apartadas. Ahora, ANTES de que se limpien los
+        quants en cero, cada hold activo se re-apunta al quant con existencia
+        de su lote (preferencia: el bin destino indicado, luego el de mayor
+        cantidad). Sin quant vivo (placa vendida/dada de baja) no se toca y
+        sigue la regla de siempre.
+
+        Devuelve [(hold, quant_viejo, quant_nuevo)]."""
+        domain = [('estado', '=', 'activo'), ('quant_id.quantity', '<=', 0)]
+        if lot_ids:
+            domain.append(('lot_id', 'in', list(lot_ids)))
+        holds = self.sudo().search(domain)
+        if not holds:
+            return []
+        Quant = self.env['stock.quant'].sudo()
+        moved = []
+        for hold in holds:
+            old = hold.quant_id
+            cands = Quant.search([
+                ('lot_id', '=', hold.lot_id.id),
+                ('quantity', '>', 0),
+                ('location_id.usage', '=', 'internal'),
+                ('company_id', '=', hold.company_id.id),
+            ])
+            if not cands:
+                continue
+            target = max(cands, key=lambda q: (
+                bool(dest_location_id and q.location_id.id == dest_location_id),
+                q.quantity or 0.0, -q.id))
+            if target == old:
+                continue
+            try:
+                with self.env.cr.savepoint():
+                    hold.with_context(som_hold_reanchor=True).write({'quant_id': target.id})
+            except (UserError, ValidationError) as e:
+                _logger.warning(
+                    '[SOM_HOLD] No se pudo re-anclar el apartado %s de %s a %s: %s',
+                    hold.name, old.location_id.complete_name if old else '-',
+                    target.location_id.complete_name, e)
+                continue
+            moved.append((hold, old, target))
+            _logger.info('[SOM_HOLD] Apartado %s viaja con la placa: %s → %s',
+                         hold.name, old.location_id.complete_name if old else '-',
+                         target.location_id.complete_name)
+        return moved
+
+    @api.model
+    def _som_reanchor_before_merge(self):
+        """Antes de que _merge_quants funda duplicados (borra los de id
+        mayor por SQL, cascada incluida), los holds activos colgados de un
+        quant duplicado pasan al que sobrevive (el de id menor)."""
+        self.env.cr.execute("""
+            SELECT h.id, MIN(q2.id)
+              FROM stock_lot_hold h
+              JOIN stock_quant q ON q.id = h.quant_id
+              JOIN stock_quant q2
+                ON q2.product_id = q.product_id
+               AND q2.location_id = q.location_id
+               AND q2.company_id IS NOT DISTINCT FROM q.company_id
+               AND q2.lot_id IS NOT DISTINCT FROM q.lot_id
+               AND q2.package_id IS NOT DISTINCT FROM q.package_id
+               AND q2.owner_id IS NOT DISTINCT FROM q.owner_id
+               AND q2.id < q.id
+             WHERE h.estado = 'activo'
+             GROUP BY h.id
+        """)
+        rows = self.env.cr.fetchall()
+        for hold_id, quant_id in rows:
+            self.env.cr.execute(
+                "UPDATE stock_lot_hold SET quant_id = %s WHERE id = %s", (quant_id, hold_id))
+        if rows:
+            self.sudo().browse([r[0] for r in rows]).invalidate_recordset()
+            _logger.info('[SOM_HOLD] %s apartado(s) re-anclados antes de fundir quants duplicados', len(rows))
+        return len(rows)
+
     # ==================== MÉTODOS COMPUTADOS ====================
     @api.depends('lot_id', 'partner_id', 'company_id')
     def _compute_name(self):
