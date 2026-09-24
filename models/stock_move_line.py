@@ -379,17 +379,41 @@ class StockMoveLine(models.Model):
 
     def _som_warn_sales_of_returned_lot(self, line):
         """Aviso (no bloqueo) a las ventas vivas que traen el lote que se
-        está DEVOLVIENDO: su material asignado salió por devolución."""
+        está DEVOLVIENDO: su material asignado salió por devolución.
+
+        - La orden que HACE la devolución no se avisa a sí misma (V/575
+          recibía la alerta de su propia devolución).
+        - Una sola vez por (lote, orden, devolución): el candado corre en
+          cada create/write de move line y repetía el mensaje.
+        """
         try:
+            pick = line.picking_id
+            returning_orders = self.env['sale.order']
+            move = line.move_id
+            if move and move.sale_line_id:
+                returning_orders |= move.sale_line_id.order_id
+            for pk in (pick, 'return_id' in pick._fields and pick.return_id):
+                if pk and 'sale_id' in pk._fields and pk.sale_id:
+                    returning_orders |= pk.sale_id
+
             sols = self.env['sale.order.line'].sudo().search([
                 ('lot_ids', 'in', line.lot_id.id),
                 ('order_id.state', 'in', ('draft', 'sent', 'sale')),
             ])
-            for order in sols.mapped('order_id'):
-                order.message_post(body=(
+            Message = self.env['mail.message'].sudo()
+            for order in sols.mapped('order_id') - returning_orders:
+                body = (
                     '⚠ El lote %s asignado a esta orden salió en una '
                     'DEVOLUCIÓN (%s). Revisa la asignación de material.'
-                ) % (line.lot_id.name, line.picking_id.name))
+                ) % (line.lot_id.name, pick.name)
+                if Message.search_count([
+                    ('model', '=', 'sale.order'),
+                    ('res_id', '=', order.id),
+                    ('body', 'ilike', 'El lote %s asignado' % line.lot_id.name),
+                    ('body', 'ilike', '(%s)' % pick.name),
+                ], limit=1):
+                    continue
+                order.message_post(body=body)
         except Exception:
             _logger.exception(
                 '[LOT_RETURN] No se pudo avisar a las ventas del lote '

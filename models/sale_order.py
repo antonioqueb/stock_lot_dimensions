@@ -555,7 +555,10 @@ class SaleOrder(models.Model):
             if line.x_selected_lots:
                 picking = line.move_ids.mapped('picking_id')
                 if picking:
-                    self._assign_specific_lots(picking, line.product_id, line.x_selected_lots)
+                    self._assign_specific_lots(
+                        picking, line.product_id, line.x_selected_lots,
+                        sale_line=line,
+                    )
         
         if not from_hold_order:
             self.env['shopping.cart'].clear_cart()
@@ -566,8 +569,42 @@ class SaleOrder(models.Model):
             'order_name': sale_order.name
         }
     
-    def _assign_specific_lots(self, picking, product, quants):
-        for move in picking.move_ids.filtered(lambda m: m.product_id == product):
+    def _assign_specific_lots(self, picking, product, quants, breakdown=None, sale_line=None):
+        """Reserva los quants exactos en los moves del picking.
+
+        - Con ``sale_line`` solo toca los moves de ESA línea (filtrar por
+          producto repartía las placas de un renglón en todos los renglones
+          del mismo producto).
+        - Solo crea líneas en moves cuyo origen contiene la ubicación del
+          quant; el OUT encadenado recibe los lotes por la reserva nativa al
+          validar el PICK (crearle líneas en el bin descontaba dos veces).
+        - Nunca reserva más que la demanda del move.
+        """
+        def _move_matches(m):
+            if m.product_id != product:
+                return False
+            if sale_line and m.sale_line_id:
+                return m.sale_line_id == sale_line
+            return True
+
+        def _location_contains(parent, child):
+            return bool(
+                parent and child and child.parent_path and parent.parent_path
+                and child.parent_path.startswith(parent.parent_path)
+            )
+
+        for move in picking.move_ids.filtered(_move_matches):
+            if move.state in ('done', 'cancel'):
+                continue
+            product_quants = quants.filtered(lambda q: q.product_id == product)
+            move_quants = product_quants.filtered(
+                lambda q: _location_contains(move.location_id, q.location_id)
+            )
+            if not move_quants:
+                if move.move_orig_ids:
+                    continue
+                move_quants = product_quants
+
             if move.move_line_ids:
                 # Primero liberar la reserva nativa. Un unlink directo puede dejar
                 # stock.quant.reserved_quantity inflado y provocar duplicidades en
@@ -590,17 +627,24 @@ class SaleOrder(models.Model):
                 skip_hold_validation=True,
             )
             
-            for quant in quants:
+            remaining = move.product_uom_qty
+            for quant in move_quants:
+                if remaining <= 0.001:
+                    break
+                reserve = min(quant.quantity, remaining)
+                if reserve <= 0.001:
+                    continue
                 move_line_model.create({
                     'move_id': move.id,
-                    'picking_id': picking.id,
+                    'picking_id': move.picking_id.id,
                     'product_id': product.id,
                     'lot_id': quant.lot_id.id,
                     'location_id': quant.location_id.id,
                     'location_dest_id': move.location_dest_id.id,
-                    'quantity': quant.quantity,
+                    'quantity': reserve,
                     'product_uom_id': move.product_uom.id,
                 })
+                remaining -= reserve
     
     def action_confirm(self):
         _logger.info("Confirmando órdenes: %s", self.mapped('name'))
