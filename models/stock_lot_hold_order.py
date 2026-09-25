@@ -934,31 +934,14 @@ class StockLotHoldOrder(models.Model):
             return False
 
     def _som_notify_seller_expired(self):
-        """Reserva VENCIDA: aviso al VENDEDOR por Odoo (actividad) y por
-        correo. Lo dispara el cron al primer vencimiento."""
+        """Reserva VENCIDA: aviso al VENDEDOR por correo. Lo dispara el cron
+        al primer vencimiento."""
         for order in self:
             if order.x_expiry_seller_notified or not order.user_id:
                 continue
             seller = order.user_id
-            detalle = order._som_hold_lines_html()
-            try:
-                order.activity_schedule(
-                    'mail.mail_activity_data_todo',
-                    summary='Reserva VENCIDA: %s (%s)' % (
-                        order.name, order.partner_id.display_name or ''),
-                    note=(
-                        '<p><b>⏰ La reserva %s venció</b> (%s).</p>'
-                        '<p>Las placas quedaron LIBERADAS al inventario, '
-                        'pero se conservan en la orden: <b>Renovar</b> las '
-                        're-aparta si siguen libres. Al segundo vencimiento '
-                        'el material se eliminará de la reserva.</p>%s'
-                    ) % (order.name, order._som_expiry_local_str(), detalle),
-                    user_id=seller.id,
-                )
-            except Exception:
-                _logger.exception(
-                    '[HOLD NOTIFY] Sin actividad de vencimiento para %s.',
-                    order.name)
+            # Sin actividad en el Centro (25 sep 2026): el usuario no le ve
+            # sentido al aviso de reserva vencida; solo queda el correo.
             order._som_send_plain_mail(
                 seller.email,
                 'Reserva vencida %s · %s' % (
