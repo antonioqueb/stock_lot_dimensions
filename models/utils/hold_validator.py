@@ -122,7 +122,7 @@ class HoldValidator:
         
         return available_lots
     
-    def validate_lot_assignment(self, lot_id, location_id, customer_id, company_id=None):
+    def validate_lot_assignment(self, lot_id, location_id, customer_id, company_id=None, qty=None):
         """
         Valida si un lote puede ser asignado a un cliente en una compañía específica
         
@@ -162,18 +162,16 @@ class HoldValidator:
         # Hold de la misma compañía → verificar cliente por PARTNER COMERCIAL
         # (el picking trae la dirección de ENTREGA; el hold puede estar a
         # nombre del contacto o de la empresa — mismo cliente, no bloquear).
-        hold_partner = quant.x_hold_activo_id.partner_id
-        customer_commercial_id = (
-            self.env['res.partner'].browse(customer_id).commercial_partner_id.id
-            if customer_id else False
-        )
+        # Regla canónica (stock.quant.som_hold_blocking_partner): solo los
+        # holds AJENOS cuentan. Con `qty` (lo que la operación toma del quant)
+        # un apartado PARCIAL ajeno se respeta: la operación solo cabe en lo
+        # libre para este cliente. Sin `qty`, basta con que quede remanente.
+        # Antes se miraba solo x_hold_activo_id (el más reciente): si era del
+        # mismo cliente, los holds ajenos del formato se ignoraban.
+        blocker = quant.som_hold_blocking_partner(partner_id=customer_id, qty=qty)
+        hold_partner = blocker
 
-        # APARTADO PARCIAL: si el hold no retiene el quant completo, el
-        # remanente es usable por cualquier cliente — no se bloquea.
-        if not quant.som_hold_blocks_fully():
-            return
-
-        if hold_partner.commercial_partner_id.id != customer_commercial_id:
+        if blocker:
             # 🔑 Cargar objetos completos ANTES de construir el mensaje
             lot = self.env['stock.lot'].browse(lot_id)
             customer = self.env['res.partner'].browse(customer_id)

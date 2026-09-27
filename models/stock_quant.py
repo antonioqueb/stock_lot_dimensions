@@ -54,34 +54,60 @@ class StockQuant(models.Model):
         total = sum(h._som_held_qty() for h in holds)
         return min(total, self.quantity or 0.0)
 
-    def som_hold_blocking_partner(self, partner_id=None, hold_order_id=None):
-        """Partner del hold que BLOQUEA a `partner_id` en este quant, o False.
-        Con apartados parciales un quant puede tener varios holds activos:
-        no bloquea si (a) alguno es del mismo partner comercial, (b) alguno
-        pertenece a la orden de reserva `hold_order_id` (la que se está
-        convirtiendo), o (c) el formato/pieza aún tiene remanente libre."""
+    def _som_foreign_active_holds(self, partner_id=None, hold_order_id=None):
+        """Holds activos del quant que NO son de `partner_id` (partner
+        comercial) ni de la orden de reserva `hold_order_id`."""
         self.ensure_one()
-        if not getattr(self, 'x_tiene_hold', False):
-            return False
         Hold = self.env['stock.lot.hold'].sudo()
+        if not getattr(self, 'x_tiene_hold', False):
+            return Hold
         domain = [('quant_id', '=', self.id), ('estado', '=', 'activo')]
         if self.company_id:
             domain.append(('company_id', '=', self.company_id.id))
         holds = Hold.search(domain) or (self.x_hold_activo_id if self.x_hold_activo_id else Hold)
-        if not holds:
-            return False
         commercial = False
         if partner_id:
             commercial = self.env['res.partner'].browse(int(partner_id)).commercial_partner_id.id
-        for h in holds:
-            if commercial and h.partner_id.commercial_partner_id.id == commercial:
-                return False
-            if hold_order_id and getattr(h, 'hold_order_id', False) \
-                    and h.hold_order_id.id == int(hold_order_id):
-                return False
-        if not self.som_hold_blocks_fully():
+        return holds.filtered(lambda h: not (
+            (commercial and h.partner_id.commercial_partner_id.id == commercial)
+            or (hold_order_id and getattr(h, 'hold_order_id', False)
+                and h.hold_order_id.id == int(hold_order_id))
+        ))
+
+    def som_hold_free_qty_for(self, partner_id=None, hold_order_id=None):
+        """m² del quant que `partner_id` puede usar: físico − lo retenido por
+        holds activos AJENOS (los suyos y los de la reserva que se convierte
+        no le restan). Placa con hold ajeno → 0 (su hold retiene todo)."""
+        self.ensure_one()
+        foreign = self._som_foreign_active_holds(partner_id, hold_order_id)
+        qty = self.quantity or 0.0
+        if not foreign:
+            return max(qty, 0.0)
+        held = min(sum(h._som_held_qty() for h in foreign), qty)
+        return max(qty - held, 0.0)
+
+    def som_hold_blocking_partner(self, partner_id=None, hold_order_id=None, qty=None):
+        """Partner del hold que BLOQUEA a `partner_id` en este quant, o False.
+
+        Se miden solo los holds AJENOS (ni del mismo partner comercial ni de
+        la orden de reserva `hold_order_id` que se está convirtiendo).
+        - Con `qty` (lo que la operación pide de este quant): bloquea si no
+          cabe en lo libre para el partner. Antes bastaba con que quedara
+          CUALQUIER remanente: con 15 de 20 apartados para A, B vendía 10 y
+          al entregar A perdía m² sin aviso.
+        - Sin `qty`: bloquea solo si no queda nada libre (compatibilidad).
+        Antes, además, un hold propio en el quant anulaba cualquier hold
+        ajeno."""
+        self.ensure_one()
+        foreign = self._som_foreign_active_holds(partner_id, hold_order_id)
+        if not foreign:
             return False
-        return holds[0].partner_id
+        free = self.som_hold_free_qty_for(partner_id, hold_order_id)
+        if qty is None:
+            blocked = free <= 0.0001
+        else:
+            blocked = float(qty or 0.0) > free + 0.0001
+        return foreign[0].partner_id if blocked else False
 
     def som_hold_free_qty(self):
         """m² del quant NO retenidos por su hold activo."""

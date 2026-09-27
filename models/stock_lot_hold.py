@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # models/stock_lot_hold.py
-from odoo import models, fields, api
+from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 from .utils.business_days import BusinessDaysCalculator
 from .utils.notification_builder import NotificationBuilder
@@ -383,8 +383,15 @@ class StockLotHold(models.Model):
                 # crean el hold por aquí). La transacción competidora espera
                 # el lock y, al reanudar, la búsqueda de abajo ya ve el hold
                 # confirmado por la otra.
+                # OJO REPEATABLE READ (aislamiento de Odoo): un SELECT ... FOR
+                # UPDATE solo hace esperar; al reanudar, la transacción sigue
+                # con su foto VIEJA y no ve el hold de la otra (crear un hold
+                # no modifica la fila del quant) → dos holds activos. Un
+                # UPDATE inocuo sí cuenta como modificación: la competidora
+                # falla por serialización, Odoo la reintenta y en el
+                # reintento la búsqueda ya ve el hold.
                 self.env.cr.execute(
-                    "SELECT id FROM stock_quant WHERE id = %s FOR UPDATE",
+                    "UPDATE stock_quant SET write_date = write_date WHERE id = %s",
                     [int(vals['quant_id'])],
                 )
                 existentes = self.search([
@@ -395,8 +402,60 @@ class StockLotHold(models.Model):
 
                 if existentes:
                     self._som_check_can_add_hold(vals, existentes)
-        
+
+                self._som_check_not_sold_to_other(vals)
+
         return super(StockLotHold, self).create(vals_list)
+
+    @api.model
+    def _som_check_not_sold_to_other(self, vals):
+        """Un apartado (venga de donde venga: galería, Inventario Visual,
+        asistente, orden de reserva) no puede caer sobre material que ya
+        está en una venta ACTIVA de OTRO cliente comercial. Antes solo las
+        órdenes de reserva lo revisaban: una placa en lot_ids de V/100 sin
+        move line viva se veía libre y se apartaba para otro cliente (dos
+        dueños). PLACA: cualquier venta ajena bloquea. FORMATO/PIEZA: pasa
+        si lo que se aparta (x_held_qty, o el quant completo) cabe en su
+        libre real (_som_lot_free_qty, el mismo cálculo de la reserva)."""
+        quant = self.env['stock.quant'].sudo().browse(int(vals['quant_id']))
+        lot = quant.lot_id
+        Sol = self.env['sale.order.line'].sudo()
+        if not lot or 'lot_ids' not in Sol._fields:
+            return
+        partner = self.env['res.partner'].browse(vals.get('partner_id') or [])
+        own = partner.commercial_partner_id if partner else self.env['res.partner']
+        sols = Sol.search([
+            ('lot_ids', 'in', lot.id),
+            ('order_id.state', 'in', ('draft', 'sent', 'sale')),
+            ('order_id.company_id', '=', vals['company_id']),
+        ]).filtered(lambda s: s.order_id.partner_id.commercial_partner_id != own)
+        if not sols:
+            return
+        tipo = str(getattr(lot, 'x_tipo', '') or '').lower()
+        if tipo in ('formato', 'pieza'):
+            Order = self.env['stock.lot.hold.order']
+            probe = self.env['stock.lot.hold.order.line'].new({
+                'order_id': Order.new({
+                    'partner_id': partner.id or False,
+                    'company_id': vals['company_id'],
+                }),
+            })
+            try:
+                libre = probe._som_lot_free_qty(lot)[2]
+            except Exception:  # noqa: BLE001
+                libre = 0.0
+            pedido = float(vals.get('x_held_qty') or 0.0) or (quant.quantity or 0.0)
+            if pedido <= libre + 0.0001:
+                return
+        sol = sols[:1]
+        raise UserError(_(
+            'No se puede apartar el lote %(lot)s: ya está en la venta %(so)s '
+            'de %(partner)s. Libéralo de esa venta primero.'
+        ) % {
+            'lot': lot.name,
+            'so': sol.order_id.name,
+            'partner': sol.order_id.partner_id.display_name or '',
+        })
 
     @api.model
     def _som_check_can_add_hold(self, vals, existentes):

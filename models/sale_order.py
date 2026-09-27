@@ -475,12 +475,24 @@ class SaleOrder(models.Model):
         order_commercial = order_partner.commercial_partner_id
 
         for product in products:
+            # Cantidad pedida por lote/quant (formato/pieza): con ella el
+            # apartado PARCIAL ajeno se respeta, no solo "queda remanente".
+            requested = {}
+            for row in product.get('lots_breakdown') or []:
+                try:
+                    requested[int(row.get('id'))] = float(row.get('quantity') or 0.0)
+                except (TypeError, ValueError):
+                    continue
             for quant_id in product['selected_lots']:
                 quant = self.env['stock.quant'].browse(quant_id)
                 if quant.x_tiene_hold:
+                    qty = requested.get(quant.id)
+                    if qty is None and quant.lot_id:
+                        qty = requested.get(quant.lot_id.id)
                     blocker = quant.som_hold_blocking_partner(
                         partner_id=partner_id,
-                        hold_order_id=self.env.context.get('hold_order_id'))
+                        hold_order_id=self.env.context.get('hold_order_id'),
+                        qty=qty)
                     if blocker:
                         raise UserError(f"El lote {quant.lot_id.name} está apartado para {blocker.name}")
         

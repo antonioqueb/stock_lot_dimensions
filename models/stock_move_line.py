@@ -731,7 +731,7 @@ class StockMoveLine(models.Model):
 
         return False
 
-    def _validate_hold_for_lines(self, forced_lot_id=False):
+    def _validate_hold_for_lines(self, forced_lot_id=False, with_qty=False):
         validator = HoldValidator(self.env)
 
         for line in self:
@@ -757,6 +757,10 @@ class StockMoveLine(models.Model):
                 line.location_id.id,
                 partner.id,
                 company_id,
+                # Solo reservas NUEVAS miden cantidad contra apartados
+                # parciales ajenos; el constrains conserva la regla previa
+                # para no trabar entregas viejas ya sobrecomprometidas.
+                qty=(line.quantity or 0.0) if with_qty else None,
             )
 
         return True
@@ -1039,7 +1043,7 @@ class StockMoveLine(models.Model):
 
         lines = super().create(vals_list)
 
-        lines._validate_hold_for_lines()
+        lines._validate_hold_for_lines(with_qty=True)
         lines._validate_duplicate_lot_commitment()
 
         for line in lines:
