@@ -611,6 +611,11 @@ class StockQuant(models.Model):
             self.env['stock.lot.hold']._som_reanchor_to_live_quants()
         except Exception:  # noqa: BLE001 - jamás tumbar un movimiento por el re-anclaje
             _logger.exception('[SOM_HOLD] re-anclaje de apartados antes de limpiar quants en cero')
+        try:
+            with self.env.cr.savepoint():
+                self.env['stock.lot.hold']._som_trace_holds_dying_with_quants()
+        except Exception:  # noqa: BLE001
+            _logger.exception('[SOM_HOLD] constancia de apartados que se borran con su quant')
         return super()._unlink_zero_quants()
 
     @api.model
@@ -675,20 +680,38 @@ class StockQuant(models.Model):
             ('company_id', 'in', company_ids) # Solo holds de esta(s) compañía(s) bloquean stock
         ]
         
-        # 2. Refinar lógica según cliente
+        # 2. Refinar lógica según cliente — por PARTNER COMERCIAL (un hold a
+        # nombre del contacto de la empresa no bloquea a la empresa) y
+        # contra TODOS los clientes permitidos (allowed_partner_ids, que se
+        # llena al confirmar varias órdenes a la vez).
+        allowed_ids = list(self.env.context.get('allowed_partner_ids') or [])
         if cliente_permitido_id:
+            allowed_ids.append(cliente_permitido_id)
+        allowed_commercial = self.env['res.partner'].browse(
+            allowed_ids).exists().mapped('commercial_partner_id')
+        if allowed_commercial:
             # Si hay un cliente permitido, el hold SOLO es un bloqueo si es para OTRO cliente.
-            domain_blockers.append(('partner_id', '!=', cliente_permitido_id))
-        else:
-            # Si no hay cliente permitido, CUALQUIER hold activo es un bloqueo.
-            pass
-            
+            domain_blockers.append(
+                ('partner_id.commercial_partner_id', 'not in', allowed_commercial.ids))
+        # Sin cliente permitido, CUALQUIER hold activo es un bloqueo.
+        # Vencidos que el cron aún no marcó tampoco bloquean.
+        domain_blockers.append(('fecha_expiracion', '>', fields.Datetime.now()))
+
         # 3. Ejecutar búsqueda vectorizada (1 sola Query SQL)
         active_holds = self.env['stock.lot.hold'].sudo().search(domain_blockers)
-        
-        # 4. Obtener IDs de quants bloqueados
-        blocked_quant_ids = set(active_holds.mapped('quant_id').ids)
-        
+
+        # 4. Obtener IDs de quants bloqueados. FORMATO/PIEZA: el hold ajeno
+        # solo retiene su parcialidad; el quant se bloquea únicamente si ya
+        # no le queda nada libre para este cliente (antes se bloqueaba todo).
+        blocked_quant_ids = set()
+        partner_for_free = allowed_commercial[:1].id if allowed_commercial else None
+        for quant in active_holds.mapped('quant_id'):
+            tipo = str(getattr(quant.lot_id, 'x_tipo', '') or '').lower()
+            if tipo in ('formato', 'pieza') \
+                    and quant.som_hold_free_qty_for(partner_for_free) > 0.0001:
+                continue
+            blocked_quant_ids.add(quant.id)
+
         # 5. Si no hay bloqueos, retornar todo el set original
         if not blocked_quant_ids:
             return quants

@@ -258,6 +258,18 @@ class StockLotHold(models.Model):
         if lot_ids:
             domain.append(('lot_id', 'in', list(lot_ids)))
         holds = self.sudo().search(domain)
+        # FORMATO/PIEZA movido EN PARTE: el apartado de 15 se quedaba en el
+        # quant de 10 (retenía solo 10) y el bin nuevo quedaba libre. Si su
+        # parcialidad ya no cabe en su quant, también viaja al quant vivo que
+        # la contenga.
+        partial_domain = [
+            ('estado', '=', 'activo'), ('x_held_qty', '>', 0),
+            ('quant_id.quantity', '>', 0)]
+        if lot_ids:
+            partial_domain.append(('lot_id', 'in', list(lot_ids)))
+        holds |= self.sudo().search(partial_domain).filtered(
+            lambda h: h._som_is_fractionable()
+            and (h.x_held_qty or 0.0) > (h.quant_id.quantity or 0.0) + 0.0001)
         if not holds:
             return []
         Quant = self.env['stock.quant'].sudo()
@@ -270,6 +282,10 @@ class StockLotHold(models.Model):
                 ('location_id.usage', '=', 'internal'),
                 ('company_id', '=', hold.company_id.id),
             ])
+            if (old.quantity or 0.0) > 0:
+                # Re-anclaje por parcialidad: solo a un quant que la contenga.
+                cands = cands.filtered(
+                    lambda q: (q.quantity or 0.0) + 0.0001 >= (hold.x_held_qty or 0.0))
             if not cands:
                 continue
             target = max(cands, key=lambda q: (
@@ -291,6 +307,34 @@ class StockLotHold(models.Model):
                          hold.name, old.location_id.complete_name if old else '-',
                          target.location_id.complete_name)
         return moved
+
+    @api.model
+    def _som_trace_holds_dying_with_quants(self):
+        """Los holds activos que siguen colgados de un quant en CERO (placa
+        vendida, dada de baja o re-anclaje fallido) se borran en cascada con
+        él al limpiar quants: antes desaparecían sin estado, sin mensaje y
+        sin bitácora. Se deja constancia en el lote y en la orden de reserva
+        antes de que el core los borre."""
+        holds = self.sudo().search([
+            ('estado', '=', 'activo'), ('quant_id.quantity', '<=', 0)])
+        Line = self.env['stock.lot.hold.order.line'].sudo()
+        for hold in holds:
+            body = _(
+                'Apartado %(hold)s de %(partner)s ELIMINADO: la placa %(lot)s '
+                'ya no tiene existencia en %(loc)s (salida, baja o ajuste) y '
+                'no había otro quant vivo del lote para re-anclarlo.'
+            ) % {
+                'hold': hold.name or hold.id,
+                'partner': hold.partner_id.display_name or '-',
+                'lot': hold.lot_id.name or '-',
+                'loc': hold.quant_id.location_id.complete_name or '-',
+            }
+            _logger.warning('[SOM_HOLD] %s', body)
+            if hold.lot_id:
+                hold.lot_id.message_post(body=body)
+            line = Line.search([('hold_ids', 'in', hold.id)], limit=1)
+            if line and line.order_id:
+                line.order_id.message_post(body=body)
 
     @api.model
     def _som_reanchor_before_merge(self):
@@ -399,6 +443,18 @@ class StockLotHold(models.Model):
                     ('company_id', '=', vals['company_id']),
                     ('estado', '=', 'activo')
                 ])
+                # PLACA: única por LOTE y compañía, no por quant. Con dos
+                # quants del mismo lote (residuo o duplicado) cabían dos
+                # apartados activos, uno por quant.
+                hold_quant = self.env['stock.quant'].sudo().browse(int(vals['quant_id']))
+                hold_lot = hold_quant.lot_id
+                if hold_lot and str(getattr(hold_lot, 'x_tipo', '') or 'placa').lower() \
+                        not in ('formato', 'pieza'):
+                    existentes |= self.search([
+                        ('lot_id', '=', hold_lot.id),
+                        ('company_id', '=', vals['company_id']),
+                        ('estado', '=', 'activo'),
+                    ])
 
                 if existentes:
                     self._som_check_can_add_hold(vals, existentes)

@@ -152,7 +152,11 @@ class StockLotAssignmentLog(models.Model):
                         lot.company_id.id or self.env.company.id)
                 vals_list.append(vals)
 
-            return self.sudo().create(vals_list)
+            # Savepoint: un error SQL de la bitácora ya no deja abortada la
+            # transacción de la venta que la llamó (antes se atrapaba sin
+            # savepoint y el error real se perdía en uno posterior).
+            with self.env.cr.savepoint():
+                return self.sudo().create(vals_list)
         except Exception:
             _logger.exception(
                 '[LOT LOG] No se pudo registrar la bitácora de asignación '

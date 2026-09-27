@@ -393,12 +393,13 @@ class StockLotHoldOrder(models.Model):
         Busca quant con stock positivo para un lote.
         Primero en ubicaciones internas, luego en tránsito.
         """
+        # El de MÁS existencia: sin orden podía tocar un residuo de 0.01.
         quant = self.env['stock.quant'].search([
             ('lot_id', '=', lot.id),
             ('quantity', '>', 0),
             ('location_id.usage', '=', 'internal'),
             ('company_id', '=', company_id),
-        ], limit=1)
+        ], order='quantity desc, id asc', limit=1)
 
         if quant:
             return quant

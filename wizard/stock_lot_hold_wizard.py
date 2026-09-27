@@ -5,6 +5,7 @@ from odoo.exceptions import ValidationError, UserError
 from datetime import timedelta
 
 from odoo.addons.stock_lot_dimensions.models.som_date_format import som_format_date
+from odoo.addons.stock_lot_dimensions.models.utils.business_days import BusinessDaysCalculator
 
 class StockLotHoldWizard(models.TransientModel):
     _name = 'stock.lot.hold.wizard'
@@ -104,16 +105,10 @@ class StockLotHoldWizard(models.TransientModel):
     x_peso = fields.Float(related='lot_id.x_peso', readonly=True)
 
     def _calcular_dias_habiles(self, fecha_inicio, dias_habiles):
-        """Calcular fecha de expiración sumando días hábiles"""
-        fecha_actual = fecha_inicio
-        dias_agregados = 0
-        
-        while dias_agregados < dias_habiles:
-            fecha_actual += timedelta(days=1)
-            if fecha_actual.weekday() < 5:  # 0-4 = lunes a viernes
-                dias_agregados += 1
-        
-        return fecha_actual
+        """Calcular fecha de expiración sumando días hábiles en HORA DE
+        MONTERREY (antes weekday() sobre UTC naive: de noche el día UTC ya
+        es mañana y el apartado vencía un día hábil antes)."""
+        return BusinessDaysCalculator.get_expiration_date(fecha_inicio, dias_habiles)
 
     @api.depends('create_date')
     def _compute_fecha_expiracion(self):
