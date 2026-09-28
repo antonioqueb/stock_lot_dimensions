@@ -34,28 +34,27 @@
         <field name="name">stock.lot.hold.order.tree</field>
         <field name="model">stock.lot.hold.order</field>
         <field name="arch" type="xml">
-            <!-- Vigentes primero (la que vence antes arriba) y luego el resto,
-                 lo más reciente primero: x_list_rank / x_list_sort. -->
-            <list string="Órdenes de Reserva" default_order="x_list_rank asc, x_list_sort asc">
-                <field name="name"/>
-                <field name="fecha_orden" widget="datetime"/>
-                <field name="partner_id"/>
-                <field name="user_id"/>
-                <field name="currency_id" optional="show"/>
-                <field name="total_placas"/>
-                <field name="total_m2"/>
-                <field name="total_con_precio" optional="show" widget="monetary"/>
-                <field name="fecha_expiracion" widget="datetime"/>
-                <field name="dias_restantes" optional="show"
-                       decoration-danger="dias_restantes &lt;= 2"
-                       decoration-warning="dias_restantes &lt;= 5 and dias_restantes &gt; 2"/>
-                <field name="x_estatus_reserva" widget="badge"
-                       decoration-success="x_estatus_reserva == 'vigente'"
-                       decoration-danger="x_estatus_reserva == 'vencida'"
-                       decoration-info="x_estatus_reserva == 'en_so'"
-                       decoration-muted="x_estatus_reserva in ('cancelada', 'finalizada')"/>
+            <!-- Lista VISUAL (27 sep 2026): estatus como píldora con cuenta
+                 regresiva, autorización (inventory_shopping_cart), fechas
+                 "28 sep 2026", vendedor con avatar; cerradas atenuadas.
+                 Vigentes primero (la que vence antes arriba): x_list_rank /
+                 x_list_sort. Estilos: static/src/scss/hold_list.scss. -->
+            <list string="Órdenes de Reserva" class="o_som_hold_list"
+                  default_order="x_list_rank asc, x_list_sort asc"
+                  decoration-muted="x_estatus_reserva in ('finalizada', 'cancelada', 'en_so')">
+                <field name="name" string="Folio"/>
+                <field name="partner_id" string="Cliente"/>
+                <field name="user_id" string="Vendedor" widget="many2one_avatar_user"/>
+                <field name="fecha_orden" string="Fecha" widget="som_date_cell"/>
+                <field name="total_placas" string="Placas"/>
+                <field name="total_m2" string="m²"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="total_con_precio" string="Total" widget="monetary" optional="show"/>
+                <field name="fecha_expiracion" string="Vence" widget="som_date_cell"/>
+                <field name="x_estatus_reserva" string="Estatus" widget="som_hold_status"/>
+                <field name="sale_order_id" column_invisible="1"/>
+                <field name="dias_restantes" string="Días" optional="hide"/>
                 <field name="state" widget="badge" optional="hide"/>
-                <field name="sale_order_id" optional="hide"/>
                 <field name="company_id" groups="base.group_multi_company" optional="hide"/>
             </list>
         </field>

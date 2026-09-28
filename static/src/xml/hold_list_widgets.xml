@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="stock_lot_dimensions.SomHoldStatusCell">
+        <div class="o_shl_status">
+            <span t-attf-class="o_shl_pill o_shl_{{ cfg.cls }}">
+                <i t-attf-class="fa {{ cfg.icon }}" title=""/> <t t-esc="cfg.label"/>
+            </span>
+            <span t-if="hint" t-attf-class="o_shl_hint o_shl_hint_{{ hint.cls }}" t-esc="hint.text"/>
+        </div>
+    </t>
+    <t t-name="stock_lot_dimensions.SomHoldAuthCell">
+        <span t-if="cfg" t-attf-class="o_shl_pill o_shl_{{ cfg.cls }} o_shl_auth">
+            <i t-attf-class="fa {{ cfg.icon }}" title=""/> <t t-esc="cfg.label"/>
+        </span>
+        <span t-else="" class="o_shl_none">—</span>
+    </t>
+    <t t-name="stock_lot_dimensions.SomDateCell">
+        <span class="o_shl_date" t-esc="text"/>
+    </t>
+</templates>

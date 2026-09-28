@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Atributos Adicionales para Lotes',
-    'version': '19.0.8.53.0',
+    'version': '19.0.8.54.0',
     'category': 'Inventory/Inventory',
     'summary': 'Captura dimensiones, fotografías y gestión de reservas manuales (hold) en lotes',
     'description': """
@@ -85,6 +85,10 @@
             'stock_lot_dimensions/static/src/js/image_gallery_widget.js',
             'stock_lot_dimensions/static/src/js/image_preview_widget.js',
             'stock_lot_dimensions/static/src/js/status_icons_widget.js',
+            # Lista de órdenes de reserva visual (27 sep 2026)
+            'stock_lot_dimensions/static/src/js/hold_list_widgets.js',
+            'stock_lot_dimensions/static/src/xml/hold_list_widgets.xml',
+            'stock_lot_dimensions/static/src/scss/hold_list.scss',
             'stock_lot_dimensions/static/src/js/hold_stone_button.js',
             'stock_lot_dimensions/static/src/js/resize_plates.js',
             'stock_lot_dimensions/static/src/xml/resize_plates.xml',
