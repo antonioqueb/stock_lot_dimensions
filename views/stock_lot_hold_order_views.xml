@@ -227,6 +227,7 @@
         <!-- Lista visual fija: sin esto gana la lista de prioridad 1 de
              inventory_shopping_cart (manual_pricing). -->
         <field name="view_id" ref="view_stock_lot_hold_order_tree"/>
+        <field name="context">{'search_default_filter_vigente': 1}</field>
     </record>
 
     <!-- Abre la lista con «Mis reservas» por defecto para VENDEDORES
