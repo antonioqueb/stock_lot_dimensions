@@ -6,6 +6,7 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import format_amount
 from odoo.tools.float_utils import float_compare
+from odoo.tools.safe_eval import safe_eval
 from .utils.business_days import BusinessDaysCalculator
 from .som_date_format import som_format_date
 import logging
@@ -94,6 +95,52 @@ class StockLotHoldOrder(models.Model):
                     'vencida' if order.x_expired_flag else 'vigente')
             else:
                 order.x_estatus_reserva = 'borrador'
+
+    # ORDEN DE LA LISTA (27 sep 2026): vigentes primero (la que vence antes
+    # arriba), luego borradores, vencidas, en SO, finalizadas y canceladas;
+    # dentro de esos, lo más reciente primero. Almacenado para ordenar en SQL.
+    _SOM_LIST_RANK = {'vigente': 1, 'borrador': 2, 'vencida': 3, 'en_so': 4,
+                      'finalizada': 5, 'cancelada': 6}
+    x_list_rank = fields.Integer(compute='_compute_x_list_sort', store=True, index=True)
+    x_list_sort = fields.Float(compute='_compute_x_list_sort', store=True)
+
+    @api.depends('x_estatus_reserva', 'fecha_expiracion', 'fecha_orden')
+    def _compute_x_list_sort(self):
+        for order in self:
+            order.x_list_rank = self._SOM_LIST_RANK.get(order.x_estatus_reserva, 9)
+            if order.x_estatus_reserva in ('vigente', 'borrador') and order.fecha_expiracion:
+                order.x_list_sort = order.fecha_expiracion.timestamp()      # vence antes → arriba
+            else:
+                when = order.fecha_orden or order.create_date
+                order.x_list_sort = -when.timestamp() if when else 0.0      # más reciente → arriba
+
+    @api.model
+    def _som_open_holds_action(self):
+        """Menú Holds: los VENDEDORES abren filtrados a sus reservas; quien
+        además es autorizador, visor del dashboard o administrador ve todas.
+        (Un act_window no puede decidir el filtro por grupo.)"""
+        action = self.env['ir.actions.act_window']._for_xml_id(
+            'stock_lot_dimensions.action_stock_lot_hold_order')
+        user = self.env.user
+
+        def has(xmlid):
+            return bool(self.env.ref(xmlid, raise_if_not_found=False)) and user.has_group(xmlid)
+
+        seller = has('inventory_shopping_cart.group_seller') or (
+            not self.env.ref('inventory_shopping_cart.group_seller', raise_if_not_found=False)
+            and has('sales_team.group_sale_salesman'))
+        boss = any(has(x) for x in (
+            'inventory_shopping_cart.group_price_authorizer',
+            'inventory_shopping_cart.group_dashboard_viewer',
+            'sales_team.group_sale_manager',
+            'base.group_system'))
+        raw = action.get('context') or {}
+        ctx = dict(safe_eval(raw, {'uid': self.env.uid, 'context': dict(self.env.context)})
+                   if isinstance(raw, str) else raw)
+        if seller and not boss:
+            ctx['search_default_filter_mias'] = 1
+        action['context'] = ctx
+        return action
 
     x_expiry_seller_notified = fields.Boolean(
         copy=False, help='Ya se avisó al vendedor del vencimiento.')
