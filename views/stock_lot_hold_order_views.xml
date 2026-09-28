@@ -44,6 +44,7 @@
                   decoration-muted="x_estatus_reserva in ('finalizada', 'cancelada', 'en_so')">
                 <field name="name" string="Folio"/>
                 <field name="partner_id" string="Cliente"/>
+                <field name="project_id" string="Proyecto" optional="show"/>
                 <field name="user_id" string="Vendedor" widget="many2one_avatar_user"/>
                 <field name="fecha_orden" string="Fecha" widget="som_date_cell"/>
                 <field name="total_placas" string="Placas"/>
@@ -67,6 +68,7 @@
             <search string="Reservas">
                 <field name="name"/>
                 <field name="partner_id"/>
+                <field name="project_id"/>
                 <field name="user_id"/>
                 <filter name="filter_vigente" string="Vigentes"
                         domain="[('x_estatus_reserva', '=', 'vigente')]"/>
@@ -84,6 +86,8 @@
                         context="{'group_by': 'x_estatus_reserva'}"/>
                 <filter name="group_vendedor" string="Agrupar por vendedor"
                         context="{'group_by': 'user_id'}"/>
+                <filter name="group_proyecto" string="Agrupar por proyecto"
+                        context="{'group_by': 'project_id'}"/>
                 <filter name="group_cliente" string="Agrupar por cliente"
                         context="{'group_by': 'partner_id'}"/>
                 <filter name="group_company" string="Compañía"
