@@ -1,5 +1,25 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields
+from odoo import api, models, fields
+
+# La unidad del producto es texto libre, pero TODO el sistema la lee como
+# Placa / Formato / Pieza (PL, worksheet, portal, x_tipo del lote). Una
+# captura como 'PIEZAS' o 'PZ' tumbaba el Procesar PL con "Wrong value for
+# stock.lot.x_tipo" (C177, BLOQUE TRAVERTINO VERACRUZ RUSTICO 80X80X80).
+SOM_UNIT_ALIASES = {
+    'placa': 'Placa', 'placas': 'Placa',
+    'formato': 'Formato', 'formatos': 'Formato',
+    'pieza': 'Pieza', 'piezas': 'Pieza', 'pz': 'Pieza', 'pzs': 'Pieza',
+    'pza': 'Pieza', 'pzas': 'Pieza',
+    'servicio': 'Servicio', 'servicios': 'Servicio',
+}
+
+
+def som_normalize_unit(value):
+    if not value:
+        return value
+    raw = str(value).strip()
+    return SOM_UNIT_ALIASES.get(raw.lower().rstrip('.'), raw)
+
 
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
@@ -64,6 +84,20 @@ class ProductTemplate(models.Model):
         string='Unidad del Producto',
         help='Unidad de medida utilizada para este producto'
     )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('x_unidad_del_producto'):
+                vals['x_unidad_del_producto'] = som_normalize_unit(
+                    vals['x_unidad_del_producto'])
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if vals.get('x_unidad_del_producto'):
+            vals = dict(vals, x_unidad_del_producto=som_normalize_unit(
+                vals['x_unidad_del_producto']))
+        return super().write(vals)
 
 
 
