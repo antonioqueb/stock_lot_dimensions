@@ -324,11 +324,14 @@ class StockQuant(models.Model):
         return [('id', 'not in', bloqueados)] if busca_apartables else [('id', 'in', bloqueados)]
 
     # ==================== MÉTODOS COMPUTADOS ====================
-    @api.depends('lot_id.x_detalles_placa')
+    @api.depends('lot_id.x_detalles_placa', 'lot_id.x_cantidad_fotos_detalle')
     def _compute_tiene_detalles(self):
-        """Verificar si la placa tiene detalles especiales"""
+        """Verificar si la placa tiene detalles especiales (nota o fotos
+        de detalle)."""
         for quant in self:
             quant.x_tiene_detalles = bool(
+                quant.lot_id.x_cantidad_fotos_detalle
+            ) or bool(
                 quant.x_detalles_placa and 
                 quant.x_detalles_placa.strip()
             )
